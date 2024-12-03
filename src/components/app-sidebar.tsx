@@ -8,11 +8,11 @@ import {
     SidebarGroupContent,
     SidebarMenu,
     SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarMenuBadge
+    SidebarMenuAction,
 } from "@/components/ui/sidebar"
 import { Link } from '@tanstack/react-router'
 import { useConfiguration } from "@/hooks/use-configuration"
+import { ModeToggle } from "./mode-toggle"
 
 export function AppSidebar() {
 
@@ -43,6 +43,13 @@ export function AppSidebar() {
                             <SidebarMenuButton asChild>
                                 <Link to='/settings' disabled>Settings</Link>
                             </SidebarMenuButton>
+                        </SidebarMenu>
+                        <SidebarMenu>
+                            <ThemeSwitcher>
+                                <SidebarMenuButton>
+                                    Theme
+                                </SidebarMenuButton>
+                            </ThemeSwitcher>
                         </SidebarMenu>
                         <SidebarMenu>
                             <SidebarMenuButton disabled>
@@ -84,5 +91,41 @@ const Footer: React.FC = () => {
                 )
             }
         </div>
+    )
+}
+
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useTheme } from "@/components/theme-provider"
+
+interface ModeToggleProps {
+    children: React.ReactNode
+}
+
+const ThemeSwitcher: React.FC<ModeToggleProps> = ({ children }) => {
+    const { setTheme } = useTheme()
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                {children}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                    Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                    Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                    System
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     )
 }

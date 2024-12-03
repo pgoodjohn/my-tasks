@@ -7,6 +7,7 @@ import {
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "@/index.css";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { ThemeProvider } from "@/components/theme-provider";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -24,7 +25,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <SidebarProvider>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <RouterProvider router={router} />
+        </ThemeProvider>
       </QueryClientProvider>
     </SidebarProvider>
   </React.StrictMode>,

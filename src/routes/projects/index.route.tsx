@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
-import { ColumnDef, ColumnSizing } from '@tanstack/react-table'
+import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
 import EditProjectDialog from '@/features/projects/EditProjectDialog'
 import { Button } from '@/components/ui/button'

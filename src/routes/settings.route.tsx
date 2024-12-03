@@ -5,5 +5,7 @@ export const Route = createFileRoute('/settings')({
 })
 
 function RouteComponent() {
-    return <div>Hello "/settings"!</div>
+    return <div>
+        <p className='text-xl'>Settings</p>
+    </div>
 }

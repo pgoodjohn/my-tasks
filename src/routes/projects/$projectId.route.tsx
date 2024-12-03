@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import TasksTable from '@/components/tasks-table'
 import { Checkbox } from '@/components/ui/checkbox'
-import { invoke } from '@tauri-apps/api/core'
 
 export const Route = createFileRoute('/projects/$projectId')({
     component: RouteComponent,

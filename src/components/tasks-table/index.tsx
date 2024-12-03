@@ -7,7 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from '@/components/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Task } from './types';
+import { Task } from '@/types';
 import EditTaskDialog from '@/components/tasks-table/EditTaskDialog';
 
 
@@ -72,7 +72,7 @@ const columns: ColumnDef<Task>[] = [
             const task = row.original
 
             return (
-                <div className='flex justify-end items-center'>
+                <div className='flex justify-end'>
                     <EditTaskDialog task={task} />
                 </div>
             )
