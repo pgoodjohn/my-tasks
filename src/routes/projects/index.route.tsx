@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
-import { ColumnDef } from '@tanstack/react-table'
+import { ColumnDef, ColumnSizing } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
 import EditProjectDialog from '@/features/projects/EditProjectDialog'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,19 @@ type Project = {
 }
 
 const projectOverviewColumns: ColumnDef<Project>[] = [
+    {
+        id: "id",
+        accessorKey: "id",
+        header: "",
+        cell: ({ row }) => {
+            const project = row.original
+            return (
+                <Link to={`/projects/${project.id}`}>
+                    <Button size="sm">→</Button>
+                </Link>
+            )
+        }
+    },
     {
         accessorKey: "title",
         header: "Title",
@@ -69,15 +82,14 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
     },
     {
         id: "actions",
+        size: 100,
         cell: ({ row }) => {
             const project = row.original
-
-            return <div>
-                <EditProjectDialog project={project} />
-                <Link to={`/projects/${project.id}`}>
-                    <Button>Open</Button>
-                </Link>
-            </div>
+            return (
+                <div className='flex justify-end items-center'>
+                    <EditProjectDialog project={project} />
+                </div>
+            )
         }
     },
 ]

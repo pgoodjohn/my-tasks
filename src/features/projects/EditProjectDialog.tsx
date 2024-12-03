@@ -56,7 +56,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button size="sm">
                     Edit
                 </Button>
             </DialogTrigger>

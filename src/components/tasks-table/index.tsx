@@ -72,7 +72,7 @@ const columns: ColumnDef<Task>[] = [
             const task = row.original
 
             return (
-                <div>
+                <div className='flex justify-end items-center'>
                     <EditTaskDialog task={task} />
                 </div>
             )
