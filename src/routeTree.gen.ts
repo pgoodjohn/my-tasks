@@ -11,25 +11,32 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as IndexImport } from './routes/index'
-import { Route as ProjectsIndexImport } from './routes/projects/index'
-import { Route as ProjectsProjectIdImport } from './routes/projects/$projectId'
+import { Route as SettingsRouteImport } from './routes/settings.route'
+import { Route as IndexRouteImport } from './routes/index.route'
+import { Route as ProjectsIndexRouteImport } from './routes/projects/index.route'
+import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId.route'
 
 // Create/Update Routes
 
-const IndexRoute = IndexImport.update({
+const SettingsRouteRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const IndexRouteRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
 } as any)
 
-const ProjectsIndexRoute = ProjectsIndexImport.update({
+const ProjectsIndexRouteRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
   getParentRoute: () => rootRoute,
 } as any)
 
-const ProjectsProjectIdRoute = ProjectsProjectIdImport.update({
+const ProjectsProjectIdRouteRoute = ProjectsProjectIdRouteImport.update({
   id: '/projects/$projectId',
   path: '/projects/$projectId',
   getParentRoute: () => rootRoute,
@@ -43,21 +50,28 @@ declare module '@tanstack/react-router' {
       id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexImport
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRoute
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRoute
     }
     '/projects/$projectId': {
       id: '/projects/$projectId'
       path: '/projects/$projectId'
       fullPath: '/projects/$projectId'
-      preLoaderRoute: typeof ProjectsProjectIdImport
+      preLoaderRoute: typeof ProjectsProjectIdRouteImport
       parentRoute: typeof rootRoute
     }
     '/projects/': {
       id: '/projects/'
       path: '/projects'
       fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsIndexImport
+      preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRoute
     }
   }
@@ -66,43 +80,48 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/projects': typeof ProjectsIndexRoute
+  '/': typeof IndexRouteRoute
+  '/settings': typeof SettingsRouteRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
+  '/projects': typeof ProjectsIndexRouteRoute
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/projects': typeof ProjectsIndexRoute
+  '/': typeof IndexRouteRoute
+  '/settings': typeof SettingsRouteRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
+  '/projects': typeof ProjectsIndexRouteRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/projects/': typeof ProjectsIndexRoute
+  '/': typeof IndexRouteRoute
+  '/settings': typeof SettingsRouteRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
+  '/projects/': typeof ProjectsIndexRouteRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/projects/$projectId' | '/projects'
+  fullPaths: '/' | '/settings' | '/projects/$projectId' | '/projects'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/projects/$projectId' | '/projects'
-  id: '__root__' | '/' | '/projects/$projectId' | '/projects/'
+  to: '/' | '/settings' | '/projects/$projectId' | '/projects'
+  id: '__root__' | '/' | '/settings' | '/projects/$projectId' | '/projects/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
-  ProjectsIndexRoute: typeof ProjectsIndexRoute
+  IndexRouteRoute: typeof IndexRouteRoute
+  SettingsRouteRoute: typeof SettingsRouteRoute
+  ProjectsProjectIdRouteRoute: typeof ProjectsProjectIdRouteRoute
+  ProjectsIndexRouteRoute: typeof ProjectsIndexRouteRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
-  ProjectsIndexRoute: ProjectsIndexRoute,
+  IndexRouteRoute: IndexRouteRoute,
+  SettingsRouteRoute: SettingsRouteRoute,
+  ProjectsProjectIdRouteRoute: ProjectsProjectIdRouteRoute,
+  ProjectsIndexRouteRoute: ProjectsIndexRouteRoute,
 }
 
 export const routeTree = rootRoute
@@ -116,18 +135,22 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/settings",
         "/projects/$projectId",
         "/projects/"
       ]
     },
     "/": {
-      "filePath": "index.tsx"
+      "filePath": "index.route.tsx"
+    },
+    "/settings": {
+      "filePath": "settings.route.tsx"
     },
     "/projects/$projectId": {
-      "filePath": "projects/$projectId.tsx"
+      "filePath": "projects/$projectId.route.tsx"
     },
     "/projects/": {
-      "filePath": "projects/index.tsx"
+      "filePath": "projects/index.route.tsx"
     }
   }
 }

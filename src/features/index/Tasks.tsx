@@ -8,22 +8,22 @@ import {
     useQueryClient,
 } from '@tanstack/react-query'
 import { invoke } from '@tauri-apps/api/core';
-import { Checkbox } from './components/ui/checkbox';
-import { DatePicker } from './components/datepicker';
-import Projects from './Projects';
-import { Combobox } from './components/combobox';
-import { Separator } from './components/ui/separator';
+import { Checkbox } from '../../components/ui/checkbox';
+import { DatePicker } from '../../components/datepicker';
+import ProjectsSheet from './ProjectsSheet';
+import { Combobox } from '../../components/combobox';
+import { Separator } from '../../components/ui/separator';
 import { invoke_tauri_command } from '@/lib/utils';
-import TasksTable from '@/components/TasksTable';
+import TasksTable from '@/components/tasks-table';
 
 const Tasks: React.FC = () => {
 
     return (
-        <div className='max-h-screen p-8'>
+        <div className='w-full max-h-screen p-4'>
             <div className='flex'>
                 <h1 className='text-xl'>Todo List</h1>
                 <div className='flex-grow' />
-                <Projects />
+                <ProjectsSheet />
             </div>
             <div className='pt-2'>
                 <div className='flex items-center space-y-2'>

@@ -8,7 +8,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from '@/components/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Task } from './types';
-import EditTaskDialog from '@/components/EditTaskDialog';
+import EditTaskDialog from '@/components/tasks-table/EditTaskDialog';
 
 
 const columns: ColumnDef<Task>[] = [

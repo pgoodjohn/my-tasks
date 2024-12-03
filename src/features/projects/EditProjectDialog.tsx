@@ -7,15 +7,15 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { Button } from "../ui/button"
+import { Button } from "../../components/ui/button"
 import { DialogClose } from "@radix-ui/react-dialog"
 import { useForm } from "@tanstack/react-form"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { invoke_tauri_command } from "@/lib/utils"
-import { Input } from "../ui/input"
+import { Input } from "../../components/ui/input"
 import { useState } from "react"
-import { Separator } from "../ui/separator"
-import { Textarea } from "../ui/textarea"
+import { Separator } from "../../components/ui/separator"
+import { Textarea } from "../../components/ui/textarea"
 
 interface EditProjectDialogProps {
     project: any,

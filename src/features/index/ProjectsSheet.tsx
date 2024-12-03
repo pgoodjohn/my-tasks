@@ -6,7 +6,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
-import { Button } from "./components/ui/button";
+import { Button } from "../../components/ui/button";
 import {
     useQuery,
     useMutation,
@@ -16,10 +16,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { ColumnDef } from "@tanstack/react-table"
 import { Input } from '@/components/ui/input';
 import { useForm } from '@tanstack/react-form'
-import { DataTable } from "./components/data-table";
-import { invoke_tauri_command } from "./lib/utils";
+import { DataTable } from "../../components/data-table";
+import { invoke_tauri_command } from "../../lib/utils";
 
-const Projects = () => {
+const ProjectsSheet = () => {
 
     return (
         <Sheet>
@@ -42,7 +42,7 @@ const Projects = () => {
     )
 }
 
-export default Projects;
+export default ProjectsSheet;
 
 const ProjectsList = () => {
     const todosListQuery = useQuery({

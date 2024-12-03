@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
-import TasksTable from '@/components/TasksTable'
+import TasksTable from '@/components/tasks-table'
 
 export const Route = createFileRoute('/projects/$projectId')({
     component: RouteComponent,

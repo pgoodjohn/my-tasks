@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
-import EditProjectDialog from '@/components/EditProjectDialog'
+import EditProjectDialog from '@/features/projects/EditProjectDialog'
 import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/projects/')({
