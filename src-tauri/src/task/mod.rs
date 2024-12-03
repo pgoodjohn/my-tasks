@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use rusqlite::{Connection, Result, Row, Statement};
+use rusqlite::{Connection, Result, Row};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -50,6 +50,19 @@ impl Project {
                 &self.description,
                 &self.created_at_utc.to_rfc3339(), 
                 &self.updated_at_utc.to_rfc3339()],
+        ).unwrap();
+
+        Ok(self)
+    }
+
+    pub fn update(&self, connection: &Connection) -> Result<&Self, ()> {
+        connection.execute(
+            "UPDATE projects SET title = ?1, description = ?2, updated_at_utc = ?3 WHERE id = ?4",
+            rusqlite::params![
+                &self.title,
+                &self.description,
+                &self.updated_at_utc.to_rfc3339(),
+                &self.id.to_string()],
         ).unwrap();
 
         Ok(self)
@@ -154,7 +167,7 @@ pub fn save_task_command(
     due_date: Option<String>,
     project_id: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
-    configuration: State<Configuration>
+    _configuration: State<Configuration>
 ) -> Result<String, String> {
     log::debug!("Running save task command for: {:?} | {:?} | {:?}", title, description, due_date);
     let task = Task::new(
@@ -185,7 +198,7 @@ pub fn save_task_command(
 pub fn load_tasks_command(
     include_completed: bool,
     db: State<Pool<SqliteConnectionManager>>,
-    configuration: State<Configuration>,
+    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running load tasks command - include_completed: {:?}", include_completed);
 
@@ -212,7 +225,7 @@ pub fn load_tasks_command(
 pub fn delete_task_command(
     task_id: String,
     db: State<Pool<SqliteConnectionManager>>,
-    configuration: State<Configuration>,
+    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running delete task command for card ID: {}", task_id);
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -231,7 +244,7 @@ pub fn delete_task_command(
 pub fn complete_task_command(
     task_id: String,
     db: State<Pool<SqliteConnectionManager>>,
-    configuration: State<Configuration>,
+    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running complete task command for card ID: {}", task_id);
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -282,7 +295,7 @@ pub fn update_task_command(
 #[tauri::command]
 pub fn load_projects_command(
     db: State<Pool<SqliteConnectionManager>>,
-    configuration: State<Configuration>,
+    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running list projects command");
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -304,7 +317,7 @@ pub fn create_project_command(
     title: String,
     description: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
-    configuration: State<Configuration>,
+    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running create project command for: {:?} | {:?}", title, description);
     let project = Project::new(
@@ -315,4 +328,33 @@ pub fn create_project_command(
     project.save(&db.get().unwrap()).unwrap();
 
     Ok(serde_json::to_string(&project).unwrap())
+}
+
+#[tauri::command]
+pub fn update_project_command(
+    project_id: String,
+    new_title: Option<String>,
+    new_description: Option<String>,
+    db: State<Pool<SqliteConnectionManager>>,
+    _configuration: State<Configuration>,
+) -> Result<String, String> {
+    log::debug!("Running update project command for: {:?} | {:?}", new_title, new_description);
+    let conn = db.get().unwrap(); // Get a connection from the pool
+
+    let uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string()).unwrap();
+
+    let project = Project::load_by_id(uuid, &conn).unwrap();
+
+    match project {
+        Some(mut project) => {
+            project.title = new_title.unwrap_or(project.title);
+            project.description = new_description.or(project.description);
+            project.updated_at_utc = Utc::now();
+            project.update(&conn).unwrap();
+            return Ok(serde_json::to_string(&project).unwrap());
+        }
+        None => {
+            return Err("Project not found".to_string());
+        }
+    }
 }

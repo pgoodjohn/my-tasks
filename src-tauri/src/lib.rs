@@ -8,7 +8,7 @@ mod task;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let configuration = configuration::Configuration::init().unwrap();
-    log::info!("Starting MTG Companion!");
+    log::info!("Starting My Tasks!");
 
     let db_pool = storage::setup_database(&configuration).expect("Could not set up database.");
 
@@ -25,6 +25,7 @@ pub fn run() {
             task::update_task_command,
             task::load_projects_command,
             task::create_project_command,
+            task::update_project_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

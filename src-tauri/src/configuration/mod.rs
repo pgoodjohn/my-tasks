@@ -1,6 +1,7 @@
 use plogger;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::path::PathBuf;
 use tauri::State;
 use toml;
@@ -41,7 +42,11 @@ impl Configuration {
 
         if !config_path.exists() {
             log::info!("Creating configuration file {:?}", &config_path);
-            File::create(&config_path).expect("Could not create config file");
+            OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(&config_path)
+                .expect("Could not create config file with write permissions");
         }
 
         config_path
@@ -85,7 +90,8 @@ impl Configuration {
                     Ok(config) => Ok(config),
                     Err(e) => {
                         log::error!("Could not parse config file: {:?}", e);
-                        Err(String::from("Could not parse config file"))
+                        // File's probably empty or malformatted, let's reset
+                        Ok(Configuration::bootstrap(dev_mode).unwrap())
                     }
                 }
             }
@@ -123,12 +129,13 @@ impl Configuration {
     }
 
     pub fn init() -> Result<Self, String> {
-        let dev_mode = cfg!(debug_assertions);
+        let dev_mode: bool = cfg!(debug_assertions);
         plogger::init(dev_mode);
         log::debug!("Logger initialised");
         log::debug!("Initializing configuration with dev mode - {:?}", dev_mode);
 
-        let config = Configuration::load_from_file(dev_mode).expect("Could not load configuration");
+        let config: Configuration =
+            Configuration::load_from_file(dev_mode).expect("Could not load configuration");
 
         log::debug!("Configuration initialised - {:?}", config);
 

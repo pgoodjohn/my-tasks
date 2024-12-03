@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
+import EditProjectDialog from '@/components/EditProjectDialog'
 
 export const Route = createFileRoute('/projects/')({
     component: RouteComponent,
@@ -31,6 +32,14 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
     {
         accessorKey: "title",
         header: "Title",
+    },
+    {
+        id: "actions",
+        cell: ({ row }) => {
+            const project = row.original
+
+            return <EditProjectDialog project={project} />
+        }
     }
 ]
 
