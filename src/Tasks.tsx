@@ -164,6 +164,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
+    DialogClose
 } from "@/components/ui/dialog"
 import { invoke_tauri_command } from './lib/utils';
 
@@ -174,14 +175,16 @@ interface EditTaskDialogProps {
 
 const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ task }) => {
 
+    const [open, setOpen] = useState(false)
+
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger><Button>Edit</Button></DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Edit Task</DialogTitle>
                 </DialogHeader>
-                <EditTaskForm task={task} />
+                <EditTaskForm task={task} onSuccess={setOpen} />
             </DialogContent>
         </Dialog>
     )
@@ -189,9 +192,10 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ task }) => {
 
 interface EditTaskFormProps {
     task: Task;
+    onSuccess: (open: boolean) => void;
 }
 
-const EditTaskForm: React.FC<EditTaskFormProps> = ({ task }) => {
+const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
     const queryClient = useQueryClient()
 
     const todoForm = useForm({
@@ -230,6 +234,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task }) => {
             // Invalidate and refetch
             queryClient.invalidateQueries({ queryKey: ['todos'] })
             todoForm.reset()
+            onSuccess(false)
         },
     })
 

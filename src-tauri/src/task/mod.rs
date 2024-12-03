@@ -284,9 +284,19 @@ pub fn update_task_command(
     task.due_at_utc = due_date.map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
     task.updated_at_utc = Utc::now();
 
+    match project_id {
+        Some(project_id) => {
+            let project_uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string()).unwrap();
+            task.project = Project::load_by_id(project_uuid, &conn).unwrap();
+        },
+        None => {
+            task.project = None;
+        }
+    }
+
     conn.execute(
-        "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, updated_at_utc = ?4 WHERE id = ?5",
-        rusqlite::params![&task.title, &task.description, task.due_at_utc.map(|date| date.to_rfc3339()), task.updated_at_utc.to_rfc3339(), &uuid.to_string()],
+        "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, updated_at_utc = ?4, project_id = ?5 WHERE id = ?6",
+        rusqlite::params![&task.title, &task.description, task.due_at_utc.map(|date| date.to_rfc3339()), task.updated_at_utc.to_rfc3339(), task.project.as_ref().map(|project| project.id.to_string()), &uuid.to_string()],
     ).map_err(|e| e.to_string())?;
 
     Ok(serde_json::to_string(&task).unwrap())
