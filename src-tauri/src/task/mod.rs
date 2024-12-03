@@ -417,10 +417,11 @@ impl ProjectDetail {
 #[tauri::command]
 pub fn load_project_details_command(
     project_id: String,
+    include_completed_tasks: bool,
     db: State<Pool<SqliteConnectionManager>>,
     _configuration: State<Configuration>,
 ) -> Result<String, String> {
-    log::debug!("Running load project details command for project ID: {}", project_id);
+    log::debug!("Running load project details command for project ID: {}, include_completed_tasks: {:?}", project_id, include_completed_tasks);
     let conn = db.get().unwrap(); // Get a connection from the pool
 
     let uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string()).unwrap();
@@ -429,6 +430,18 @@ pub fn load_project_details_command(
 
     match project_detail {
         Some(project_detail) => {
+
+            if include_completed_tasks {
+                return Ok(serde_json::to_string(&project_detail).unwrap());
+            }
+
+            let open_tasks: Vec<Task> = project_detail.tasks.into_iter().filter(|task| task.completed_at_utc.is_none()).collect();
+
+            let project_detail = ProjectDetail {
+                project: project_detail.project,
+                tasks: open_tasks,
+            };
+
             return Ok(serde_json::to_string(&project_detail).unwrap());
         }
         None => {
