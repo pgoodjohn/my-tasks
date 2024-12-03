@@ -164,7 +164,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogClose
 } from "@/components/ui/dialog"
 import { invoke_tauri_command } from './lib/utils';
 
