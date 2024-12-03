@@ -26,6 +26,7 @@ pub fn run() {
             task::load_projects_command,
             task::create_project_command,
             task::update_project_command,
+            task::load_project_details_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

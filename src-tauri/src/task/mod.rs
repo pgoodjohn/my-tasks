@@ -158,6 +158,20 @@ impl Task {
             updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap())
         })
     }
+
+    fn load_for_project(project_id: Uuid, connection: &Connection) -> Result<Vec<Self>> {
+        let mut stmt = connection.prepare("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY created_at_utc DESC").unwrap();
+        let task_iter = stmt.query_map(rusqlite::params![project_id.to_string()], |row| {
+            Task::from_row(row, connection)
+        }).unwrap();
+
+        let mut tasks = Vec::new();
+        for task in task_iter {
+            tasks.push(task.unwrap());
+        }
+
+        Ok(tasks)
+    }
 }
 
 #[tauri::command]
@@ -362,6 +376,51 @@ pub fn update_project_command(
             project.updated_at_utc = Utc::now();
             project.update(&conn).unwrap();
             return Ok(serde_json::to_string(&project).unwrap());
+        }
+        None => {
+            return Err("Project not found".to_string());
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct ProjectDetail {
+    project: Project,
+    tasks: Vec<Task>,
+}
+
+impl ProjectDetail {
+    pub fn for_project_with_id(uuid: Uuid, connection: &Connection) -> Result<Option<Self>, String> {
+        let project = Project::load_by_id(uuid, connection).unwrap();
+        match project {
+            None => return Ok(None),
+            Some(project) => {
+                let tasks = Task::load_for_project(project.id, connection).unwrap();
+                return Ok(Some(ProjectDetail {
+                    project: project,
+                    tasks: tasks,
+                }));
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub fn load_project_details_command(
+    project_id: String,
+    db: State<Pool<SqliteConnectionManager>>,
+    _configuration: State<Configuration>,
+) -> Result<String, String> {
+    log::debug!("Running load project details command for project ID: {}", project_id);
+    let conn = db.get().unwrap(); // Get a connection from the pool
+
+    let uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string()).unwrap();
+
+    let project_detail = ProjectDetail::for_project_with_id(uuid, &conn).unwrap();
+
+    match project_detail {
+        Some(project_detail) => {
+            return Ok(serde_json::to_string(&project_detail).unwrap());
         }
         None => {
             return Err("Project not found".to_string());

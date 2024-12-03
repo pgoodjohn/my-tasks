@@ -1,9 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
 import EditProjectDialog from '@/components/EditProjectDialog'
+import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/projects/')({
     component: RouteComponent,
@@ -38,7 +39,12 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
         cell: ({ row }) => {
             const project = row.original
 
-            return <EditProjectDialog project={project} />
+            return <div>
+                <EditProjectDialog project={project} />
+                <Link to={`/projects/${project.id}`}>
+                    <Button>Open</Button>
+                </Link>
+            </div>
         }
     }
 ]
