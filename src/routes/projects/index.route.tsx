@@ -17,8 +17,10 @@ function RouteComponent() {
 const ProjectsOverview: React.FC = () => {
     return (
         <div>
-            <p>Projects Overview</p>
-            <ProjectsDetailedList />
+            <p className='text-xl'>Projects Overview</p>
+            <div className='pt-2'>
+                <ProjectsDetailedList />
+            </div>
         </div>
     )
 }
@@ -35,6 +37,37 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
         header: "Title",
     },
     {
+        id: "openTasks",
+        header: "Open Tasks",
+        cell: ({ row }) => {
+            const project = row.original
+
+            const openTasksForProjectQuery = useQuery({
+                queryKey: ['tasks', 'project', project.id, 'open'],
+                queryFn: async () => {
+                    return invoke_tauri_command('count_open_tasks_for_project_command', { projectId: project.id })
+                }
+            })
+
+            if (openTasksForProjectQuery.isLoading) {
+                return <div></div>
+            }
+
+            if (openTasksForProjectQuery.isError) {
+                return <div>Error Counting</div>
+            }
+
+            if (openTasksForProjectQuery.data) {
+                console.debug("Loaded Data", openTasksForProjectQuery.data)
+            }
+
+            return (
+                <div>{openTasksForProjectQuery.data}</div>
+            )
+
+        }
+    },
+    {
         id: "actions",
         cell: ({ row }) => {
             const project = row.original
@@ -46,7 +79,7 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
                 </Link>
             </div>
         }
-    }
+    },
 ]
 
 const ProjectsDetailedList: React.FC = () => {

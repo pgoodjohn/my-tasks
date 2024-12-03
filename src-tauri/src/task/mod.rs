@@ -97,6 +97,15 @@ impl Project {
             updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap())
         })
     }
+
+    pub fn count_open_tasks_for_project(&self, connection: &Connection) -> Result<i64> {
+        let mut stmt = connection.prepare("SELECT COUNT(*) FROM tasks WHERE project_id = ?1 AND completed_at_utc IS NULL").unwrap();
+        let count = stmt.query_row(rusqlite::params![self.id.to_string()], |row| {
+            row.get(0)
+        });
+
+        count
+    }
 }
 
 impl Task {
@@ -421,6 +430,30 @@ pub fn load_project_details_command(
     match project_detail {
         Some(project_detail) => {
             return Ok(serde_json::to_string(&project_detail).unwrap());
+        }
+        None => {
+            return Err("Project not found".to_string());
+        }
+    }
+}
+
+#[tauri::command]
+pub fn count_open_tasks_for_project_command(
+    project_id: String,
+    db: State<Pool<SqliteConnectionManager>>,
+    _configuration: State<Configuration>,
+) -> Result<String, String> {
+    log::debug!("Running count open tasks for project command for project ID: {}", project_id);
+    let conn = db.get().unwrap(); // Get a connection from the pool
+
+    let uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string()).unwrap();
+
+    let project = Project::load_by_id(uuid, &conn).unwrap();
+
+    match project {
+        Some(project) => {
+            let count = project.count_open_tasks_for_project(&conn).unwrap();
+            return Ok(count.to_string());
         }
         None => {
             return Err("Project not found".to_string());

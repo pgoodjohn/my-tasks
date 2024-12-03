@@ -4,6 +4,7 @@ import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { useConfiguration } from '@/hooks/use-configuration'
+import AppContainer from '@/components/app-container'
 
 export const Route = createRootRoute({
     component: RootComponent,
@@ -21,7 +22,9 @@ function RootComponent() {
                         <SidebarTrigger />
                         <p>🍞 Breadcrumbs 🍞</p>
                     </div>
-                    <Outlet />
+                    <AppContainer>
+                        <Outlet />
+                    </AppContainer>
                 </div>
             </div>
             {data?.developmentMode && <TanStackRouterDevtools position='bottom-right' />}

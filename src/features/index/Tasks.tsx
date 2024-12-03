@@ -19,7 +19,7 @@ import TasksTable from '@/components/tasks-table';
 const Tasks: React.FC = () => {
 
     return (
-        <div className='w-full max-h-screen p-4'>
+        <div>
             <div className='flex'>
                 <h1 className='text-xl'>Todo List</h1>
                 <div className='flex-grow' />
