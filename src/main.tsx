@@ -5,7 +5,8 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import "./index.css";
+import "@/index.css";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -21,8 +22,10 @@ const queryClient = new QueryClient()
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <SidebarProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </SidebarProvider>
   </React.StrictMode>,
 );

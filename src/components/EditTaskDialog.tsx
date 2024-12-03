@@ -6,7 +6,6 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { invoke_tauri_command } from '@/lib/utils';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,13 +16,8 @@ import {
     useQueryClient,
 } from '@tanstack/react-query'
 import { invoke } from '@tauri-apps/api/core';
-import { ColumnDef } from "@tanstack/react-table"
-import { DataTable } from '@/components/data-table';
-import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/datepicker';
-import Projects from '@/Projects';
 import { Combobox } from '@/components/combobox';
-import { Separator } from '@/components/ui/separator';
 
 interface EditTaskDialogProps {
     task: Task;

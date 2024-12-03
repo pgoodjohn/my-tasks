@@ -11,7 +11,7 @@ function RouteComponent() {
     const { projectId } = Route.useParams()
 
     const projectDetailQuery = useQuery({
-        queryKey: ['project', projectId],
+        queryKey: ['todos', 'projects', projectId],
         queryFn: async () => {
             let data = await invoke_tauri_command('load_project_details_command', { projectId })
             return data
