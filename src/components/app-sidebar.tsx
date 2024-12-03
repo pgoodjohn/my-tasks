@@ -8,11 +8,9 @@ import {
     SidebarGroupContent,
     SidebarMenu,
     SidebarMenuButton,
-    SidebarMenuAction,
 } from "@/components/ui/sidebar"
 import { Link } from '@tanstack/react-router'
 import { useConfiguration } from "@/hooks/use-configuration"
-import { ModeToggle } from "./mode-toggle"
 
 export function AppSidebar() {
 
@@ -77,16 +75,16 @@ const Footer: React.FC = () => {
     console.debug("Loaded Configuration", data)
 
     return (
-        <div className="flex">
+        <div className="flex text-center">
             {
                 data.developmentMode && (
-                    <p className="text-red-500">🚨 {data.version} - Development 🚨</p>
+                    <p className="text-orange-500">👷 v{data.version} 🚧 </p>
                 )
             }
             {
                 data.developmentMode == false && (
                     <p>
-                        {data.version}
+                        v{data.version}
                     </p>
                 )
             }
