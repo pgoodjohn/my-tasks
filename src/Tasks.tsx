@@ -61,7 +61,6 @@ const TasksList: React.FC = () => {
     if (todosListQuery.data) {
         console.debug("Loaded Data", todosListQuery.data)
     }
-
     return (
         <div className='py-2'>
             <div className="flex space-x-2 pb-4">
@@ -301,7 +300,10 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                         </div>
                     )}
                 />
-                <Button type="submit">Submit</Button>
+                <div className=''>
+                    <Button variant="outline" className='m-2' onClick={(_e) => onSuccess(false)}>Cancel</Button>
+                    <Button className="m-2" type="submit">Save</Button>
+                </div>
             </form>
         </div>
     )
