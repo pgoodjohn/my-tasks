@@ -28,6 +28,7 @@ const ProjectsOverview: React.FC = () => {
 type Project = {
     id: string
     title: string
+    emoji: string | null,
     description: string | null
 }
 
@@ -48,6 +49,12 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
     {
         accessorKey: "title",
         header: "Title",
+        cell: ({ row }) => {
+            const project = row.original
+            return (
+                <div>{project.emoji ?? ""}{project.title}</div>
+            )
+        }
     },
     {
         id: "openTasks",
