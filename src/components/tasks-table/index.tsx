@@ -47,12 +47,13 @@ const columns: ColumnDef<Task>[] = [
     {
         id: "title",
         accessorKey: "title",
-        header: "Title",
-    },
-    {
-        id: "description",
-        accessorKey: "description",
-        header: "Description",
+        header: "Task",
+        cell: ({ row }) => {
+            return <div className='flex flex-col'>
+                <p>{row.original.title}</p>
+                {row.original.description && <p className="text-gray-500 text-sm">{row.original.description}</p>}
+            </div>
+        }
     },
     {
         id: "project",

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import TasksTable from '@/components/tasks-table'
 import { Checkbox } from '@/components/ui/checkbox'
+import EditProjectDialog from '@/features/projects/EditProjectDialog'
 
 export const Route = createFileRoute('/projects/$projectId')({
     component: RouteComponent,
@@ -37,7 +38,11 @@ function RouteComponent() {
 
     return (
         <div>
-            <p className='text-xl'>{projectDetailQuery.data.project.title}</p>
+            <div className='container flex items-center'>
+                <p className='text-xl'>{projectDetailQuery.data.project.emoji} {projectDetailQuery.data.project.title}</p>
+                <div className='flex-grow' />
+                <EditProjectDialog project={projectDetailQuery.data.project} />
+            </div>
             <div className='pt-2'>
                 <div className="flex space-x-2 pb-4">
                     <Checkbox id="show-completed" checked={showCompleted} onCheckedChange={() => setShowCompleted(!showCompleted)} />
@@ -51,6 +56,5 @@ function RouteComponent() {
                 <TasksTable tasks={projectDetailQuery.data.tasks} hiddenColumns={["project"]} />
             </div>
         </div>
-
     )
 }

@@ -59,9 +59,10 @@ impl Project {
 
     pub fn update(&self, connection: &Connection) -> Result<&Self, ()> {
         connection.execute(
-            "UPDATE projects SET title = ?1, description = ?2, updated_at_utc = ?3 WHERE id = ?4",
+            "UPDATE projects SET title = ?1, emoji = ?2, description = ?3, updated_at_utc = ?4 WHERE id = ?5",
             rusqlite::params![
                 &self.title,
+                &self.emoji,
                 &self.description,
                 &self.updated_at_utc.to_rfc3339(),
                 &self.id.to_string()],
@@ -375,6 +376,7 @@ pub fn create_project_command(
 pub fn update_project_command(
     project_id: String,
     new_title: Option<String>,
+    new_emoji: Option<String>,
     new_description: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
     _configuration: State<Configuration>,
@@ -389,6 +391,7 @@ pub fn update_project_command(
     match project {
         Some(mut project) => {
             project.title = new_title.unwrap_or(project.title);
+            project.emoji = new_emoji.or(project.emoji);
             project.description = new_description.or(project.description);
             project.updated_at_utc = Utc::now();
             project.update(&conn).unwrap();
