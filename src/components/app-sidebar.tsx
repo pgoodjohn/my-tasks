@@ -130,8 +130,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/theme-provider"
-import { useQuery } from "@tanstack/react-query"
-import { Project } from "@/types"
 
 interface ModeToggleProps {
     children: React.ReactNode
