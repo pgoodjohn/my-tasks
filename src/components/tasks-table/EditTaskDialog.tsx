@@ -17,7 +17,7 @@ import {
 } from '@tanstack/react-query'
 import { invoke } from '@tauri-apps/api/core';
 import { DatePicker } from '@/components/datepicker';
-import { Combobox } from '@/features/index/combobox';
+import { Combobox } from '@/components/projects-combobox';
 
 interface EditTaskDialogProps {
     task: Task;
