@@ -15,6 +15,8 @@ pub struct Configuration {
     pub config_path: PathBuf,
     #[serde(rename = "dbPath")]
     pub db_path: PathBuf,
+    #[serde(rename = "favoriteProjectsUuids")]
+    pub favorite_projects_uuids: Vec<String>,
 }
 
 impl Configuration {
@@ -91,6 +93,10 @@ impl Configuration {
                     Err(e) => {
                         log::error!("Could not parse config file: {:?}", e);
                         // File's probably empty or malformatted, let's reset
+                        // If new things are added to the configuration struct and we try to open an old file
+                        // This will cause it to reset it to a new configuration, erasing any other custom configuration
+                        // that might've been changed
+                        // TODO: Fix This
                         Ok(Configuration::bootstrap(dev_mode).unwrap())
                     }
                 }
@@ -108,6 +114,7 @@ impl Configuration {
             development_mode: dev_mode,
             config_path: Configuration::config_path(dev_mode),
             db_path: Configuration::db_path(dev_mode),
+            favorite_projects_uuids: Vec::new(),
         };
 
         config.save().expect("Could not save config file");
@@ -120,7 +127,10 @@ impl Configuration {
         let config_str = toml::to_string(&self).expect("Could not serialize config");
 
         match std::fs::write(&config_path, config_str) {
-            Ok(_) => Ok(()),
+            Ok(_) => {
+                log::debug!("Configuration saved to file");
+                Ok(())
+            }
             Err(e) => {
                 log::error!("Could not write config file: {:?}", e);
                 Err(String::from("Could not write config file"))
@@ -144,8 +154,23 @@ impl Configuration {
 }
 
 #[tauri::command]
-pub fn load_configuration_command(configuration: State<Configuration>) -> String {
+pub fn load_configuration_command(configuration: State<Mutex<Configuration>>) -> String {
     log::debug!("Running load_configuration_command. {:?}", configuration);
 
     serde_json::to_string(&configuration.inner()).unwrap()
+}
+use std::sync::Mutex;
+
+#[tauri::command]
+pub fn add_project_to_favourites_command(
+    configuration: State<Mutex<Configuration>>,
+    project_uuid: String,
+) -> Result<String, String> {
+    log::debug!("Adding project to favourites: {:?}", project_uuid);
+
+    let mut config = configuration.lock().unwrap();
+    config.favorite_projects_uuids.push(project_uuid);
+    config.save().unwrap();
+
+    Ok(serde_json::to_string(&*config).unwrap())
 }

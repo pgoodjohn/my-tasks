@@ -1,6 +1,8 @@
 extern crate r2d2;
 extern crate r2d2_sqlite;
 
+use std::sync::Mutex;
+
 mod configuration;
 mod storage;
 mod task;
@@ -14,9 +16,10 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .manage(configuration)
+        .manage(Mutex::new(configuration))
         .manage(db_pool)
         .invoke_handler(tauri::generate_handler![
+            configuration::add_project_to_favourites_command,
             configuration::load_configuration_command,
             task::complete_task_command,
             task::delete_task_command,

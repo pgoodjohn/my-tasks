@@ -6,8 +6,6 @@ use uuid::Uuid;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 
-use crate::configuration::Configuration;
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Task {
     pub id: Uuid,
@@ -194,7 +192,6 @@ pub fn save_task_command(
     due_date: Option<String>,
     project_id: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>
 ) -> Result<String, String> {
     log::debug!("Running save task command for: {:?} | {:?} | {:?}", title, description, due_date);
 
@@ -230,7 +227,6 @@ pub fn save_task_command(
 pub fn load_tasks_command(
     include_completed: bool,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running load tasks command - include_completed: {:?}", include_completed);
 
@@ -257,7 +253,6 @@ pub fn load_tasks_command(
 pub fn delete_task_command(
     task_id: String,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running delete task command for card ID: {}", task_id);
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -276,7 +271,6 @@ pub fn delete_task_command(
 pub fn complete_task_command(
     task_id: String,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running complete task command for card ID: {}", task_id);
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -299,7 +293,6 @@ pub fn update_task_command(
     due_date: Option<String>,
     project_id: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running update task command for: {:?} | {:?} | {:?}", title, description, due_date);
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -337,7 +330,6 @@ pub fn update_task_command(
 #[tauri::command]
 pub fn load_projects_command(
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running list projects command");
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -359,7 +351,6 @@ pub fn create_project_command(
     title: String,
     description: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running create project command for: {:?} | {:?}", title, description);
     let project = Project::new(
@@ -379,7 +370,6 @@ pub fn update_project_command(
     new_emoji: Option<String>,
     new_description: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running update project command for: {:?} | {:?}", new_title, new_description);
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -430,7 +420,6 @@ pub fn load_project_details_command(
     project_id: String,
     include_completed_tasks: bool,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running load project details command for project ID: {}, include_completed_tasks: {:?}", project_id, include_completed_tasks);
     let conn = db.get().unwrap(); // Get a connection from the pool
@@ -465,7 +454,6 @@ pub fn load_project_details_command(
 pub fn count_open_tasks_for_project_command(
     project_id: String,
     db: State<Pool<SqliteConnectionManager>>,
-    _configuration: State<Configuration>,
 ) -> Result<String, String> {
     log::debug!("Running count open tasks for project command for project ID: {}", project_id);
     let conn = db.get().unwrap(); // Get a connection from the pool

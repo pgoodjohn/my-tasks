@@ -95,11 +95,40 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
             return (
                 <div className='flex justify-end items-center'>
                     <EditProjectDialog project={project} />
+                    <FavoriteProjectButton project={project} />
                 </div>
             )
         }
     },
 ]
+
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useConfiguration } from '@/hooks/use-configuration'
+
+const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
+
+    const { data: configurationData } = useConfiguration()
+
+    const queryClient = useQueryClient()
+
+    const favoriteMutation = useMutation({
+        mutationFn: async () => {
+            return invoke_tauri_command('add_project_to_favourites_command', { projectUuid: project.id })
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] })
+            queryClient.invalidateQueries({ queryKey: ['configuration'] })
+        }
+    })
+
+    return (
+        <Button size="sm" disabled={favoriteMutation.isPending || configurationData.favoriteProjectsUuids?.includes(project.id)} onClick={() => {
+            favoriteMutation.mutateAsync()
+        }}>
+            Favorite
+        </Button>
+    )
+}
 
 const ProjectsDetailedList: React.FC = () => {
     const projectsListQuery = useQuery({
