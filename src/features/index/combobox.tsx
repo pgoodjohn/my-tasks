@@ -40,14 +40,14 @@ export function Combobox({ values, selectedValue, onChange }: ComboBoxProps) {
                     className="w-[200px] justify-between"
                 >
                     {selectedValue
-                        ? values.find((value) => value.id == selectedValue)?.title
+                        ? <ProjectTag project={values.find((item) => item.id === selectedValue)} />
                         : "No Project"}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0">
                 <Command>
-                    <CommandInput placeholder="Search projects..." />
+                    <CommandInput placeholder="(🚫) Search projects..." />
                     <CommandList>
                         <CommandEmpty>No projects.</CommandEmpty>
                         <CommandGroup>
