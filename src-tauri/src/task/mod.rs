@@ -24,6 +24,7 @@ pub struct Task {
 pub struct Project {
     pub id: Uuid,
     pub title: String,
+    pub emoji: Option<String>,
     pub description: Option<String>,
     pub created_at_utc: DateTime<Utc>,
     pub updated_at_utc: DateTime<Utc>,
@@ -35,6 +36,7 @@ impl Project {
         Project {
             id: Uuid::now_v7(),
             title: title,
+            emoji: None,
             description: description,
             created_at_utc: Utc::now(),
             updated_at_utc: Utc::now(),
@@ -92,6 +94,7 @@ impl Project {
         Ok(Project {
             id: Uuid::parse_str(&uuid_string).unwrap(),
             title: row.get("title").unwrap(),
+            emoji: row.get("emoji").unwrap(),
             description: row.get("description").ok(),
             created_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&created_at_string).unwrap()),
             updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap())
@@ -193,17 +196,22 @@ pub fn save_task_command(
     _configuration: State<Configuration>
 ) -> Result<String, String> {
     log::debug!("Running save task command for: {:?} | {:?} | {:?}", title, description, due_date);
+
+    let connection = db.get().unwrap();
+
     let task = Task::new(
         title,
         description,
         match project_id {
-            Some(id) => Some(Project {
-                id: Uuid::parse_str(&id).unwrap(),
-                title: String::from(""),
-                description: None,
-                created_at_utc: Utc::now(),
-                updated_at_utc: Utc::now(),
-            }),
+            Some(id) => {
+                let project = Project::load_by_id(Uuid::parse_str(&id).unwrap(), &connection).unwrap();
+                match project {
+                    Some(project) => Some(project),
+                    None => {
+                        return Err("Could not find project with id".to_string());
+                    }
+                }
+            },
             None => None
         },
         match due_date {
@@ -212,7 +220,7 @@ pub fn save_task_command(
         }
     );
 
-    task.save(&db.get().unwrap()).unwrap();
+    task.save(&connection).unwrap();
 
     Ok(serde_json::to_string(&task).unwrap())
 }
