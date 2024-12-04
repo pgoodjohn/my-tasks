@@ -68,7 +68,7 @@ const columns: ColumnDef<Task>[] = [
         accessorKey: "due_at_utc",
         header: "Due Date",
         cell: ({ row }) => {
-            return row.getValue("due_at_utc") ? new Date(row.getValue("due_at_utc")).toLocaleDateString() : "-"
+            return <DueDateColumn dateString={row.original.due_at_utc} />
         }
     },
     {
@@ -103,3 +103,19 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, hiddenColumns }) => {
 }
 
 export default TasksTable;
+
+interface DueDateColumnProps {
+    dateString: string | null,
+}
+
+const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString }) => {
+    console.debug('dateString', dateString)
+    if (dateString !== null) {
+        const date = new Date(dateString)
+        return <span>
+            <p>{date.getDate()}/{date.getMonth()}/{date.getFullYear()}</p>
+        </span>
+    }
+
+    return <span>-</span>
+}
