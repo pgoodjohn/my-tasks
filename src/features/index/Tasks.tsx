@@ -11,7 +11,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Checkbox } from '../../components/ui/checkbox';
 import { DatePicker } from '../../components/datepicker';
 import ProjectsSheet from './ProjectsSheet';
-import { Combobox } from '../../components/combobox';
+import { Combobox } from './combobox';
 import { Separator } from '../../components/ui/separator';
 import { invoke_tauri_command } from '@/lib/utils';
 import TasksTable from '@/components/tasks-table';
@@ -72,7 +72,7 @@ const TasksList: React.FC = () => {
                     Show Completed
                 </label>
             </div>
-            {todosListQuery.data ? <TasksTable tasks={todosListQuery.data} /> : <div>No Data</div>}
+            {todosListQuery.data ? <TasksTable tasks={todosListQuery.data} hiddenColumns={[]} /> : <div>No Data</div>}
         </div>
     )
 }

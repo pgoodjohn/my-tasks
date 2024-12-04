@@ -18,6 +18,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import ProjectTag from "@/components/project-tag"
 
 interface ComboBoxProps {
     values: any[];
@@ -65,7 +66,7 @@ export function Combobox({ values, selectedValue, onChange }: ComboBoxProps) {
                                             selectedValue === item.id ? "opacity-100" : "opacity-0"
                                         )}
                                     />
-                                    {item.title}
+                                    <ProjectTag project={item} />
                                 </CommandItem>
                             ))}
                         </CommandGroup>

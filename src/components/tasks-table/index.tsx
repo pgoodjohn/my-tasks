@@ -9,6 +9,7 @@ import { DataTable } from '@/components/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Task } from '@/types';
 import EditTaskDialog from '@/components/tasks-table/EditTaskDialog';
+import ProjectTag from '@/components/project-tag';
 
 
 const columns: ColumnDef<Task>[] = [
@@ -44,22 +45,26 @@ const columns: ColumnDef<Task>[] = [
         }
     },
     {
+        id: "title",
         accessorKey: "title",
         header: "Title",
     },
     {
+        id: "description",
         accessorKey: "description",
         header: "Description",
     },
     {
+        id: "project",
         accessorKey: "project",
         header: "Project",
         cell: ({ row }) => {
             console.log(row)
-            return row.original.project ? row.original.project.title : "-"
+            return row.original.project ? <ProjectTag project={row.original.project} asLink /> : "-"
         }
     },
     {
+        id: "due_at_utc",
         accessorKey: "due_at_utc",
         header: "Due Date",
         cell: ({ row }) => {
@@ -82,11 +87,18 @@ const columns: ColumnDef<Task>[] = [
 
 interface TasksTableProps {
     tasks: Task[]
+    hiddenColumns: string[]
 }
 
-const TasksTable: React.FC<TasksTableProps> = ({ tasks }) => {
+const TasksTable: React.FC<TasksTableProps> = ({ tasks, hiddenColumns }) => {
+
+    // filter out hidden columns
+    const filteredColumns = columns.filter((column) => {
+        return !hiddenColumns.includes(column.id as string);
+    })
+
     return (
-        <DataTable data={tasks} columns={columns} />
+        <DataTable data={tasks} columns={filteredColumns} />
     )
 }
 

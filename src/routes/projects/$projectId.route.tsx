@@ -48,7 +48,7 @@ function RouteComponent() {
                         Show Completed
                     </label>
                 </div>
-                <TasksTable tasks={projectDetailQuery.data.tasks} />
+                <TasksTable tasks={projectDetailQuery.data.tasks} hiddenColumns={["project"]} />
             </div>
         </div>
 

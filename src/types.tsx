@@ -2,7 +2,7 @@ type Task = {
     id: string
     title: string
     description: string | null
-    project: { id: string, title: string } | null
+    project: Project | null
     due_at_utc: string | null
     created_at_utc: string
     updated_at_utc: string
@@ -10,3 +10,12 @@ type Task = {
 }
 
 export type { Task }
+
+type Project = {
+    id: string
+    title: string
+    emoji: string | null
+    description: string | null
+}
+
+export type { Project }
