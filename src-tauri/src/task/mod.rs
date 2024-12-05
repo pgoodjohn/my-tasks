@@ -23,6 +23,7 @@ pub struct Project {
     pub id: Uuid,
     pub title: String,
     pub emoji: Option<String>,
+    pub color: Option<String>,
     pub description: Option<String>,
     pub created_at_utc: DateTime<Utc>,
     pub updated_at_utc: DateTime<Utc>,
@@ -35,6 +36,7 @@ impl Project {
             id: Uuid::now_v7(),
             title: title,
             emoji: None,
+            color: None,
             description: description,
             created_at_utc: Utc::now(),
             updated_at_utc: Utc::now(),
@@ -57,10 +59,11 @@ impl Project {
 
     pub fn update(&self, connection: &Connection) -> Result<&Self, ()> {
         connection.execute(
-            "UPDATE projects SET title = ?1, emoji = ?2, description = ?3, updated_at_utc = ?4 WHERE id = ?5",
+            "UPDATE projects SET title = ?1, emoji = ?2, color = ?3 description = ?4, updated_at_utc = ?5 WHERE id = ?6",
             rusqlite::params![
                 &self.title,
                 &self.emoji,
+                &self.color,
                 &self.description,
                 &self.updated_at_utc.to_rfc3339(),
                 &self.id.to_string()],
@@ -94,6 +97,7 @@ impl Project {
             id: Uuid::parse_str(&uuid_string).unwrap(),
             title: row.get("title").unwrap(),
             emoji: row.get("emoji").unwrap(),
+            color: row.get("color").unwrap(),
             description: row.get("description").ok(),
             created_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&created_at_string).unwrap()),
             updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap())

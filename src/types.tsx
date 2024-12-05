@@ -15,6 +15,7 @@ type Project = {
     id: string
     title: string
     emoji: string | null
+    color: string | null
     description: string | null
 }
 
