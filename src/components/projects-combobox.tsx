@@ -29,7 +29,6 @@ interface ComboBoxProps {
 export function Combobox({ values, selectedValue, onChange }: ComboBoxProps) {
     const [open, setOpen] = React.useState(false)
 
-
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>

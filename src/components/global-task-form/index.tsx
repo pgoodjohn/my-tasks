@@ -20,10 +20,13 @@ import {
 import { DatePicker } from '../../components/datepicker';
 import { Combobox } from '@/components/projects-combobox';
 import { invoke_tauri_command } from '@/lib/utils';
+import { useParams } from "@tanstack/react-router";
 
 
 const NewTaskForm: React.FC = () => {
     const queryClient = useQueryClient()
+
+    const { projectId } = useParams({ strict: false })
 
     const projectListQuery = useQuery({
         queryKey: ['projects'],
@@ -51,7 +54,7 @@ const NewTaskForm: React.FC = () => {
         defaultValues: {
             title: '',
             description: '',
-            projectId: undefined,
+            projectId: projectId,
             dueDate: undefined,
         },
         onSubmit: async ({ value }) => {

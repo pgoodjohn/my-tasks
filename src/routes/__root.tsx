@@ -20,17 +20,6 @@ function RootComponent() {
             <div className='flex w-full max-w-screen max-h-screen overflow-hidden'>
                 <AppSidebar />
                 <div className='w-full'>
-                    <div className='top-0'>
-                        <div className='flex items-center p-2'>
-                            <SidebarTrigger />
-                            <p>🍞 Breadcrumbs 🍞</p>
-                        </div>
-                        <Separator />
-                        <div className='p-2'>
-                            <GlobalTaskForm />
-                        </div>
-                        <Separator />
-                    </div>
                     <AppContainer>
                         <Outlet />
                     </AppContainer>
