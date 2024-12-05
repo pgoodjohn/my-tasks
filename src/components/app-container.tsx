@@ -6,7 +6,7 @@ interface AppContainerProps {
 
 const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
     return (
-        <div className="w-full max-h-screen p-4">
+        <div className="w-full max-h-screen p-4 overflow-scroll">
             {children}
         </div>
     )
