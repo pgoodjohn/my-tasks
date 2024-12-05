@@ -59,7 +59,7 @@ impl Project {
 
     pub fn update(&self, connection: &Connection) -> Result<&Self, ()> {
         connection.execute(
-            "UPDATE projects SET title = ?1, emoji = ?2, color = ?3 description = ?4, updated_at_utc = ?5 WHERE id = ?6",
+            "UPDATE projects SET title = ?1, emoji = ?2, color = ?3, description = ?4, updated_at_utc = ?5 WHERE id = ?6",
             rusqlite::params![
                 &self.title,
                 &self.emoji,
@@ -372,6 +372,7 @@ pub fn update_project_command(
     project_id: String,
     new_title: Option<String>,
     new_emoji: Option<String>,
+    new_color: Option<String>,
     new_description: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
 ) -> Result<String, String> {
@@ -387,6 +388,7 @@ pub fn update_project_command(
             project.title = new_title.unwrap_or(project.title);
             project.emoji = new_emoji.or(project.emoji);
             project.description = new_description.or(project.description);
+            project.color = new_color.or(project.color);
             project.updated_at_utc = Utc::now();
             project.update(&conn).unwrap();
             return Ok(serde_json::to_string(&project).unwrap());

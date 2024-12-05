@@ -16,6 +16,7 @@ import { Input } from "../../components/ui/input"
 import { useState } from "react"
 import { Separator } from "../../components/ui/separator"
 import { Textarea } from "../../components/ui/textarea"
+import ProjectColorCombobox from "./project-color-combobox"
 
 interface EditProjectDialogProps {
     project: any,
@@ -33,6 +34,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
             id: project.id,
             title: project.title,
             emoji: project.emoji,
+            color: project.color,
             description: project.description
         },
         onSubmit: async ({ value }) => {
@@ -43,8 +45,8 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
     })
 
     const editProjectMutation = useMutation({
-        mutationFn: async function (value: { id: string, title: string, emoji: string, description: string }) {
-            invoke_tauri_command('update_project_command', { projectId: value.id, newTitle: value.title, newEmoji: value.emoji, newDescription: value.description })
+        mutationFn: async function (value: { id: string, title: string, emoji: string, color: string, description: string }) {
+            invoke_tauri_command('update_project_command', { projectId: value.id, newTitle: value.title, newEmoji: value.emoji, newColor: value.color, newDescription: value.description })
         },
         onSuccess: () => {
             // Invalidate and refetch
@@ -82,21 +84,26 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                             children={(_field) => (
                                 <></>
                             )} />
-                        <editProjectForm.Field
-                            name="emoji"
-                            children={(field) => {
-                                return (
-                                    <div className="p-2">
+                        <div className="flex items-center p-2">
+                            <editProjectForm.Field
+                                name="emoji"
+                                children={(field) => {
+                                    return (
                                         <Input
                                             name={field.name}
                                             value={field.state.value}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => field.setValue(e.target.value)}
                                         />
-                                    </div>
-                                )
-                            }}
-                        />
+                                    )
+                                }}
+                            />
+                            <editProjectForm.Field
+                                name="color"
+                                children={(field) => {
+                                    return <ProjectColorCombobox selectedValue={field.state.value} onChange={field.handleChange} />
+                                }} />
+                        </div>
                         <editProjectForm.Field
                             name="title"
                             children={(field) => (
