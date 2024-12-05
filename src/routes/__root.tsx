@@ -1,12 +1,10 @@
 import * as React from 'react'
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools'
-import { SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { useConfiguration } from '@/hooks/use-configuration'
 import AppContainer from '@/components/app-container'
-import GlobalTaskForm from '@/components/global-task-form'
-import { Separator } from '@/components/ui/separator'
+import { Toaster } from '@/components/ui/sonner'
 
 export const Route = createRootRoute({
     component: RootComponent,
@@ -26,6 +24,7 @@ function RootComponent() {
                 </div>
             </div>
             {data?.developmentMode && <TanStackRouterDevtools position='bottom-right' />}
+            <Toaster />
         </React.Fragment >
     )
 }

@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from '@tanstack/react-form'
 import { DataTable } from "../../components/data-table";
 import { invoke_tauri_command } from "../../lib/utils";
+import { toast } from "sonner";
 
 const ProjectsSheet = () => {
 
@@ -99,6 +100,7 @@ const NewProjectForm: React.FC = () => {
         },
         onSuccess: () => {
             // Invalidate and refetch
+            toast.success(`Project "${todoForm.getFieldValue("title")}" created`)
             queryClient.invalidateQueries({ queryKey: ['projects'] })
             todoForm.reset()
         },

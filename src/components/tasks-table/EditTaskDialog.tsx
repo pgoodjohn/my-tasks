@@ -18,6 +18,7 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { DatePicker } from '@/components/datepicker';
 import { Combobox } from '@/components/projects-combobox';
+import { toast } from "sonner";
 
 interface EditTaskDialogProps {
     task: Task;
@@ -86,6 +87,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
         onSuccess: () => {
             // Invalidate and refetch
             queryClient.invalidateQueries({ queryKey: ['todos'] })
+            toast.success(`Task "${todoForm.getFieldValue("title")}" was updated`)
             todoForm.reset()
             onSuccess(false)
         },

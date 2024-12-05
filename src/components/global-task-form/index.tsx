@@ -21,6 +21,7 @@ import { DatePicker } from '../../components/datepicker';
 import { Combobox } from '@/components/projects-combobox';
 import { invoke_tauri_command } from '@/lib/utils';
 import { useParams } from "@tanstack/react-router";
+import { toast } from 'sonner';
 
 
 const NewTaskForm: React.FC = () => {
@@ -44,9 +45,14 @@ const NewTaskForm: React.FC = () => {
         },
         onSuccess: () => {
             // Invalidate and refetch
-            queryClient.invalidateQueries({ queryKey: ['todos'] })
+            toast.success(`Task "${todoForm.getFieldValue("title")}" created`)
             todoForm.reset()
+            queryClient.invalidateQueries({ queryKey: ['todos'] })
         },
+        onError: (error) => {
+            toast.error(`Error creating task`)
+            console.error(error)
+        }
     })
 
 

@@ -17,6 +17,7 @@ import { useState } from "react"
 import { Separator } from "../../components/ui/separator"
 import { Textarea } from "../../components/ui/textarea"
 import ProjectColorCombobox from "./project-color-combobox"
+import { toast } from "sonner"
 
 interface EditProjectDialogProps {
     project: any,
@@ -50,6 +51,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
         },
         onSuccess: () => {
             // Invalidate and refetch
+            toast.success(`Project "${editProjectForm.getFieldValue("title")}" was updated`)
             queryClient.invalidateQueries({ queryKey: ['projects'] })
             editProjectForm.reset()
             setOpen(false)
