@@ -10,7 +10,7 @@ import TasksTable from '@/components/tasks-table';
 const Tasks: React.FC = () => {
 
     return (
-        <div>
+        <div className='overflow-auto max-h-full'>
             <div className='flex'>
                 <h1 className='text-xl'>Todo List</h1>
                 <div className='flex-grow' />
@@ -49,7 +49,7 @@ const TasksList: React.FC = () => {
         console.debug("Loaded Data", todosListQuery.data)
     }
     return (
-        <div className='py-2'>
+        <div className='py-2 max-h-full'>
             <div className="flex space-x-2 pb-4">
                 <Checkbox id="show-completed" checked={showCompleted} onCheckedChange={() => setShowCompleted(!showCompleted)} />
                 <label

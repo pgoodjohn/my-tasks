@@ -9,7 +9,7 @@ interface AppContainerProps {
 
 const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
     return (
-        <div>
+        <div className='flex flex-col h-full'>
             <div className='top-0'>
                 <div className='flex items-center p-2'>
                     <SidebarTrigger />
@@ -21,8 +21,10 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
                 </div>
                 <Separator />
             </div>
-            <div className="w-full max-h-screen p-4 overflow-scroll">
-                {children}
+            <div className="w-full flex-grow overflow-auto">
+                <div className='p-4'>
+                    {children}
+                </div>
             </div>
         </div>
     )

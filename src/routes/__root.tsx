@@ -17,7 +17,7 @@ function RootComponent() {
         <React.Fragment>
             <div className='flex w-full max-w-screen max-h-screen overflow-hidden'>
                 <AppSidebar />
-                <div className='w-full'>
+                <div className='w-full h-full'>
                     <AppContainer>
                         <Outlet />
                     </AppContainer>
