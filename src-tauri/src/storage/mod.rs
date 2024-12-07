@@ -61,9 +61,11 @@ pub fn setup_structure(
                 id TEXT PRIMARY KEY,
                 title TEXT NOT NULL,
                 emoji TEXT,
+                color TEXT,
                 description TEXT,
                 created_at_utc DATETIME NOT NULL,
-                updated_at_utc DATETIME NOT NULL
+                updated_at_utc DATETIME NOT NULL,
+                archived_at_utc DATETIME
             );",
             [],
         )

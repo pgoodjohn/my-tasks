@@ -151,6 +151,12 @@ impl Configuration {
 
         Ok(config)
     }
+
+    pub fn remove_favorite_project(&mut self, project_uuid: &str) {
+        self.favorite_projects_uuids.retain(|x| x != project_uuid);
+
+        self.save().unwrap();
+    }
 }
 
 #[tauri::command]

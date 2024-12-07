@@ -27,6 +27,7 @@ pub struct Project {
     pub description: Option<String>,
     pub created_at_utc: DateTime<Utc>,
     pub updated_at_utc: DateTime<Utc>,
+    pub archived_at_utc: Option<DateTime<Utc>>,
 }
 
 impl Project {
@@ -40,6 +41,7 @@ impl Project {
             description: description,
             created_at_utc: Utc::now(),
             updated_at_utc: Utc::now(),
+            archived_at_utc: None,
         }
     }
 
@@ -57,15 +59,18 @@ impl Project {
         Ok(self)
     }
 
-    pub fn update(&self, connection: &Connection) -> Result<&Self, ()> {
+    pub fn update(&mut self, connection: &Connection) -> Result<&Self, ()> {
+        self.updated_at_utc = Utc::now();
+
         connection.execute(
-            "UPDATE projects SET title = ?1, emoji = ?2, color = ?3, description = ?4, updated_at_utc = ?5 WHERE id = ?6",
+            "UPDATE projects SET title = ?1, emoji = ?2, color = ?3, description = ?4, updated_at_utc = ?5, archived_at_utc = ?6 WHERE id = ?7",
             rusqlite::params![
                 &self.title,
                 &self.emoji,
                 &self.color,
                 &self.description,
                 &self.updated_at_utc.to_rfc3339(),
+                self.archived_at_utc.map(|date| date.to_rfc3339()),
                 &self.id.to_string()],
         ).unwrap();
 
@@ -92,6 +97,7 @@ impl Project {
         let uuid_string: String = row.get("id").unwrap();
         let created_at_string: String = row.get("created_at_utc").unwrap();
         let updated_at_string: String = row.get("updated_at_utc").unwrap();
+        let archived_at_string: Option<String> = row.get("archived_at_utc").unwrap();
 
         Ok(Project {
             id: Uuid::parse_str(&uuid_string).unwrap(),
@@ -100,7 +106,11 @@ impl Project {
             color: row.get("color").unwrap(),
             description: row.get("description").ok(),
             created_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&created_at_string).unwrap()),
-            updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap())
+            updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap()),
+            archived_at_utc: match archived_at_string {
+                Some(s) => Some(DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
+                None => None,
+            }
         })
     }
 
@@ -337,7 +347,7 @@ pub fn load_projects_command(
 ) -> Result<String, String> {
     log::debug!("Running list projects command");
     let conn = db.get().unwrap(); // Get a connection from the pool
-    let mut stmt = conn.prepare("SELECT * FROM projects ORDER BY title ASC").unwrap(); // Prepare the SQL statement
+    let mut stmt = conn.prepare("SELECT * FROM projects WHERE archived_at_utc IS NULL ORDER BY updated_at_utc DESC").unwrap(); // Prepare the SQL statement
     let project_iter = stmt.query_map([], |row| {
         Project::from_row(row) // Map each row to a Card object
     }).unwrap();
@@ -472,6 +482,36 @@ pub fn count_open_tasks_for_project_command(
         Some(project) => {
             let count = project.count_open_tasks_for_project(&conn).unwrap();
             return Ok(count.to_string());
+        }
+        None => {
+            return Err("Project not found".to_string());
+        }
+    }
+}
+
+use std::sync::Mutex;
+
+#[tauri::command]
+pub fn archive_project_command(
+    project_id: String,
+    db: State<Pool<SqliteConnectionManager>>,
+    configuration: State<Mutex<crate::configuration::Configuration>>,
+) -> Result<String, String> {
+    log::debug!("Running archive project command for project ID: {}", project_id);
+    let conn = db.get().unwrap(); // Get a connection from the pool
+
+    let uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string()).unwrap();
+
+    let project = Project::load_by_id(uuid, &conn).unwrap();
+
+    let mut locked_configuration = configuration.lock().unwrap();
+    locked_configuration.remove_favorite_project(&project_id);
+
+    match project {
+        Some(mut project) => {
+            project.archived_at_utc = Some(Utc::now());
+            project.update(&conn).unwrap();
+            return Ok(serde_json::to_string(&project).unwrap());
         }
         None => {
             return Err("Project not found".to_string());

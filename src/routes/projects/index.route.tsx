@@ -96,6 +96,7 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
                 <div className='flex justify-end items-center'>
                     <EditProjectDialog project={project} />
                     <FavoriteProjectButton project={project} />
+                    <ArchiveProjectButton project={project} />
                 </div>
             )
         }
@@ -127,6 +128,28 @@ const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
         }}>
             Favorite
         </Button>
+    )
+}
+
+import { toast } from 'sonner'
+
+const ArchiveProjectButton: React.FC<{ project: Project }> = ({ project }) => {
+
+    const queryClient = useQueryClient()
+
+    const archiveMutation = useMutation({
+        mutationFn: async () => {
+            return invoke_tauri_command('archive_project_command', { projectId: project.id })
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] })
+            queryClient.invalidateQueries({ queryKey: ['configuration'] })
+            toast.success(`Project ${project.title} was archived`)
+        },
+    })
+
+    return (
+        <Button size="sm" disabled={archiveMutation.isPending} onClick={() => archiveMutation.mutateAsync()}>Archive</Button>
     )
 }
 
