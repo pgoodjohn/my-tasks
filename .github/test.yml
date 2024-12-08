@@ -1,0 +1,27 @@
+name: main
+
+on:
+  push:
+    branches:
+      - "*" # listen to all branches
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: setup toolchain
+        uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: stable
+
+      - name: cargo test
+        run: cargo test --all-features
+
+      - name: rustfmt
+        run: cargo fmt --all -- --check
+
+      - name: clippy
+        run: cargo clippy --all --all-features --tests -- -D warnings
