@@ -114,6 +114,9 @@ const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
 
     const favoriteMutation = useMutation({
         mutationFn: async () => {
+            if (configurationData.favoriteProjectsUuids?.includes(project.id)) {
+                return invoke_tauri_command('remove_project_from_favourites_command', { projectUuid: project.id })
+            }
             return invoke_tauri_command('add_project_to_favourites_command', { projectUuid: project.id })
         },
         onSuccess: () => {
@@ -123,10 +126,11 @@ const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
     })
 
     return (
-        <Button size="sm" disabled={favoriteMutation.isPending || configurationData.favoriteProjectsUuids?.includes(project.id)} onClick={() => {
+        <Button size="sm" disabled={favoriteMutation.isPending} onClick={() => {
             favoriteMutation.mutateAsync()
         }}>
-            Favorite
+            {configurationData.favoriteProjectsUuids?.includes(project.id) && "Unfavorite"}
+            {configurationData.favoriteProjectsUuids?.includes(project.id) === false && "Favorite"}
         </Button>
     )
 }

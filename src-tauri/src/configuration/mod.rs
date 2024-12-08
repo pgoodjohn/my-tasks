@@ -180,3 +180,16 @@ pub fn add_project_to_favourites_command(
 
     Ok(serde_json::to_string(&*config).unwrap())
 }
+
+#[tauri::command]
+pub fn remove_project_from_favourites_command(
+    configuration: State<Mutex<Configuration>>,
+    project_uuid: String,
+) -> Result<String, String> {
+    log::debug!("Removing project from favourites: {:?}", project_uuid);
+
+    let mut config = configuration.lock().unwrap();
+    config.remove_favorite_project(&project_uuid);
+
+    Ok(serde_json::to_string(&*config).unwrap())
+}

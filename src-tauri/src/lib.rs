@@ -22,6 +22,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             configuration::add_project_to_favourites_command,
             configuration::load_configuration_command,
+            configuration::remove_project_from_favourites_command,
             project::archive_project_command,
             project::create_project_command,
             project::load_projects_command,
