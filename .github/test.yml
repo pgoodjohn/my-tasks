@@ -4,21 +4,25 @@ on:
   push:
     branches:
       - "*" # listen to all branches
+  pull_request:
+    branches:
+      - "main"
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: setup toolchain
-        uses: hecrj/setup-rust-action@v1
-        with:
-          rust-version: stable
+      - name: Build
+        run: cargo build --verbose
 
       - name: cargo test
-        run: cargo test --all-features
+        run: cargo test --verbose
 
       - name: rustfmt
         run: cargo fmt --all -- --check
