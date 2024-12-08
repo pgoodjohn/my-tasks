@@ -71,7 +71,7 @@ fn test_archiving_a_project_still_allows_you_to_load_it() {
     assert_eq!(saved_project.id, project.id);
     assert_eq!(saved_project.created_at_utc, project.created_at_utc);
     assert_eq!(saved_project.updated_at_utc, project.updated_at_utc);
-    assert!(saved_project.archived_at_utc.is_some());
+    assert!(saved_project.archived_at_utc.is_none());
 
     project.archived_at_utc = Some(Utc::now());
     project.save(&conn).unwrap();
