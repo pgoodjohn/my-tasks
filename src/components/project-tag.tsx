@@ -24,6 +24,7 @@ const ProjectTag: React.FC<ProjecTagProps> = ({ project, asLink = false }) => {
         'bg-purple-400 hover:bg-purple-500 dark:hover:bg-purple-300': project.color === 'purple',
         'bg-pink-400 hover:bg-pink-500 dark:hover:bg-pink-300': project.color === 'pink',
         'bg-rose-400 hover:bg-rose-500 dark:hover:bg-rose-300': project.color === 'rose',
+        '': !project.color
     });
 
     if (asLink) {

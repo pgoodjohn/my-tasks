@@ -1,9 +1,7 @@
 #[cfg(test)]
 use super::Project;
-use chrono::{DateTime, Utc};
-use r2d2::Pool;
-use rusqlite::{Connection, Result, Row};
-use serde::{Deserialize, Serialize};
+use chrono::Utc;
+use rusqlite::Connection;
 
 fn setup_in_memory_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
@@ -28,9 +26,7 @@ fn setup_in_memory_db() -> Connection {
 fn test_project_new() {
     let title = String::from("Test Project");
     let description = Some(String::from("This is a test project."));
-    let project = Project::new(title.clone(), description.clone());
-
-    assert_eq!(project.title, title);
+    let project = Project::new(title.clone(), None, None, description.clone());
     assert_eq!(project.description, description);
     assert!(project.id.to_string().len() > 0);
     assert!(project.created_at_utc <= Utc::now());
@@ -43,8 +39,8 @@ fn test_project_save() {
     let conn = setup_in_memory_db();
     let title = String::from("Test Project");
     let description = Some(String::from("This is a test project."));
-    let mut project = Project::new(title.clone(), description.clone());
 
+    let mut project = Project::new(title.clone(), None, None, description.clone());
     project.save(&conn).unwrap();
 
     let saved_project = Project::load_by_id(project.id, &conn).unwrap().unwrap();
@@ -61,8 +57,7 @@ fn test_archiving_a_project_still_allows_you_to_load_it() {
     let conn = setup_in_memory_db();
     let title = String::from("Test Project");
     let description = Some(String::from("This is a test project."));
-    let mut project = Project::new(title.clone(), description.clone());
-
+    let mut project = Project::new(title.clone(), None, None, description.clone());
     project.save(&conn).unwrap();
 
     let saved_project = Project::load_by_id(project.id, &conn).unwrap().unwrap();

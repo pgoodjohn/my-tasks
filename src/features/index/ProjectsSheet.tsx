@@ -49,7 +49,7 @@ const ProjectsList = () => {
     const todosListQuery = useQuery({
         queryKey: ['projects'],
         queryFn: async () => {
-            let data = await invoke_tauri_command('load_projects_command', {})
+            let data = await invoke_tauri_command('load_projects_command', { showArchivedProjects: false })
             return data
         }
     })

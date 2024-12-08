@@ -1,7 +1,6 @@
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -20,40 +19,38 @@ import ProjectColorCombobox from "./project-color-combobox"
 import { toast } from "sonner"
 
 interface EditProjectDialogProps {
-    project: any,
 }
 
-const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
+const CreateProjectDialog: React.FC<EditProjectDialogProps> = ({ }) => {
 
     const [open, setOpen] = useState(false)
 
     const queryClient = useQueryClient()
 
 
-    const editProjectForm = useForm({
+    const createProjectForm = useForm({
         defaultValues: {
-            id: project.id,
-            title: project.title,
-            emoji: project.emoji,
-            color: project.color,
-            description: project.description
+            title: "",
+            emoji: "",
+            color: "",
+            description: ""
         },
         onSubmit: async ({ value }) => {
             console.debug("Edit Project", value)
-            await editProjectMutation.mutateAsync(value)
+            await createProjectFormMutation.mutateAsync(value)
             queryClient.invalidateQueries({ queryKey: ['projects'] })
         }
     })
 
-    const editProjectMutation = useMutation({
-        mutationFn: async function (value: { id: string, title: string, emoji: string, color: string, description: string }) {
-            invoke_tauri_command('update_project_command', { projectId: value.id, newTitle: value.title, newEmoji: value.emoji, newColor: value.color, newDescription: value.description })
+    const createProjectFormMutation = useMutation({
+        mutationFn: async function (value: { title: string, emoji: string, color: string, description: string }) {
+            invoke_tauri_command('create_project_command', { title: value.title, emoji: value.emoji, color: value.color, description: value.description })
         },
         onSuccess: () => {
             // Invalidate and refetch
-            toast.success(`Project "${editProjectForm.getFieldValue("title")}" was updated`)
+            toast.success(`Project "${createProjectForm.getFieldValue("title")}" was created`)
             queryClient.invalidateQueries({ queryKey: ['projects'] })
-            editProjectForm.reset()
+            createProjectForm.reset()
             setOpen(false)
         },
     })
@@ -61,8 +58,8 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost">
-                    Edit
+                <Button variant="outline">
+                    New Project
                 </Button>
             </DialogTrigger>
             <DialogContent>
@@ -70,24 +67,16 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                     onSubmit={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        editProjectForm.handleSubmit()
+                        createProjectForm.handleSubmit()
                     }}
                 >
                     <DialogHeader className="py-2">
-                        <DialogTitle>Edit Project</DialogTitle>
-                        <DialogDescription className="text-xs">
-                            {project.id}
-                        </DialogDescription>
+                        <DialogTitle>New Project</DialogTitle>
                     </DialogHeader>
                     <Separator />
                     <div className="py-2">
-                        <editProjectForm.Field
-                            name="id"
-                            children={(_field) => (
-                                <></>
-                            )} />
                         <div className="flex items-center p-2">
-                            <editProjectForm.Field
+                            <createProjectForm.Field
                                 name="emoji"
                                 children={(field) => {
                                     return (
@@ -100,13 +89,13 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                                     )
                                 }}
                             />
-                            <editProjectForm.Field
+                            <createProjectForm.Field
                                 name="color"
                                 children={(field) => {
                                     return <ProjectColorCombobox selectedValue={field.state.value} onChange={field.handleChange} />
                                 }} />
                         </div>
-                        <editProjectForm.Field
+                        <createProjectForm.Field
                             name="title"
                             children={(field) => (
                                 <div className="p-2">
@@ -119,7 +108,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                                 </div>
                             )}
                         />
-                        <editProjectForm.Field
+                        <createProjectForm.Field
                             name="description"
                             children={(field) => (
                                 <div className="p-2">
@@ -149,4 +138,4 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
     )
 }
 
-export default EditProjectDialog
+export default CreateProjectDialog

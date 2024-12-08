@@ -5,6 +5,18 @@ import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
 import EditProjectDialog from '@/features/projects/EditProjectDialog'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreHorizontal } from "lucide-react"
+import { Project } from '@/types'
+
 
 export const Route = createFileRoute('/projects/')({
     component: RouteComponent,
@@ -17,7 +29,11 @@ function RouteComponent() {
 const ProjectsOverview: React.FC = () => {
     return (
         <div>
-            <p className='text-xl'>Projects Overview</p>
+            <div className='flex'>
+                <p className='text-xl'>Projects Overview</p>
+                <div className='flex-grow' />
+                <CreateProjectDialog />
+            </div>
             <div className='pt-2'>
                 <ProjectsDetailedList />
             </div>
@@ -25,24 +41,28 @@ const ProjectsOverview: React.FC = () => {
     )
 }
 
-type Project = {
-    id: string
-    title: string
-    emoji: string | null,
-    description: string | null
-}
-
 const projectOverviewColumns: ColumnDef<Project>[] = [
     {
-        id: "id",
-        accessorKey: "id",
-        header: "",
+        id: "actions",
         cell: ({ row }) => {
             const project = row.original
             return (
-                <Link to={`/projects/${project.id}`}>
-                    <Button size="sm">→</Button>
-                </Link>
+                <div className='items-center max-w-0.5'>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <FavoriteProjectButton project={project} />
+                            <ArchiveProjectButton project={project} />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             )
         }
     },
@@ -52,7 +72,7 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
         cell: ({ row }) => {
             const project = row.original
             return (
-                <div>{project.emoji ?? ""}{project.title}</div>
+                <ProjectTag project={project} asLink />
             )
         }
     },
@@ -82,29 +102,27 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
             }
 
             return (
-                <div>{openTasksForProjectQuery.data}</div>
+                <div className='font-medium'>{openTasksForProjectQuery.data}</div>
             )
 
         }
     },
     {
-        id: "actions",
-        size: 100,
+        id: "edit",
         cell: ({ row }) => {
             const project = row.original
             return (
-                <div className='flex justify-end items-center'>
+                <div className='max-w-0.5'>
                     <EditProjectDialog project={project} />
-                    <FavoriteProjectButton project={project} />
-                    <ArchiveProjectButton project={project} />
                 </div>
             )
         }
-    },
+    }
 ]
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useConfiguration } from '@/hooks/use-configuration'
+import ProjectTag from '@/components/project-tag'
 
 const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
 
@@ -126,16 +144,14 @@ const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
     })
 
     return (
-        <Button size="sm" disabled={favoriteMutation.isPending} onClick={() => {
+        <DropdownMenuItem disabled={favoriteMutation.isPending} onClick={() => {
             favoriteMutation.mutateAsync()
         }}>
             {configurationData.favoriteProjectsUuids?.includes(project.id) && "Unfavorite"}
             {configurationData.favoriteProjectsUuids?.includes(project.id) === false && "Favorite"}
-        </Button>
+        </DropdownMenuItem>
     )
 }
-
-import { toast } from 'sonner'
 
 const ArchiveProjectButton: React.FC<{ project: Project }> = ({ project }) => {
 
@@ -153,15 +169,22 @@ const ArchiveProjectButton: React.FC<{ project: Project }> = ({ project }) => {
     })
 
     return (
-        <Button size="sm" disabled={archiveMutation.isPending} onClick={() => archiveMutation.mutateAsync()}>Archive</Button>
+        <DropdownMenuItem disabled={archiveMutation.isPending} onClick={() => archiveMutation.mutateAsync()}>Archive</DropdownMenuItem>
     )
 }
 
+import { useState } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
+import CreateProjectDialog from '@/features/projects/CreateProjectDialog'
+
 const ProjectsDetailedList: React.FC = () => {
+
+    const [showArchived, setShowArchived] = useState(false)
+
     const projectsListQuery = useQuery({
-        queryKey: ['projects'],
+        queryKey: ['projects', showArchived],
         queryFn: async () => {
-            let data = await invoke_tauri_command('load_projects_command', {})
+            let data = await invoke_tauri_command('load_projects_command', { showArchivedProjects: showArchived })
             return data
         }
     })
@@ -180,7 +203,26 @@ const ProjectsDetailedList: React.FC = () => {
 
     return (
         <div>
-            {projectsListQuery.data ? <DataTable data={projectsListQuery.data} columns={projectOverviewColumns} /> : <div>No Data</div>}
+            <div className="flex space-x-2 pb-4">
+                <Checkbox id="show-completed" checked={showArchived} onCheckedChange={() => setShowArchived(!showArchived)} />
+                <label
+                    htmlFor="show-completed"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                    Show Archived
+                </label>
+            </div>
+            {projectsListQuery.data ? <ProjectDetailsTable projects={projectsListQuery.data} /> : <div>No Projects</div>}
         </div>
+    )
+}
+
+interface ProjectDetailsTableProps {
+    projects: Project[]
+}
+
+const ProjectDetailsTable: React.FC<ProjectDetailsTableProps> = ({ projects }) => {
+    return (
+        <DataTable data={projects} columns={projectOverviewColumns} />
     )
 }

@@ -32,7 +32,7 @@ const NewTaskForm: React.FC = () => {
     const projectListQuery = useQuery({
         queryKey: ['projects'],
         queryFn: async () => {
-            return await invoke_tauri_command('load_projects_command', {})
+            return await invoke_tauri_command('load_projects_command', { showArchivedProjects: false })
         }
     })
 

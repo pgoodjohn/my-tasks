@@ -19,6 +19,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { DatePicker } from '@/components/datepicker';
 import { Combobox } from '@/components/projects-combobox';
 import { toast } from "sonner";
+import { invoke_tauri_command } from "@/lib/utils";
 
 interface EditTaskDialogProps {
     task: Task;
@@ -70,10 +71,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
     const projectListQuery = useQuery({
         queryKey: ['projects'],
         queryFn: async () => {
-            let res = await invoke('load_projects_command');
-            console.debug("Rust Return", res)
-            let data = JSON.parse(res as string)
-            return data
+            return invoke_tauri_command('load_projects_command', { showArchivedProjects: false })
         }
     })
 

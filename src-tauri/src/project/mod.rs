@@ -23,12 +23,12 @@ pub struct Project {
 }
 
 impl Project {
-    pub fn new(title: String, description: Option<String>) -> Self {
+    pub fn new(title: String, emoji: Option<String>, color: Option<String>, description: Option<String>) -> Self {
         Project {
             id: Uuid::now_v7(),
             title: title,
-            emoji: None,
-            color: None,
+            emoji: emoji,
+            color: color,
             description: description,
             created_at_utc: Utc::now(),
             updated_at_utc: Utc::now(),
@@ -42,10 +42,12 @@ impl Project {
         }
 
         connection.execute(
-            "INSERT INTO projects (id, title, description, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT INTO projects (id, title, color, emoji, description, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             rusqlite::params![
                 &self.id.to_string(), 
                 &self.title,
+                &self.color,
+                &self.emoji,
                 &self.description,
                 &self.created_at_utc.to_rfc3339(), 
                 &self.updated_at_utc.to_rfc3339()],
@@ -115,6 +117,20 @@ impl Project {
         Ok(project_list)
     }
 
+    pub fn list_all_projects(connection: &Connection) -> Result<Vec<Project>> {
+        let mut stmt = connection.prepare("SELECT * FROM projects").unwrap();
+        let projects = stmt.query_map([], |row| {
+            Project::from_row(row)
+        });
+
+        let mut project_list = Vec::new();
+        for project in projects.unwrap() {
+            project_list.push(project.unwrap());
+        }
+
+        Ok(project_list)
+    }
+
     fn from_row(row: &Row) -> Result<Self> {
         let uuid_string: String = row.get("id").unwrap();
         let created_at_string: String = row.get("created_at_utc").unwrap();
@@ -149,12 +165,16 @@ impl Project {
 #[tauri::command]
 pub fn create_project_command(
     title: String,
+    emoji: Option<String>,
+    color: Option<String>,
     description: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
 ) -> Result<String, String> {
     log::debug!("Running create project command for: {:?} | {:?}", title, description);
     let mut project = Project::new(
         title,
+        emoji,
+        color,
         description
     );
 
@@ -224,11 +244,17 @@ pub fn update_project_command(
 
 #[tauri::command]
 pub fn load_projects_command(
+    show_archived_projects: bool,
     db: State<Pool<SqliteConnectionManager>>,
 ) -> Result<String, String> {
     log::debug!("Running list projects command");
     let conn = db.get().unwrap(); // Get a connection from the pool
-    let projects = Project::list_not_archived_projects(&conn).unwrap();
 
+    if show_archived_projects {
+        let projects = Project::list_all_projects(&conn).unwrap();
+        return Ok(serde_json::to_string(&projects).unwrap());
+    }
+
+    let projects = Project::list_not_archived_projects(&conn).unwrap();
     Ok(serde_json::to_string(&projects).unwrap())
 }
