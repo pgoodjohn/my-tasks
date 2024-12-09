@@ -18,6 +18,7 @@ import { Textarea } from "../../components/ui/textarea"
 import ProjectColorCombobox from "./project-color-combobox"
 import { toast } from "sonner"
 
+
 interface EditProjectDialogProps {
 }
 

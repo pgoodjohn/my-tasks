@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Task } from '@/types';
 import EditTaskDialog from '@/components/tasks-table/EditTaskDialog';
 import ProjectTag from '@/components/project-tag';
+import { Badge } from '../ui/badge';
 
 
 const columns: ColumnDef<Task>[] = [
@@ -50,7 +51,9 @@ const columns: ColumnDef<Task>[] = [
         header: "Task",
         cell: ({ row }) => {
             return <div className='flex flex-col'>
-                <p>{row.original.title}</p>
+                <p>
+                    {row.original.title}
+                </p>
                 {row.original.description && <p className="text-gray-500 text-sm">{row.original.description}</p>}
             </div>
         }
@@ -113,6 +116,16 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString }) => {
     console.debug('dateString', dateString)
     if (dateString !== null) {
         const date = new Date(dateString)
+
+        // if date is today, show it in a red Badge
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        if (date.getTime() === today.getTime()) {
+            return <span>
+                <Badge variant="destructive">{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</Badge>
+            </span>
+        }
+
         return <span>
             <p>{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</p>
         </span>
