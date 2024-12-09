@@ -114,7 +114,7 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString }) => {
     if (dateString !== null) {
         const date = new Date(dateString)
         return <span>
-            <p>{date.getDate()}/{date.getMonth()}/{date.getFullYear()}</p>
+            <p>{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</p>
         </span>
     }
 
