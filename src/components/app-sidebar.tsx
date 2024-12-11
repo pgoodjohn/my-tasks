@@ -29,6 +29,9 @@ export function AppSidebar() {
                             <SidebarMenuButton asChild>
                                 <Link to='/'>Home</Link>
                             </SidebarMenuButton>
+                            <SidebarMenuButton asChild>
+                                <Link to='/tasks'>Tasks</Link>
+                            </SidebarMenuButton>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild>
                                     <Link to='/projects'>Projects</Link>
@@ -44,6 +47,11 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton>
+                                    <ContributionsCalendar variant="monthly" />
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
                             <SidebarMenuButton asChild>
                                 <Link to='/settings' disabled>Settings</Link>
                             </SidebarMenuButton>
@@ -130,6 +138,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/theme-provider"
+import ContributionsCalendar from "./contributions-calendar"
 
 interface ModeToggleProps {
     children: React.ReactNode

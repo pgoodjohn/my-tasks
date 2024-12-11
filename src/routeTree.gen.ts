@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings.route'
 import { Route as IndexRouteImport } from './routes/index.route'
+import { Route as TasksIndexRouteImport } from './routes/tasks/index.route'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index.route'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId.route'
 
@@ -27,6 +28,12 @@ const SettingsRouteRoute = SettingsRouteImport.update({
 const IndexRouteRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const TasksIndexRouteRoute = TasksIndexRouteImport.update({
+  id: '/tasks/',
+  path: '/tasks/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -74,6 +81,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRoute
     }
+    '/tasks/': {
+      id: '/tasks/'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksIndexRouteImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -84,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
   '/projects': typeof ProjectsIndexRouteRoute
+  '/tasks': typeof TasksIndexRouteRoute
 }
 
 export interface FileRoutesByTo {
@@ -91,6 +106,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
   '/projects': typeof ProjectsIndexRouteRoute
+  '/tasks': typeof TasksIndexRouteRoute
 }
 
 export interface FileRoutesById {
@@ -99,14 +115,21 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
   '/projects/': typeof ProjectsIndexRouteRoute
+  '/tasks/': typeof TasksIndexRouteRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/projects/$projectId' | '/projects'
+  fullPaths: '/' | '/settings' | '/projects/$projectId' | '/projects' | '/tasks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/projects/$projectId' | '/projects'
-  id: '__root__' | '/' | '/settings' | '/projects/$projectId' | '/projects/'
+  to: '/' | '/settings' | '/projects/$projectId' | '/projects' | '/tasks'
+  id:
+    | '__root__'
+    | '/'
+    | '/settings'
+    | '/projects/$projectId'
+    | '/projects/'
+    | '/tasks/'
   fileRoutesById: FileRoutesById
 }
 
@@ -115,6 +138,7 @@ export interface RootRouteChildren {
   SettingsRouteRoute: typeof SettingsRouteRoute
   ProjectsProjectIdRouteRoute: typeof ProjectsProjectIdRouteRoute
   ProjectsIndexRouteRoute: typeof ProjectsIndexRouteRoute
+  TasksIndexRouteRoute: typeof TasksIndexRouteRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -122,6 +146,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRouteRoute: SettingsRouteRoute,
   ProjectsProjectIdRouteRoute: ProjectsProjectIdRouteRoute,
   ProjectsIndexRouteRoute: ProjectsIndexRouteRoute,
+  TasksIndexRouteRoute: TasksIndexRouteRoute,
 }
 
 export const routeTree = rootRoute
@@ -137,7 +162,8 @@ export const routeTree = rootRoute
         "/",
         "/settings",
         "/projects/$projectId",
-        "/projects/"
+        "/projects/",
+        "/tasks/"
       ]
     },
     "/": {
@@ -151,6 +177,9 @@ export const routeTree = rootRoute
     },
     "/projects/": {
       "filePath": "projects/index.route.tsx"
+    },
+    "/tasks/": {
+      "filePath": "tasks/index.route.tsx"
     }
   }
 }
