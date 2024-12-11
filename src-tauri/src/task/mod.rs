@@ -8,6 +8,8 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::project::Project;
 
+mod test;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Task {
     pub id: Uuid,
@@ -80,9 +82,35 @@ impl Task {
         })
     }
 
+    pub fn load_by_id(id: Uuid, connection: &Connection) -> Result<Option<Self>> {
+        let mut stmt = connection.prepare("SELECT * FROM tasks WHERE id = ?1 LIMIT 1").unwrap();
+        let task = stmt.query_row(rusqlite::params![id.to_string()], |row| {
+            Task::from_row(row, connection)
+        });
+
+        match task {
+            Ok(task) => Ok(Some(task)),
+            Err(_) => Ok(None)
+        }
+    }
+
     pub fn load_for_project(project_id: Uuid, connection: &Connection) -> Result<Vec<Self>> {
         let mut stmt = connection.prepare("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY created_at_utc DESC").unwrap();
         let task_iter = stmt.query_map(rusqlite::params![project_id.to_string()], |row| {
+            Task::from_row(row, connection)
+        }).unwrap();
+
+        let mut tasks = Vec::new();
+        for task in task_iter {
+            tasks.push(task.unwrap());
+        }
+
+        Ok(tasks)
+    }
+
+    pub fn load_due_before(date: DateTime<Utc>, connection: &Connection) -> Result<Vec<Self>> {
+        let mut stmt = connection.prepare("SELECT * FROM tasks WHERE due_at_utc < ?1 AND completed_at_utc IS NULL ORDER BY due_at_utc ASC").unwrap();
+        let task_iter = stmt.query_map(rusqlite::params![date.to_rfc3339()], |row| {
             Task::from_row(row, connection)
         }).unwrap();
 
@@ -258,4 +286,16 @@ pub fn count_open_tasks_for_project_command(
             return Err("Project not found".to_string());
         }
     }
+}
+
+#[tauri::command]
+pub fn load_tasks_due_today_command(
+    db: State<Pool<SqliteConnectionManager>>,
+) -> Result<String, String> {
+    log::debug!("Running load tasks due today command");
+    let conn = db.get().unwrap(); // Get a connection from the pool
+
+    let tasks = Task::load_due_before(Utc::now(), &conn).unwrap();
+
+    Ok(serde_json::to_string(&tasks).unwrap())
 }

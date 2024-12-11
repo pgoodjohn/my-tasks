@@ -31,6 +31,7 @@ pub fn run() {
             task::complete_task_command,
             task::delete_task_command,
             task::load_tasks_command,
+            task::load_tasks_due_today_command,
             task::save_task_command,
             task::update_task_command,
             task::count_open_tasks_for_project_command,

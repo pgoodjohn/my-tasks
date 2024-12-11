@@ -120,7 +120,7 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString }) => {
         // if date is today, show it in a red Badge
         const today = new Date()
         today.setHours(0, 0, 0, 0)
-        if (date.getTime() === today.getTime()) {
+        if (date.getTime() <= today.getTime()) {
             return <span>
                 <Badge variant="destructive">{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</Badge>
             </span>
