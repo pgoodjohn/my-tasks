@@ -3,7 +3,6 @@ import {
     useMutation,
     useQueryClient,
 } from '@tanstack/react-query'
-import { invoke } from '@tauri-apps/api/core';
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from '@/components/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
