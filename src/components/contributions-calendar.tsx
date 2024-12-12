@@ -6,7 +6,7 @@ interface ContributionCalendarProps {
     variant?: string
 }
 
-const ContributionsCalendar: React.FC<ContributionCalendarProps> = ({ variant }) => {
+const ContributionsCalendar: React.FC<ContributionCalendarProps> = ({ }) => {
 
     const contributionsCalendarDataQuery = useQuery({
         queryKey: ['tasks', 'completed'],

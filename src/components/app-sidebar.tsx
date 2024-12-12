@@ -138,7 +138,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/theme-provider"
-import ContributionsCalendar from "./contributions-calendar"
 
 interface ModeToggleProps {
     children: React.ReactNode
