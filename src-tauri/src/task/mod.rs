@@ -299,3 +299,32 @@ pub fn load_tasks_due_today_command(
 
     Ok(serde_json::to_string(&tasks).unwrap())
 }
+
+#[tauri::command]
+pub fn load_task_activity_statistics_command(
+    db: State<Pool<SqliteConnectionManager>>
+) -> Result<String, String> {
+    log::debug!("Running load task activity statistics command");
+    let conn = db.get().unwrap(); // Get a connection from the pool
+    let mut stmt = conn.prepare("SELECT COUNT(*) as count, strftime('%Y-%m-%d', completed_at_utc) as date FROM tasks WHERE completed_at_utc IS NOT NULL GROUP BY date ORDER BY date DESC").unwrap();
+    let task_iter = stmt.query_map([], |row| {
+        Ok((row.get("date")?, row.get("count")?))
+    }).unwrap();
+
+    let mut statistics = Vec::new();
+    for task in task_iter {
+        let (date, count): (String, i64) = task.unwrap();
+        let level = match count {
+            0 => 0,
+            1..=3 => 1,
+            4..=6 => 2,
+            7..=9 => 3,
+            _ => 4,
+        };
+        let mut entry = serde_json::Map::new();
+        entry.insert("level".to_string(), serde_json::json!(level));
+        statistics.push(serde_json::json!({ date: entry }));
+    }
+
+    Ok(serde_json::to_string(&statistics).unwrap())
+}

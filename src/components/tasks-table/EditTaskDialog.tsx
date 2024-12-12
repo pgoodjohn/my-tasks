@@ -84,7 +84,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
         },
         onSuccess: () => {
             // Invalidate and refetch
-            queryClient.invalidateQueries({ queryKey: ['todos'] })
+            queryClient.invalidateQueries({ queryKey: ['tasks'] })
             toast.success(`Task "${todoForm.getFieldValue("title")}" was updated`)
             todoForm.reset()
             onSuccess(false)

@@ -16,7 +16,7 @@ function RouteComponent() {
     const [showCompleted, setShowCompleted] = useState(false)
 
     const projectDetailQuery = useQuery({
-        queryKey: ['todos', 'projects', projectId, showCompleted],
+        queryKey: ['tasks', 'projects', projectId, showCompleted],
         queryFn: async () => {
             return await invoke_tauri_command('load_project_details_command', { projectId: projectId, includeCompletedTasks: showCompleted })
         }

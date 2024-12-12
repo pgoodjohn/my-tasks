@@ -30,6 +30,7 @@ pub fn run() {
             project::detail::load_project_details_command,
             task::complete_task_command,
             task::delete_task_command,
+            task::load_task_activity_statistics_command,
             task::load_tasks_command,
             task::load_tasks_due_today_command,
             task::save_task_command,

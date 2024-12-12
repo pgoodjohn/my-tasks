@@ -47,7 +47,7 @@ const NewTaskForm: React.FC = () => {
             // Invalidate and refetch
             toast.success(`Task "${todoForm.getFieldValue("title")}" created`)
             todoForm.reset()
-            queryClient.invalidateQueries({ queryKey: ['todos'] })
+            queryClient.invalidateQueries({ queryKey: ['tasks'] })
         },
         onError: (error) => {
             toast.error(`Error creating task`)

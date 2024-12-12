@@ -47,11 +47,11 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            <SidebarMenuItem>
+                            {/* <SidebarMenuItem>
                                 <SidebarMenuButton>
                                     <ContributionsCalendar variant="monthly" />
                                 </SidebarMenuButton>
-                            </SidebarMenuItem>
+                            </SidebarMenuItem> */}
                             <SidebarMenuButton asChild>
                                 <Link to='/settings' disabled>Settings</Link>
                             </SidebarMenuButton>

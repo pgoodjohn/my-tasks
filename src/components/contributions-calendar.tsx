@@ -1,3 +1,5 @@
+import { invoke_tauri_command } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
 import { ContributionCalendar } from 'react-contribution-calendar'
 
 interface ContributionCalendarProps {
@@ -5,27 +7,30 @@ interface ContributionCalendarProps {
 }
 
 const ContributionsCalendar: React.FC<ContributionCalendarProps> = ({ variant }) => {
-    let start = undefined;
-    let end = undefined;
 
-    if (variant === 'month') {
-        start = new Date()
-        start.setDate(1)
-        end = new Date()
-        end.setMonth(start.getMonth() + 1);
-        end.setDate(0);
+    const contributionsCalendarDataQuery = useQuery({
+        queryKey: ['tasks', 'completed'],
+        queryFn: async () => {
+            return invoke_tauri_command('load_task_activity_statistics_command', {})
+        }
+    })
+
+    if (contributionsCalendarDataQuery.isLoading) {
+        return <div>Loading...</div>
+    }
+
+    if (contributionsCalendarDataQuery.isError) {
+        return <div>Error loading contributions</div>
     }
 
     return (
         <div>
-            <h1>Contributions (WIP)</h1>
             <ContributionCalendar
-                data={[]}
+                data={contributionsCalendarDataQuery.data}
                 daysOfTheWeek={['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']}
                 // textColor="#1F2328"
+                end={new Date().toISOString().split('T')[0]}
                 textColor="#FFF"
-                start={start && start.toString()}
-                end={end && end.toString()}
                 startsOnSunday={true}
                 includeBoundary={false}
                 theme="grass"

@@ -30,7 +30,7 @@ const TasksList: React.FC = () => {
     const [showCompleted, setShowCompleted] = useState(false)
 
     const todosListQuery = useQuery({
-        queryKey: ['todos', showCompleted],
+        queryKey: ['tasks', showCompleted],
         queryFn: async () => {
             let data = await invoke_tauri_command('load_tasks_command', { includeCompleted: showCompleted })
             return data

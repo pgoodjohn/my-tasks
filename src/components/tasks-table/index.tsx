@@ -30,7 +30,7 @@ const columns: ColumnDef<Task>[] = [
                 },
                 onSuccess: () => {
                     // Invalidate and refetch
-                    queryClient.invalidateQueries({ queryKey: ['todos'] })
+                    queryClient.invalidateQueries({ queryKey: ['tasks'] })
 
                 },
             });
