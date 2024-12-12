@@ -84,11 +84,10 @@ const FavoriteProjects: React.FC = () => {
     }
 
     return data.favoriteProjects.map((project: any) => {
-        console.debug("Favorite Project",)
         return (
-            <SidebarMenuSub>
+            <SidebarMenuSub key={project.project.id}>
                 <SidebarMenuSubItem>
-                    <SidebarMenuSubButton>
+                    <SidebarMenuSubButton asChild>
                         <Link to={`/projects/${project.project.id}`}>
                             {project.project.emoji} {project.project.title}
                         </Link>
@@ -109,8 +108,6 @@ const Footer: React.FC = () => {
     if (error) {
         return <div>Error loading configuration: {error.message}</div>
     }
-
-    console.debug("Loaded Configuration", data)
 
     return (
         <div className="flex text-center">

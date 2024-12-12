@@ -1,8 +1,6 @@
 const GlobalTaskForm: React.FC = () => {
     return (
-        <p>
-            <NewTaskForm />
-        </p>
+        <NewTaskForm />
     )
 }
 
@@ -38,15 +36,13 @@ const NewTaskForm: React.FC = () => {
 
     const mutation = useMutation({
         mutationFn: async function (value: { title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
-            console.debug("Due Date: ", value.dueDate?.toISOString())
             let res = await invoke_tauri_command('save_task_command', { title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
-            console.debug("Save Rust Returned", res)
             return res
         },
         onSuccess: () => {
             // Invalidate and refetch
-            toast.success(`Task "${todoForm.getFieldValue("title")}" created`)
-            todoForm.reset()
+            toast.success(`Task "${newTaskForm.getFieldValue("title")}" created`)
+            newTaskForm.reset()
             queryClient.invalidateQueries({ queryKey: ['tasks'] })
         },
         onError: (error) => {
@@ -56,7 +52,7 @@ const NewTaskForm: React.FC = () => {
     })
 
 
-    const todoForm = useForm({
+    const newTaskForm = useForm({
         defaultValues: {
             title: '',
             description: '',
@@ -65,7 +61,6 @@ const NewTaskForm: React.FC = () => {
         },
         onSubmit: async ({ value }) => {
             // Do something with form data
-            console.log(value)
             await mutation.mutateAsync(value)
         },
     })
@@ -77,11 +72,11 @@ const NewTaskForm: React.FC = () => {
                 onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    todoForm.handleSubmit();
+                    newTaskForm.handleSubmit();
                 }}
             >
                 <div className='flex space-x-2'>
-                    <todoForm.Field
+                    <newTaskForm.Field
                         name="title"
                         children={(field) => (
                             <Input
@@ -92,7 +87,7 @@ const NewTaskForm: React.FC = () => {
                             />
                         )}
                     />
-                    <todoForm.Field
+                    <newTaskForm.Field
                         name="description"
                         children={(field) => (
                             <Input
@@ -103,14 +98,14 @@ const NewTaskForm: React.FC = () => {
                             />
                         )}
                     />
-                    <todoForm.Field
+                    <newTaskForm.Field
                         name="projectId"
                         children={(field) => {
                             return (
                                 <Combobox values={projectListQuery.data || []} selectedValue={field.state.value} onChange={field.handleChange} />
                             )
                         }} />
-                    <todoForm.Field
+                    <newTaskForm.Field
                         name="dueDate"
                         children={(field) => (
                             <DatePicker

@@ -39,7 +39,6 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
             description: project.description
         },
         onSubmit: async ({ value }) => {
-            console.debug("Edit Project", value)
             await editProjectMutation.mutateAsync(value)
             queryClient.invalidateQueries({ queryKey: ['projects'] })
         }

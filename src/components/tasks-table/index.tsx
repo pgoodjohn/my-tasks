@@ -11,6 +11,7 @@ import { Task } from '@/types';
 import EditTaskDialog from '@/components/tasks-table/EditTaskDialog';
 import ProjectTag from '@/components/project-tag';
 import { Badge } from '../ui/badge';
+import { invoke_tauri_command } from '@/lib/utils';
 
 
 const columns: ColumnDef<Task>[] = [
@@ -23,9 +24,7 @@ const columns: ColumnDef<Task>[] = [
 
             const markCompleteMutation = useMutation({
                 mutationFn: async function () {
-                    console.debug("Marking update", row.getValue("id"))
-                    let res = await invoke('complete_task_command', { taskId: row.original.id })
-                    console.debug("Complete Rust Returned", res)
+                    let res = await invoke_tauri_command('complete_task_command', { taskId: row.original.id });
                     return res
                 },
                 onSuccess: () => {
@@ -63,7 +62,6 @@ const columns: ColumnDef<Task>[] = [
         accessorKey: "project",
         header: "Project",
         cell: ({ row }) => {
-            console.log(row)
             return row.original.project ? <ProjectTag project={row.original.project} asLink /> : "-"
         }
     },
@@ -113,7 +111,6 @@ interface DueDateColumnProps {
 }
 
 const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString }) => {
-    console.debug('dateString', dateString)
     if (dateString !== null) {
         const date = new Date(dateString)
 

@@ -34,8 +34,6 @@ function RouteComponent() {
         return <div>Not found</div>
     }
 
-    console.debug('projectDetailQuery.data', projectDetailQuery.data)
-
     return (
         <div>
             <div className='container flex items-center'>

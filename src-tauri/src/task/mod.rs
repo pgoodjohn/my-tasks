@@ -220,7 +220,7 @@ pub fn complete_task_command(
         rusqlite::params![Utc::now().to_rfc3339(), &uuid.to_string()],
     ).map_err(|e| e.to_string())?;
 
-    Ok(format!("Card with ID {} completed successfully", task_id))
+    Ok("{}".to_string())
 }
 
 #[tauri::command]

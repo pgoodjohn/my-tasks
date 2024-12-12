@@ -3,7 +3,6 @@ import {
     useQuery,
 } from '@tanstack/react-query'
 import { Checkbox } from '../../components/ui/checkbox';
-import ProjectsSheet from './ProjectsSheet';
 import { invoke_tauri_command } from '@/lib/utils';
 import TasksTable from '@/components/tasks-table';
 
@@ -12,9 +11,7 @@ const Tasks: React.FC = () => {
     return (
         <div className='overflow-auto max-h-full'>
             <div className='flex'>
-                <h1 className='text-xl'>Todo List</h1>
-                <div className='flex-grow' />
-                <ProjectsSheet />
+                <h1 className='text-xl'>Task List</h1>
             </div>
             <div className='pt-2'>
                 <TasksList />
@@ -29,7 +26,7 @@ const TasksList: React.FC = () => {
 
     const [showCompleted, setShowCompleted] = useState(false)
 
-    const todosListQuery = useQuery({
+    const taskListQuery = useQuery({
         queryKey: ['tasks', showCompleted],
         queryFn: async () => {
             let data = await invoke_tauri_command('load_tasks_command', { includeCompleted: showCompleted })
@@ -37,17 +34,14 @@ const TasksList: React.FC = () => {
         }
     })
 
-    if (todosListQuery.isLoading) {
+    if (taskListQuery.isLoading) {
         return <div>Loading...</div>
     }
 
-    if (todosListQuery.isError) {
+    if (taskListQuery.isError) {
         return <div>Error loading tasks</div>
     }
 
-    if (todosListQuery.data) {
-        console.debug("Loaded Data", todosListQuery.data)
-    }
     return (
         <div className='py-2 max-h-full'>
             <div className="flex space-x-2 pb-4">
@@ -59,7 +53,7 @@ const TasksList: React.FC = () => {
                     Show Completed
                 </label>
             </div>
-            {todosListQuery.data ? <TasksTable tasks={todosListQuery.data} hiddenColumns={[]} /> : <div>No Data</div>}
+            {taskListQuery.data ? <TasksTable tasks={taskListQuery.data} hiddenColumns={[]} /> : <div>No Data</div>}
         </div>
     )
 }

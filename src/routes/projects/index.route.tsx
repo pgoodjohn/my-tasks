@@ -97,10 +97,6 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
                 return <div>Error Counting</div>
             }
 
-            if (openTasksForProjectQuery.data) {
-                console.debug("Loaded Data", openTasksForProjectQuery.data)
-            }
-
             return (
                 <div className='font-medium'>{openTasksForProjectQuery.data}</div>
             )
@@ -195,10 +191,6 @@ const ProjectsDetailedList: React.FC = () => {
 
     if (projectsListQuery.isError) {
         return <div>Error loading tasks</div>
-    }
-
-    if (projectsListQuery.data) {
-        console.debug("Loaded Data", projectsListQuery.data)
     }
 
     return (

@@ -53,7 +53,7 @@ interface EditTaskFormProps {
 const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
     const queryClient = useQueryClient()
 
-    const todoForm = useForm({
+    const editTaskForm = useForm({
         defaultValues: {
             id: task.id,
             title: task.title,
@@ -63,7 +63,6 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
         },
         onSubmit: async ({ value }) => {
             // Do something with form data
-            console.log(value)
             await mutation.mutateAsync(value)
         },
     })
@@ -77,16 +76,14 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
 
     const mutation = useMutation({
         mutationFn: async function (value: { id: string, title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
-            console.debug("Due Date: ", value.dueDate?.toISOString())
             let res = await invoke('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
-            console.debug("Save Rust Returned", res)
             return res
         },
         onSuccess: () => {
             // Invalidate and refetch
             queryClient.invalidateQueries({ queryKey: ['tasks'] })
-            toast.success(`Task "${todoForm.getFieldValue("title")}" was updated`)
-            todoForm.reset()
+            toast.success(`Task "${editTaskForm.getFieldValue("title")}" was updated`)
+            editTaskForm.reset()
             onSuccess(false)
         },
     })
@@ -98,15 +95,15 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                 onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    todoForm.handleSubmit();
+                    editTaskForm.handleSubmit();
                 }}
             >
-                <todoForm.Field
+                <editTaskForm.Field
                     name="id"
                     children={(_field) => (
                         <></>
                     )} />
-                <todoForm.Field
+                <editTaskForm.Field
                     name="title"
                     children={(field) => (
                         <div className='flex flex-col'>
@@ -120,7 +117,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                         </div>
                     )}
                 />
-                <todoForm.Field
+                <editTaskForm.Field
                     name="description"
                     children={(field) => (
                         <div className='flex flex-col'>
@@ -134,7 +131,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                         </div>
                     )}
                 />
-                <todoForm.Field
+                <editTaskForm.Field
                     name="projectId"
                     children={(field) => (
                         <div className='flex flex-col'>
@@ -143,7 +140,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                         </div>
                     )}
                 />
-                <todoForm.Field
+                <editTaskForm.Field
                     name="dueDate"
                     children={(field) => (
                         <div className='flex flex-col'>
