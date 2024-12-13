@@ -38,6 +38,9 @@ const ContributionsCalendar: React.FC<ContributionCalendarProps> = ({ }) => {
                 cy={10}
                 cr={2}
                 scroll={false}
+                hideDayLabels={true}
+                hideMonthLabels={true}
+                hideDescription={true}
             />
         </div>
     );
