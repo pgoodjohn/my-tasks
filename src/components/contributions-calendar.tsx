@@ -28,15 +28,9 @@ const ContributionsCalendar: React.FC<ContributionCalendarProps> = ({ }) => {
             <ContributionCalendar
                 data={contributionsCalendarDataQuery.data}
                 daysOfTheWeek={['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']}
-                // textColor="#1F2328"
                 end={new Date().toISOString().split('T')[0]}
-                textColor="#FFF"
                 startsOnSunday={true}
                 includeBoundary={false}
-                theme="grass"
-                cx={10}
-                cy={10}
-                cr={2}
                 scroll={false}
                 hideDayLabels={true}
                 hideMonthLabels={true}

@@ -323,6 +323,7 @@ pub fn load_task_activity_statistics_command(
         };
         let mut entry = serde_json::Map::new();
         entry.insert("level".to_string(), serde_json::json!(level));
+        entry.insert("data".to_string(), serde_json::json!({ "completedTasks": count }));
         statistics.push(serde_json::json!({ date: entry }));
     }
 
