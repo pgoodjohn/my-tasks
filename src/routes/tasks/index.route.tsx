@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import Tasks from '@/features/index/Tasks'
+import Index from '@/features/tasks-list'
 
 export const Route = createFileRoute('/tasks/')({
     component: RouteComponent,
 })
 
 function RouteComponent() {
-    return <Tasks />
+    return <Index />
 }

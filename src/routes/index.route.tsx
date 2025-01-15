@@ -1,7 +1,5 @@
-import ContributionsCalendar from '@/components/contributions-calendar'
-import Tasks from '@/features/index/Tasks'
-import DueToday from '@/features/index/due-today'
 import { createFileRoute } from '@tanstack/react-router'
+import Index from '@/features/index'
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
@@ -9,10 +7,6 @@ export const Route = createFileRoute('/')({
 
 function RouteComponent() {
   return (
-    <div>
-      <DueToday />
-      <Tasks />
-      <ContributionsCalendar />
-    </div>
+    <Index />
   )
 }
