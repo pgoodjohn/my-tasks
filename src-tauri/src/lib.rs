@@ -36,6 +36,7 @@ pub fn run() {
             task::save_task_command,
             task::update_task_command,
             task::count_open_tasks_for_project_command,
+            task::load_tasks_with_deadline_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

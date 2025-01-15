@@ -17,42 +17,69 @@ pub struct Task {
     pub description: Option<String>,
     pub project: Option<Project>,
     pub due_at_utc: Option<DateTime<Utc>>,
+    pub deadline_at_utc: Option<DateTime<Utc>>,
     pub created_at_utc: DateTime<Utc>,
     pub completed_at_utc: Option<DateTime<Utc>>,
     pub updated_at_utc: DateTime<Utc>,
 }
 
 impl Task {
-    pub fn new(title: String, description: Option<String>, project: Option<Project>, due_at_utc: Option<DateTime<Utc>>) -> Self {
+    pub fn new(title: String, description: Option<String>, project: Option<Project>, due_at_utc: Option<DateTime<Utc>>, deadline_at_utc: Option<DateTime<Utc>>) -> Self {
         Task {
             id: Uuid::now_v7(),
             title: title,
             description: description,
             project: project,
             due_at_utc: due_at_utc,
+            deadline_at_utc: deadline_at_utc,
             created_at_utc: Utc::now(),
             completed_at_utc: None, 
             updated_at_utc: Utc::now(),
         }
     }
 
-    fn is_stored(&self) -> bool {
-        false
+    fn is_stored(&self, connection: &Connection) -> bool {
+        let stored_task = Task::load_by_id(self.id, connection).unwrap();
+
+        match stored_task {
+            Some(_) => true,
+            None => false
+        }
+    }
+
+    fn update(&self, connection: &Connection) -> Result<&Self, ()> {
+
+        connection.execute(
+            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, updated_at_utc = ?4, project_id = ?5, deadline_at_utc = ?6 WHERE id = ?7",
+            rusqlite::params![
+                self.title, 
+                self.description, 
+                self.due_at_utc.map(|date| date.to_rfc3339()), 
+                self.updated_at_utc.to_rfc3339(), 
+                self.project.as_ref().map(|project| project.id.to_string()), 
+                self.deadline_at_utc.map(|date| date.to_rfc3339()), 
+                &self.id.to_string()
+            ],
+        ).map_err(|e| e.to_string()).unwrap();
+
+        Ok(self)
     }
 
     pub fn save(&self, connection: &Connection) -> Result<&Self, ()> {
-        if self.is_stored() {
+        if self.is_stored(connection) {
+            self.update(connection).unwrap();
             return Ok(self);
         }
 
         connection.execute(
-            "INSERT INTO tasks (id, title, description, project_id, due_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO tasks (id, title, description, project_id, due_at_utc, deadline_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             rusqlite::params![
                 &self.id.to_string(), 
                 &self.title,
                 &self.description,
                 &self.project.as_ref().map(|project| project.id.to_string()),
                 &self.due_at_utc.map(|date| date.to_rfc3339()),
+                &self.deadline_at_utc.map(|date| date.to_rfc3339()),
                 &self.created_at_utc.to_rfc3339(), 
                 &self.updated_at_utc.to_rfc3339()],
         ).unwrap();
@@ -76,6 +103,7 @@ impl Task {
                 None => None
             },
             due_at_utc: row.get("due_at_utc").ok().map(|date: String| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap())),
+            deadline_at_utc: row.get("deadline_at_utc").ok().map(|date: String| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap())),
             created_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&created_at_string).unwrap()),
             completed_at_utc: completed_at_string.map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
             updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap())
@@ -121,6 +149,20 @@ impl Task {
 
         Ok(tasks)
     }
+
+    pub fn load_with_deadlines(connection: &Connection) -> Result<Vec<Self>> {
+        let mut stmt = connection.prepare("SELECT * FROM tasks WHERE deadline_at_utc IS NOT NULL AND completed_at_utc IS NULL ORDER BY deadline_at_utc ASC").unwrap();
+        let task_iter = stmt.query_map([], |row| {
+            Task::from_row(row, connection)
+        }).unwrap();
+
+        let mut tasks = Vec::new();
+        for task in task_iter {
+            tasks.push(task.unwrap());
+        }
+
+        Ok(tasks)
+    }
 }
 
 #[tauri::command]
@@ -128,6 +170,7 @@ pub fn save_task_command(
     title: String,
     description: Option<String>,
     due_date: Option<String>,
+    deadline: Option<String>,
     project_id: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
 ) -> Result<String, String> {
@@ -151,6 +194,10 @@ pub fn save_task_command(
             None => None
         },
         match due_date {
+            Some(date) => Some(DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap())),
+            None => None
+        },
+        match deadline {
             Some(date) => Some(DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap())),
             None => None
         }
@@ -229,6 +276,7 @@ pub fn update_task_command(
     title: String,
     description: Option<String>,
     due_date: Option<String>,
+    deadline: Option<String>,
     project_id: Option<String>,
     db: State<Pool<SqliteConnectionManager>>,
 ) -> Result<String, String> {
@@ -245,6 +293,7 @@ pub fn update_task_command(
     task.title = title;
     task.description = description;
     task.due_at_utc = due_date.map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
+    task.deadline_at_utc = deadline.map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
     task.updated_at_utc = Utc::now();
 
     match project_id {
@@ -257,10 +306,7 @@ pub fn update_task_command(
         }
     }
 
-    conn.execute(
-        "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, updated_at_utc = ?4, project_id = ?5 WHERE id = ?6",
-        rusqlite::params![&task.title, &task.description, task.due_at_utc.map(|date| date.to_rfc3339()), task.updated_at_utc.to_rfc3339(), task.project.as_ref().map(|project| project.id.to_string()), &uuid.to_string()],
-    ).map_err(|e| e.to_string())?;
+    task.save(&conn).unwrap();
 
     Ok(serde_json::to_string(&task).unwrap())
 }
@@ -296,6 +342,18 @@ pub fn load_tasks_due_today_command(
     let conn = db.get().unwrap(); // Get a connection from the pool
 
     let tasks = Task::load_due_before(Utc::now(), &conn).unwrap();
+
+    Ok(serde_json::to_string(&tasks).unwrap())
+}
+
+#[tauri::command]
+pub fn load_tasks_with_deadline_command(
+    db: State<Pool<SqliteConnectionManager>>,
+) -> Result<String, String> {
+    log::debug!("Running load tasks with deadline command");
+    let conn = db.get().unwrap(); // Get a connection from the pool
+
+    let tasks = Task::load_with_deadlines(&conn).unwrap();
 
     Ok(serde_json::to_string(&tasks).unwrap())
 }

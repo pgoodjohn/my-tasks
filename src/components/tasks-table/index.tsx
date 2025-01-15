@@ -73,6 +73,14 @@ const columns: ColumnDef<Task>[] = [
         }
     },
     {
+        id: "deadline_at_utc",
+        accessorKey: "deadline_at_utc",
+        header: "Deadline",
+        cell: ({ row }) => {
+            return <DueDateColumn dateString={row.original.deadline_at_utc} />
+        }
+    },
+    {
         id: "actions",
         cell: ({ row }) => {
             const task = row.original

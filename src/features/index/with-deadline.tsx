@@ -2,22 +2,22 @@ import { invoke_tauri_command } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import TasksTable from "@/components/tasks-table";
 
-const DueToday = () => {
+const WithDeadline = () => {
 
     return (
-        <div className="container pr-2">
-            <h1>Due Today</h1>
+        <div className="container pl-2">
+            <h1>With Deadline</h1>
             <DueTodayTable />
         </div>
     );
 }
 
-export default DueToday
+export default WithDeadline
 
 const DueTodayTable = () => {
     const overdueTasksQuery = useQuery({
-        queryKey: ['tasks', 'overdue'],
-        queryFn: () => invoke_tauri_command('load_tasks_due_today_command', { filter: 'overdue' }),
+        queryKey: ['tasks', 'deadline'],
+        queryFn: () => invoke_tauri_command('load_tasks_with_deadline_command', {}),
     });
 
     if (overdueTasksQuery.isLoading) {

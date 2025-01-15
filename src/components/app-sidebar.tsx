@@ -75,6 +75,10 @@ export function AppSidebar() {
     )
 }
 
+type FavoriteProject = {
+    project: Project
+}
+
 const FavoriteProjects: React.FC = () => {
 
     const { data, isLoading, error } = useConfiguration();
@@ -83,17 +87,17 @@ const FavoriteProjects: React.FC = () => {
         return <></>
     }
 
-    return data.favoriteProjects.map((project: any) => {
+    return data.favoriteProjects.map((project: FavoriteProject) => {
         return (
             <SidebarMenuSub key={project.project.id}>
                 <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild>
-                        <Link to={`/projects/${project.project.id}`}>
+                        <Link to="/projects/$projectId" params={{ projectId: project.project.id }}>
                             {project.project.emoji} {project.project.title}
                         </Link>
                     </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
-            </SidebarMenuSub>
+            </SidebarMenuSub >
         )
     })
 }
@@ -135,6 +139,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/theme-provider"
+import { Project } from "@/types"
 
 interface ModeToggleProps {
     children: React.ReactNode

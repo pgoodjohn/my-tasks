@@ -1,9 +1,10 @@
 #[cfg(test)]
 use super::Project;
+#[cfg(test)]
 use chrono::Utc;
 use rusqlite::Connection;
 
-fn setup_in_memory_db() -> Connection {
+fn _setup_in_memory_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
     conn.execute(
         "CREATE TABLE projects (
@@ -36,7 +37,7 @@ fn test_project_new() {
 
 #[test]
 fn test_project_save() {
-    let conn = setup_in_memory_db();
+    let conn = _setup_in_memory_db();
     let title = String::from("Test Project");
     let description = Some(String::from("This is a test project."));
 
@@ -54,7 +55,7 @@ fn test_project_save() {
 
 #[test]
 fn test_archiving_a_project_still_allows_you_to_load_it() {
-    let conn = setup_in_memory_db();
+    let conn = _setup_in_memory_db();
     let title = String::from("Test Project");
     let description = Some(String::from("This is a test project."));
     let mut project = Project::new(title.clone(), None, None, description.clone());

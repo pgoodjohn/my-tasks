@@ -29,12 +29,12 @@ const ProjectTag: React.FC<ProjecTagProps> = ({ project, asLink = false }) => {
 
     if (asLink) {
         return (
-            <Link to={`/projects/${project.id}`}>
+            <Link to="/projects/$projectId" params={{ projectId: project.id }}>
                 <Badge className={badgeClasses}>
                     <span>{project.emoji}</span>
                     <span>{project.title}</span>
                 </Badge>
-            </Link>
+            </Link >
         );
     }
 

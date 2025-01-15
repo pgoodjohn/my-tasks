@@ -83,4 +83,8 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .debug {
+    border: 1px solid red;
+  }
 }

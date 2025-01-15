@@ -45,6 +45,7 @@ pub fn setup_structure(
                 description TEXT,
                 project_id TEXT,
                 due_at_utc DATETIME,
+                deadline_at_utc DATETIME,
                 created_at_utc DATETIME NOT NULL,
                 completed_at_utc DATETIME,
                 updated_at_utc DATETIME NOT NULL
