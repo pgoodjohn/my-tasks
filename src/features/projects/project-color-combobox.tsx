@@ -50,6 +50,7 @@ const ProjectColorCombobox: React.FC<ProjectColorCombooxProps> = ({ selectedValu
                     aria-expanded={open}
                 >
                     <ColorSquare color={selectedValue} />
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0">
