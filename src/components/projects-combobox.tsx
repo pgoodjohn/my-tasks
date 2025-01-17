@@ -19,15 +19,17 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import ProjectTag from "@/components/project-tag"
+import { Project } from "@/types"
 
 interface ComboBoxProps {
-    values: any[];
-    selectedValue: any;
+    values: Project[];
+    selectedValue: string | undefined,
     onChange: any;
 }
 
 export function Combobox({ values, selectedValue, onChange }: ComboBoxProps) {
     const [open, setOpen] = React.useState(false)
+    const selectedProject = values.find((item) => item.title === selectedValue)
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -39,7 +41,7 @@ export function Combobox({ values, selectedValue, onChange }: ComboBoxProps) {
                     className="w-[200px] justify-between"
                 >
                     {selectedValue
-                        ? <ProjectTag project={values.find((item) => item.id === selectedValue)} />
+                        ? <SelectedProjectProps project={selectedProject} projectList={values} />
                         : "No Project"}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -53,18 +55,20 @@ export function Combobox({ values, selectedValue, onChange }: ComboBoxProps) {
                             {values.map((item) => (
                                 <CommandItem
                                     key={item.id}
-                                    value={item.id}
+                                    value={item.title}
                                     onSelect={(currentValue) => {
                                         onChange(currentValue === selectedValue ? "" : currentValue)
                                         setOpen(false)
                                     }}
                                 >
-                                    <Check
-                                        className={cn(
-                                            "mr-2 h-4 w-4",
-                                            selectedValue === item.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                    />
+                                    {selectedValue &&
+                                        <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                selectedValue === item.title ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                    }
                                     <ProjectTag project={item} />
                                 </CommandItem>
                             ))}
@@ -74,4 +78,22 @@ export function Combobox({ values, selectedValue, onChange }: ComboBoxProps) {
             </PopoverContent>
         </Popover>
     )
+}
+
+interface SelectedProjectProps {
+    project: Project | undefined;
+    projectList: Project[];
+}
+
+const SelectedProjectProps: React.FC<SelectedProjectProps> = ({ project, projectList }) => {
+    if (!project) {
+        return <></>
+    }
+
+    if (projectList.find((item) => item.title === project.title)) {
+        return <ProjectTag project={projectList.find((item) => item.id === project.id)!} />
+    }
+
+    return <> </>
+
 }

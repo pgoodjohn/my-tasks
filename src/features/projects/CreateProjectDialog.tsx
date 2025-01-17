@@ -17,6 +17,7 @@ import { Separator } from "../../components/ui/separator"
 import { Textarea } from "../../components/ui/textarea"
 import ProjectColorCombobox from "./project-color-combobox"
 import { toast } from "sonner"
+import { EmojiPickerFormItem } from "@/components/emoji-picker-form-item"
 
 
 interface EditProjectDialogProps {
@@ -75,19 +76,29 @@ const CreateProjectDialog: React.FC<EditProjectDialogProps> = ({ }) => {
                     </DialogHeader>
                     <Separator />
                     <div className="py-2">
-                        <div className="flex items-center p-2">
+                        <div className="flex container p-2">
                             <createProjectForm.Field
                                 name="emoji"
                                 children={(field) => {
                                     return (
+                                        <div className="pr-2">
+                                            <EmojiPickerFormItem value={field.state.value} onSelect={(value) => field.setValue(value)} />
+                                        </div>
+                                    )
+                                }}
+                            />
+                            <createProjectForm.Field
+                                name="title"
+                                children={(field) => (
+                                    <div className="container pr-2">
                                         <Input
                                             name={field.name}
                                             value={field.state.value}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => field.setValue(e.target.value)}
                                         />
-                                    )
-                                }}
+                                    </div>
+                                )}
                             />
                             <createProjectForm.Field
                                 name="color"
@@ -95,19 +106,6 @@ const CreateProjectDialog: React.FC<EditProjectDialogProps> = ({ }) => {
                                     return <ProjectColorCombobox selectedValue={field.state.value} onChange={field.handleChange} />
                                 }} />
                         </div>
-                        <createProjectForm.Field
-                            name="title"
-                            children={(field) => (
-                                <div className="p-2">
-                                    <Input
-                                        name={field.name}
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.setValue(e.target.value)}
-                                    />
-                                </div>
-                            )}
-                        />
                         <createProjectForm.Field
                             name="description"
                             children={(field) => (
