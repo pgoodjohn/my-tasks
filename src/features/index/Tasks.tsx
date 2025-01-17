@@ -10,9 +10,6 @@ const Tasks: React.FC = () => {
 
     return (
         <div className='overflow-auto max-h-full'>
-            <div className='flex'>
-                <h1 className='text-xl'>Task List</h1>
-            </div>
             <div className='pt-2'>
                 <TasksList />
             </div>
