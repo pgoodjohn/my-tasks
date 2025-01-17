@@ -137,7 +137,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                     children={(field) => (
                         <div className='flex flex-col'>
                             <label className='text-sm font-medium'>Project</label>
-                            <Combobox values={projectListQuery.data || []} selectedValue={field.state.value} onChange={field.handleChange} />
+                            <Combobox modal={true} values={projectListQuery.data || []} selectedValue={field.state.value} onChange={field.handleChange} />
                         </div>
                     )}
                 />

@@ -102,7 +102,7 @@ const NewTaskForm: React.FC = () => {
                         name="projectId"
                         children={(field) => {
                             return (
-                                <Combobox values={projectListQuery.data || []} selectedValue={field.state.value} onChange={field.handleChange} />
+                                <Combobox modal={true} values={projectListQuery.data || []} selectedValue={field.state.value} onChange={field.handleChange} />
                             )
                         }} />
                     <newTaskForm.Field

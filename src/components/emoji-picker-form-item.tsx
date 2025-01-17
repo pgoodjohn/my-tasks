@@ -16,7 +16,7 @@ export function EmojiPickerFormItem({ value, onSelect }: EmojiPickerFormItemProp
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} modal={true} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline">
             {value ?? "-"}

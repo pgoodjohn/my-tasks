@@ -42,7 +42,7 @@ const ProjectColorCombobox: React.FC<ProjectColorCombooxProps> = ({ selectedValu
     const [open, setOpen] = React.useState(false)
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} modal={true} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="ghost"

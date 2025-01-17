@@ -22,17 +22,18 @@ import ProjectTag from "@/components/project-tag"
 import { Project } from "@/types"
 
 interface ComboBoxProps {
+    modal: boolean;
     values: Project[];
     selectedValue: string | undefined,
     onChange: any;
 }
 
-export function Combobox({ values, selectedValue, onChange }: ComboBoxProps) {
+export function Combobox({ modal, values, selectedValue, onChange }: ComboBoxProps) {
     const [open, setOpen] = React.useState(false)
     const selectedProject = values.find((item) => item.title === selectedValue)
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} modal={modal} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
