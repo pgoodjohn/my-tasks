@@ -12,6 +12,7 @@ import {
     SidebarMenuSub,
     SidebarMenuSubItem,
     SidebarMenuSubButton,
+    SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Link } from '@tanstack/react-router'
 import { useConfiguration } from "@/hooks/use-configuration"
@@ -69,6 +70,11 @@ export function AppSidebar() {
                         <SidebarMenu>
                             <SidebarMenuButton disabled>
                                 <Footer />
+                            </SidebarMenuButton>
+                        </SidebarMenu>
+                        <SidebarMenu>
+                            <SidebarMenuButton>
+                                <SidebarTrigger />
                             </SidebarMenuButton>
                         </SidebarMenu>
                     </SidebarGroupContent>

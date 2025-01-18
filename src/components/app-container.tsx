@@ -1,7 +1,10 @@
 import React from 'react'
-import { SidebarTrigger } from './ui/sidebar'
+import { ChevronLeft } from "lucide-react"
 import GlobalTaskForm from './global-task-form'
 import { Separator } from './ui/separator'
+import { Button } from './ui/button'
+import { useRouter } from '@tanstack/react-router'
+import AppBreadcrumb from './app-breadcrumb'
 
 interface AppContainerProps {
     children: React.ReactNode
@@ -12,8 +15,8 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
         <div className='flex flex-col h-full'>
             <div className='top-0'>
                 <div className='flex items-center p-2'>
-                    <SidebarTrigger />
-                    <p>🍞 Breadcrumbs 🍞</p>
+                    <BackButton />
+                    <AppBreadcrumb />
                 </div>
                 <Separator />
                 <div className='p-2'>
@@ -31,3 +34,22 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 }
 
 export default AppContainer
+
+function BackButton() {
+
+    const router = useRouter();
+
+    const handleBack = () => {
+        router.history.back();
+    }
+
+    return (
+        <Button
+            variant='ghost'
+            className='max-w-[25px]'
+            onClick={handleBack}
+        >
+            <ChevronLeft />
+        </Button>
+    )
+}
