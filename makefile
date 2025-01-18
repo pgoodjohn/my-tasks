@@ -4,5 +4,5 @@ start:
 build:
 	npm run tauri build
 
-tests:
+test:
 	cd src-tauri && cargo test

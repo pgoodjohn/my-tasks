@@ -49,7 +49,7 @@ impl Task {
         }
     }
 
-    pub fn update(&mut self, data: UpdatedTaskData) -> Result<(), commands::TaskError> {
+    pub fn update(&mut self, data: UpdatedTaskData, connection: &Connection) -> Result<(), commands::TaskError> {
         self.title = data.title;
         self.description = data.description;
         self.due_at_utc = data.due_date
@@ -61,7 +61,7 @@ impl Task {
         match data.project_id {
             Some(project_id) => {
                 let project_uuid = Uuid::parse_str(&project_id)?;
-                self.project = Project::load_by_id(project_uuid, &Connection::open("todo.db").unwrap())?;
+                self.project = Project::load_by_id(project_uuid, connection)?;
             }
             None => {
                 self.project = None;
@@ -118,7 +118,7 @@ impl Task {
         Ok(self)
     }
 
-    fn from_row(row: &Row, connection: &Connection) -> Result<Self> {
+    fn from_row(row: &Row, connection: &Connection) -> Result<Self, rusqlite::Error> {
         let uuid_string: String = row.get("id").unwrap();
         let project_uuid_string: Option<String> = row.get("project_id").ok();
         let created_at_string: String = row.get("created_at_utc").unwrap();
@@ -130,7 +130,7 @@ impl Task {
             title: row.get("title").unwrap(),
             description: row.get("description").ok(),
             project: match project_uuid_string {
-                Some(uuid) => Project::load_by_id(Uuid::parse_str(&uuid).unwrap(), &connection).unwrap(),
+                Some(uuid) => Project::load_by_id(Uuid::parse_str(&uuid).unwrap(), &connection)?,
                 None => None
             },
             due_at_utc: row.get("due_at_utc").ok().map(|date: String| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap())),

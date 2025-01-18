@@ -65,7 +65,7 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
         cell: ({ row }) => {
             const project = row.original
             return (
-                <ProjectTag project={project} asLink />
+                <ProjectTag projectId={project.id} asLink />
             )
         }
     },

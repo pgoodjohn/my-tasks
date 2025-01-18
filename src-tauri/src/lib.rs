@@ -3,6 +3,7 @@ extern crate r2d2_sqlite;
 
 use std::sync::Mutex;
 
+mod commands;
 mod configuration;
 mod project;
 mod storage;
@@ -25,7 +26,7 @@ pub fn run() {
             configuration::remove_project_from_favourites_command,
             project::archive_project_command,
             project::create_project_command,
-            project::load_projects_command,
+            project::commands::load_projects_command,
             project::update_project_command,
             project::detail::load_project_details_command,
             task::complete_task_command,

@@ -7,6 +7,7 @@ use tauri::State;
 use std::sync::Mutex;
 use uuid::Uuid;
 
+pub mod commands;
 pub mod detail;
 mod test;
 
@@ -103,7 +104,7 @@ impl Project {
 
     }
 
-    pub fn list_not_archived_projects(connection: &Connection) -> Result<Vec<Project>> {
+    pub fn list_not_archived_projects(connection: &Connection) -> Result<Vec<Project>, ()> {
         let mut stmt = connection.prepare("SELECT * FROM projects WHERE archived_at_utc IS NULL").unwrap();
         let projects = stmt.query_map([], |row| {
             Project::from_row(row)
@@ -117,7 +118,7 @@ impl Project {
         Ok(project_list)
     }
 
-    pub fn list_all_projects(connection: &Connection) -> Result<Vec<Project>> {
+    pub fn list_all_projects(connection: &Connection) -> Result<Vec<Project>, ()> {
         let mut stmt = connection.prepare("SELECT * FROM projects").unwrap();
         let projects = stmt.query_map([], |row| {
             Project::from_row(row)
@@ -239,22 +240,4 @@ pub fn update_project_command(
             return Err("Project not found".to_string());
         }
     }
-}
-
-
-#[tauri::command]
-pub fn load_projects_command(
-    show_archived_projects: bool,
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!("Running list projects command");
-    let conn = db.get().unwrap(); // Get a connection from the pool
-
-    if show_archived_projects {
-        let projects = Project::list_all_projects(&conn).unwrap();
-        return Ok(serde_json::to_string(&projects).unwrap());
-    }
-
-    let projects = Project::list_not_archived_projects(&conn).unwrap();
-    Ok(serde_json::to_string(&projects).unwrap())
 }

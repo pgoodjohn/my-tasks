@@ -1,14 +1,27 @@
-import { Project } from '@/types'
 import { Link } from '@tanstack/react-router'
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { useProjects } from '@/hooks/use-projects';
 
 interface ProjecTagProps {
-    project: Project;
+    projectId: string;
     asLink?: boolean;
 }
 
-const ProjectTag: React.FC<ProjecTagProps> = ({ project, asLink = false }) => {
+const ProjectTag: React.FC<ProjecTagProps> = ({ projectId, asLink = false }) => {
+
+    const projects = useProjects();
+
+    if (projects.isLoading) {
+        return <></>;
+    }
+
+    let project: any = projects.data?.find((p) => p.id === projectId);
+
+    if (!project) {
+        return <></>;
+    }
+
     const badgeClasses = cn({
         'bg-red-400 hover:bg-red-500 dark:hover:bg-red-300': project.color === 'red',
         'bg-orange-400 hover:bg-orange-500 dark:hover:bg-orange-300': project.color === 'orange',

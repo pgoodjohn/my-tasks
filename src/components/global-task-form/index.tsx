@@ -11,28 +11,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from '@tanstack/react-form'
 import {
-    useQuery,
     useMutation,
     useQueryClient,
 } from '@tanstack/react-query'
 import { DatePicker } from '../../components/datepicker';
-import { Combobox } from '@/components/projects-combobox';
 import { invoke_tauri_command } from '@/lib/utils';
 import { useParams } from "@tanstack/react-router";
 import { toast } from 'sonner';
+import { ProjectsPicker } from '../projects-picker';
 
 
 const NewTaskForm: React.FC = () => {
     const queryClient = useQueryClient()
 
     const { projectId } = useParams({ strict: false })
-
-    const projectListQuery = useQuery({
-        queryKey: ['projects'],
-        queryFn: async () => {
-            return await invoke_tauri_command('load_projects_command', { showArchivedProjects: false })
-        }
-    })
 
     const mutation = useMutation({
         mutationFn: async function (value: { title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
@@ -102,7 +94,7 @@ const NewTaskForm: React.FC = () => {
                         name="projectId"
                         children={(field) => {
                             return (
-                                <Combobox modal={true} values={projectListQuery.data || []} selectedValue={field.state.value} onChange={field.handleChange} />
+                                <ProjectsPicker modal={true} selectedValue={field.state.value} onChange={field.handleChange} />
                             )
                         }} />
                     <newTaskForm.Field

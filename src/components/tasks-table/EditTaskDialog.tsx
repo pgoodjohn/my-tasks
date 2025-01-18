@@ -11,14 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from '@tanstack/react-form'
 import {
-    useQuery,
     useMutation,
     useQueryClient,
 } from '@tanstack/react-query'
 import { DatePicker } from '@/components/datepicker';
-import { Combobox } from '@/components/projects-combobox';
 import { toast } from "sonner";
 import { invoke_tauri_command } from "@/lib/utils";
+import { ProjectsPicker } from "../projects-picker";
 
 interface EditTaskDialogProps {
     task: Task;
@@ -65,13 +64,6 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
             // Do something with form data
             await mutation.mutateAsync(value)
         },
-    })
-
-    const projectListQuery = useQuery({
-        queryKey: ['projects'],
-        queryFn: async () => {
-            return invoke_tauri_command('load_projects_command', { showArchivedProjects: false })
-        }
     })
 
     const mutation = useMutation({
@@ -141,7 +133,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                     children={(field) => (
                         <div className='flex flex-col'>
                             <label className='text-sm font-medium'>Project</label>
-                            <Combobox modal={true} values={projectListQuery.data || []} selectedValue={field.state.value} onChange={field.handleChange} />
+                            <ProjectsPicker modal={true} selectedValue={field.state.value} onChange={field.handleChange} />
                         </div>
                     )}
                 />

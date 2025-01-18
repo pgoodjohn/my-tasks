@@ -61,7 +61,7 @@ const columns: ColumnDef<Task>[] = [
         accessorKey: "project",
         header: "Project",
         cell: ({ row }) => {
-            return row.original.project ? <ProjectTag project={row.original.project} asLink /> : "-"
+            return row.original.project ? <ProjectTag projectId={row.original.project.id} asLink /> : "-"
         }
     },
     {
