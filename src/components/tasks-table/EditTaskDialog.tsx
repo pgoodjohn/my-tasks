@@ -15,7 +15,6 @@ import {
     useMutation,
     useQueryClient,
 } from '@tanstack/react-query'
-import { invoke } from '@tauri-apps/api/core';
 import { DatePicker } from '@/components/datepicker';
 import { Combobox } from '@/components/projects-combobox';
 import { toast } from "sonner";
@@ -77,7 +76,8 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
 
     const mutation = useMutation({
         mutationFn: async function (value: { id: string, title: string, description: string, dueDate: Date | undefined, projectId: string | undefined, deadline: Date | undefined }) {
-            let res = await invoke('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, deadline: value.deadline, projectId: value.projectId });
+            // let res = await invoke('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, deadline: value.deadline, projectId: value.projectId });
+            let res = await invoke_tauri_command('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, deadline: value.deadline, projectId: value.projectId });
             return res
         },
         onSuccess: () => {
@@ -87,8 +87,9 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
             editTaskForm.reset()
             onSuccess(false)
         },
-        onError: (error) => {
-            toast.error(`Error updating task: ${error}`)
+        onError: (error: any) => {
+            console.debug(error)
+            toast.error(`Error updating task: ${error.display_message}`)
         }
     })
 

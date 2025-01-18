@@ -1,5 +1,3 @@
-use std::f32::consts::E;
-
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, Result, Row};
 use serde::{Deserialize, Serialize};
