@@ -1,3 +1,5 @@
+use std::f32::consts::E;
+
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, Result, Row};
 use serde::{Deserialize, Serialize};
@@ -8,7 +10,18 @@ use r2d2_sqlite::SqliteConnectionManager;
 
 use crate::project::Project;
 
+pub mod commands;
 mod test;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdatedTaskData {
+    title: String,
+    description: Option<String>,
+    due_date: Option<String>,
+    deadline: Option<String>,
+    project_id: Option<String>,
+}
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Task {
@@ -38,6 +51,27 @@ impl Task {
         }
     }
 
+    pub fn update(&mut self, data: UpdatedTaskData) -> Result<(), commands::TaskError> {
+        self.title = data.title;
+        self.description = data.description;
+        self.due_at_utc = data.due_date
+            .map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
+        self.deadline_at_utc = data.deadline
+            .map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
+        self.updated_at_utc = Utc::now();
+
+        match data.project_id {
+            Some(project_id) => {
+                let project_uuid = Uuid::parse_str(&project_id)?;
+                self.project = Project::load_by_id(project_uuid, &Connection::open("todo.db").unwrap())?;
+            }
+            None => {
+                self.project = None;
+            }
+        }
+        Ok(())
+    }
+
     fn is_stored(&self, connection: &Connection) -> bool {
         let stored_task = Task::load_by_id(self.id, connection).unwrap();
 
@@ -47,8 +81,7 @@ impl Task {
         }
     }
 
-    fn update(&self, connection: &Connection) -> Result<&Self, ()> {
-
+    fn update_record(&self, connection: &Connection) -> Result<&Self, rusqlite::Error> {
         connection.execute(
             "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, updated_at_utc = ?4, project_id = ?5, deadline_at_utc = ?6 WHERE id = ?7",
             rusqlite::params![
@@ -60,14 +93,14 @@ impl Task {
                 self.deadline_at_utc.map(|date| date.to_rfc3339()), 
                 &self.id.to_string()
             ],
-        ).map_err(|e| e.to_string()).unwrap();
+        )?;
 
         Ok(self)
     }
 
-    pub fn save(&self, connection: &Connection) -> Result<&Self, ()> {
+    pub fn save(&self, connection: &Connection) -> Result<&Self, rusqlite::Error> {
         if self.is_stored(connection) {
-            self.update(connection).unwrap();
+            self.update_record(connection)?;
             return Ok(self);
         }
 
@@ -82,7 +115,7 @@ impl Task {
                 &self.deadline_at_utc.map(|date| date.to_rfc3339()),
                 &self.created_at_utc.to_rfc3339(), 
                 &self.updated_at_utc.to_rfc3339()],
-        ).unwrap();
+        )?;
 
         Ok(self)
     }
@@ -152,6 +185,20 @@ impl Task {
 
     pub fn load_with_deadlines(connection: &Connection) -> Result<Vec<Self>> {
         let mut stmt = connection.prepare("SELECT * FROM tasks WHERE deadline_at_utc IS NOT NULL AND completed_at_utc IS NULL ORDER BY deadline_at_utc ASC").unwrap();
+        let task_iter = stmt.query_map([], |row| {
+            Task::from_row(row, connection)
+        }).unwrap();
+
+        let mut tasks = Vec::new();
+        for task in task_iter {
+            tasks.push(task.unwrap());
+        }
+
+        Ok(tasks)
+    }
+
+    pub fn load_inbox(connection: &Connection) -> Result<Vec<Self>> {
+        let mut stmt = connection.prepare("SELECT * FROM tasks WHERE project_id IS NULL AND completed_at_utc IS NULL ORDER BY created_at_utc DESC").unwrap();
         let task_iter = stmt.query_map([], |row| {
             Task::from_row(row, connection)
         }).unwrap();
@@ -271,47 +318,6 @@ pub fn complete_task_command(
 }
 
 #[tauri::command]
-pub fn update_task_command(
-    task_id: String,
-    title: String,
-    description: Option<String>,
-    due_date: Option<String>,
-    deadline: Option<String>,
-    project_id: Option<String>,
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!("Running update task command for: {:?} | {:?} | {:?}", title, description, due_date);
-    let conn = db.get().unwrap(); // Get a connection from the pool
-
-    let uuid = Uuid::parse_str(&task_id).map_err(|e| e.to_string()).unwrap();
-
-    let mut stmt = conn.prepare("SELECT * FROM tasks WHERE id = ?1 LIMIT 1").unwrap();
-    let mut task = stmt.query_row(rusqlite::params![uuid.to_string()], |row| {
-        Task::from_row(row, &conn)
-    }).map_err(|e| e.to_string()).unwrap();
-
-    task.title = title;
-    task.description = description;
-    task.due_at_utc = due_date.map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
-    task.deadline_at_utc = deadline.map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
-    task.updated_at_utc = Utc::now();
-
-    match project_id {
-        Some(project_id) => {
-            let project_uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string()).unwrap();
-            task.project = Project::load_by_id(project_uuid, &conn).unwrap();
-        },
-        None => {
-            task.project = None;
-        }
-    }
-
-    task.save(&conn).unwrap();
-
-    Ok(serde_json::to_string(&task).unwrap())
-}
-
-#[tauri::command]
 pub fn count_open_tasks_for_project_command(
     project_id: String,
     db: State<Pool<SqliteConnectionManager>>,
@@ -386,4 +392,16 @@ pub fn load_task_activity_statistics_command(
     }
 
     Ok(serde_json::to_string(&statistics).unwrap())
+}
+
+#[tauri::command]
+pub fn load_tasks_inbox_command(
+    db: State<Pool<SqliteConnectionManager>>
+) -> Result<String, String> {
+    log::debug!("Running load tasks inbox command");
+    let conn = db.get().unwrap(); // Get a connection from the pool
+
+    let tasks = Task::load_inbox(&conn).unwrap();
+
+    Ok(serde_json::to_string(&tasks).unwrap())
 }

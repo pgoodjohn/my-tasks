@@ -1,7 +1,6 @@
 import DueToday from "./due-today"
-import Tasks from "./Tasks"
-import ContributionsCalendar from "@/components/contributions-calendar"
 import WithDeadline from "./with-deadline"
+import Inbox from "./inbox"
 
 function Index() {
     return (
@@ -10,8 +9,7 @@ function Index() {
                 <DueToday />
                 <WithDeadline />
             </div>
-            <Tasks />
-            <ContributionsCalendar />
+            <Inbox />
         </div>
     )
 }

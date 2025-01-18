@@ -53,6 +53,9 @@ export function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem> */}
                             <SidebarMenuButton asChild>
+                                <Link to='/statistics'>Statistics</Link>
+                            </SidebarMenuButton>
+                            <SidebarMenuButton asChild>
                                 <Link to='/settings' disabled>Settings</Link>
                             </SidebarMenuButton>
                         </SidebarMenu>

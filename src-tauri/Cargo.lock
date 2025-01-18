@@ -1919,6 +1919,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-shell",
+ "thiserror 2.0.11",
  "toml 0.8.19",
  "uuid",
 ]
