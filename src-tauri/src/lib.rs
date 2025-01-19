@@ -1,7 +1,10 @@
 extern crate r2d2;
 extern crate r2d2_sqlite;
 
+use sqlx::sqlite::SqlitePool;
 use std::sync::Mutex;
+use tauri::Manager;
+use tokio;
 
 mod commands;
 mod configuration;
@@ -11,15 +14,38 @@ mod task;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    println!("Preloading Configuration");
-    let configuration = configuration::Configuration::init().unwrap();
-    log::info!("Starting My Tasks!");
-
-    let db_pool = storage::setup_database(&configuration).expect("Could not set up database.");
+    let db_pool = storage::setup_database().expect("Could not set up database.");
 
     tauri::Builder::default()
+        .setup(|app| {
+            let configuration = configuration::Configuration::init().unwrap();
+            log::info!("Starting My Tasks!");
+            log::debug!("Initialising app with configuration: {:?}", configuration);
+            // Create a new Tokio runtime
+            let rt = tokio::runtime::Runtime::new().unwrap();
+
+            // Use the runtime to block on the async connection
+            let db_pool = rt.block_on(async move {
+                log::debug!("Setting up db connection pool");
+                let db_pool = SqlitePool::connect(
+                    configuration::Configuration::db_path(cfg!(debug_assertions))
+                        .to_str()
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+                sqlx::migrate!("./migrations").run(&db_pool).await.unwrap();
+                log::debug!("Migrations run successfully");
+
+                return db_pool;
+            });
+            app.manage(Mutex::new(db_pool.clone()));
+
+            app.manage(Mutex::new(configuration));
+
+            Ok(())
+        })
         .plugin(tauri_plugin_shell::init())
-        .manage(Mutex::new(configuration))
         .manage(db_pool)
         .invoke_handler(tauri::generate_handler![
             configuration::add_project_to_favourites_command,

@@ -344,7 +344,7 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
-				OTHER_LDFLAGS = "-lsqlite3";
+				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.my-tasks.app;
 				PRODUCT_NAME = "my-tasks";
 				SDKROOT = iphoneos;
@@ -517,7 +517,7 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
-				OTHER_LDFLAGS = "-lsqlite3";
+				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.my-tasks.app;
 				PRODUCT_NAME = "my-tasks";
 				SDKROOT = iphoneos;

@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 use std::sync::Mutex;
 use uuid::Uuid;
+use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
 
 pub mod commands;
 pub mod detail;
@@ -88,19 +89,19 @@ impl Project {
         Ok(self)
     }
 
-    pub fn load_by_id(id: Uuid, connection: &Connection) -> Result<Option<Self>> {
-        let mut stmt = connection.prepare("SELECT * FROM projects WHERE id = ?1 LIMIT 1").unwrap();
-        let project = stmt.query_row(rusqlite::params![id.to_string()], |row| {
-            Project::from_row(row)
-        });
+    pub async fn load_by_id(id: Uuid, connection: &mut PoolConnection<Sqlite>,) -> Result<Option<Self>> {
+        let mut rows = sqlx::query("SELECT * FROM projects WHERE id = ?1 LIMIT 1")
+        .bind(id.to_string())
+        .fetch_all(&mut **connection)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|row: sqlx::sqlite::SqliteRow| {
+            Project::from_sqlx_row(row).unwrap() // TODO: unwrap
+        })
+        .collect::<Vec<_>>();
 
-        match project {
-            Ok(project) => Ok(Some(project)),
-            Err(_) => {
-                log::error!("Could not find project with ID: {:?}", id);
-                Ok(None)
-            }
-        }
+        return Ok(rows.pop());
 
     }
 
@@ -144,6 +145,27 @@ impl Project {
             emoji: row.get("emoji").unwrap(),
             color: row.get("color").unwrap(),
             description: row.get("description").ok(),
+            created_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&created_at_string).unwrap()),
+            updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap()),
+            archived_at_utc: match archived_at_string {
+                Some(s) => Some(DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
+                None => None,
+            }
+        })
+    }
+
+    fn from_sqlx_row(row: sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
+        let uuid_string: String = row.get("id");
+        let created_at_string: String = row.get("created_at_utc");
+        let updated_at_string: String = row.get("updated_at_utc");
+        let archived_at_string: Option<String> = row.get("archived_at_utc");
+
+        Ok(Project {
+            id: Uuid::parse_str(&uuid_string).unwrap(),
+            title: row.get("title"),
+            emoji: row.get("emoji"),
+            color: row.get("color"),
+            description: row.get("description"),
             created_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&created_at_string).unwrap()),
             updated_at_utc: DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&updated_at_string).unwrap()),
             archived_at_utc: match archived_at_string {

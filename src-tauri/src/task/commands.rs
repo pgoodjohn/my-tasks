@@ -1,6 +1,4 @@
-use r2d2::Pool;
-use r2d2_sqlite::SqliteConnectionManager;
-use rusqlite::{Connection, Result};
+use sqlx::SqlitePool;
 use tauri::State;
 use thiserror::Error;
 use uuid::Uuid;
@@ -16,6 +14,9 @@ pub enum TaskError {
 
     #[error("Database error: {0}")]
     DatabaseError(#[from] rusqlite::Error),
+
+    #[error("SQLx error: {0}")]
+    SQLxError(#[from] sqlx::Error),
 }
 
 impl TaskError {
@@ -23,55 +24,60 @@ impl TaskError {
         match self {
             TaskError::InvalidUUID(_) => "Invalid UUID".to_string(),
             TaskError::DatabaseError(_) => "Database error".to_string(),
+            TaskError::SQLxError(_) => "Database error".to_string(),
         }
     }
 }
 
 struct TaskManager<'a> {
-    connection: &'a Connection,
+    db_pool: &'a SqlitePool,
 }
 
 impl<'a> TaskManager<'a> {
-    fn new(connection: &'a Connection) -> Result<Self, ()> {
-        Ok(TaskManager { connection })
+    fn new(db_pool: &'a SqlitePool) -> Result<Self, ()> {
+        Ok(TaskManager { db_pool })
     }
 
-    fn update_task(
+    async fn update_task(
         &self,
         task_id: String,
         update_data: UpdatedTaskData,
     ) -> Result<Option<Task>, TaskError> {
-        let uuid = Uuid::parse_str(&task_id)?;
+        let uuid: Uuid = Uuid::parse_str(&task_id)?;
 
-        let task = Task::load_by_id(uuid, &self.connection)?;
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let task = Task::load_by_id(uuid, &mut connection).await?;
 
         match task {
             None => return Ok(None),
             Some(mut task) => {
-                task.update(update_data, &self.connection)?;
-                task.save(&self.connection)?;
+                task.update(update_data, &mut connection);
+                task.save(&mut connection).await?;
 
                 Ok(Some(task))
             }
         }
     }
 
-    fn _save_task(&self, task: Task) -> Result<Task, TaskError> {
-        task.save(&self.connection)?;
+    async fn _save_task(&self, task: Task) -> Result<Task, TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        task.save(&mut connection).await?;
 
         Ok(task)
     }
 }
 
 #[tauri::command]
-pub fn update_task_command(
+pub async fn update_task_command(
     task_id: String,
     title: String,
     description: Option<String>,
     due_date: Option<String>,
     deadline: Option<String>,
     project_id: Option<String>,
-    db: State<Pool<SqliteConnectionManager>>,
+    db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
     let updated_task_data = UpdatedTaskData {
         title,
@@ -87,10 +93,9 @@ pub fn update_task_command(
         updated_task_data,
     );
 
-    let connection = db.get().unwrap(); // Get a connection from the pool
-    let task_manager = TaskManager::new(&connection).unwrap();
+    let task_manager = TaskManager::new(&db).unwrap();
 
-    match task_manager.update_task(task_id, updated_task_data) {
+    match task_manager.update_task(task_id, updated_task_data).await {
         Ok(task) => Ok(serde_json::to_string(&task).unwrap()),
         Err(e) => {
             let error = ErrorResponse::new(
@@ -106,15 +111,19 @@ pub fn update_task_command(
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn updates_a_task() {
-        use super::*;
-        use rusqlite::Connection;
+    use sqlx::sqlite::SqlitePool;
+    use sqlx::Error;
 
-        fn _setup_in_memory_db() -> Connection {
-            let conn = Connection::open_in_memory().unwrap();
-            conn.execute(
-                "
+    async fn create_in_memory_pool() -> Result<SqlitePool, Error> {
+        let pool = SqlitePool::connect(":memory:").await?;
+        Ok(pool)
+    }
+
+    async fn apply_migrations(pool: &SqlitePool) -> Result<(), Error> {
+        let mut connection = pool.acquire().await.unwrap();
+
+        sqlx::query(
+            r#"
         CREATE TABLE IF NOT EXISTS tasks (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
@@ -125,13 +134,14 @@ mod tests {
             created_at_utc DATETIME NOT NULL,
             completed_at_utc DATETIME,
             updated_at_utc DATETIME NOT NULL
-        );",
-                [],
-            )
-            .unwrap();
+        )
+            "#,
+        )
+        .execute(&mut *connection)
+        .await?;
 
-            conn.execute(
-                "
+        sqlx::query(
+            r#"
         CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
@@ -141,17 +151,24 @@ mod tests {
             created_at_utc DATETIME NOT NULL,
             updated_at_utc DATETIME NOT NULL,
             archived_at_utc DATETIME
-        );",
-                [],
-            )
-            .unwrap();
+        )
+            "#,
+        )
+        .execute(&mut *connection)
+        .await?;
 
-            conn
-        }
+        Ok(())
+    }
 
-        let conn = _setup_in_memory_db();
+    #[tokio::test]
+    async fn updates_a_task() {
+        use super::*;
 
-        let manager = TaskManager::new(&conn).unwrap();
+        let pool = create_in_memory_pool().await.unwrap();
+
+        apply_migrations(&pool).await.unwrap();
+
+        let manager = TaskManager::new(&pool).unwrap();
         let task = Task::new(
             "Test Task".to_string(),
             Some("This is a test task.".to_string()),
@@ -160,7 +177,7 @@ mod tests {
             None,
         );
         let task_id = task.id.clone();
-        manager._save_task(task).unwrap();
+        manager._save_task(task).await.unwrap();
 
         let updated_task_data = UpdatedTaskData {
             title: "Updated task".to_string(),
@@ -172,6 +189,7 @@ mod tests {
 
         let updated_task = manager
             .update_task(task_id.to_string(), updated_task_data)
+            .await
             .unwrap()
             .unwrap();
 

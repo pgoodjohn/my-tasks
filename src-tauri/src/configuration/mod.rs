@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use tauri::State;
 use toml;
 
@@ -54,7 +55,7 @@ impl Configuration {
         config_path
     }
 
-    fn db_path(dev_mode: bool) -> PathBuf {
+    pub fn db_path(dev_mode: bool) -> PathBuf {
         if dev_mode {
             let mut config_path = PathBuf::new();
             config_path.push("file.db");
@@ -165,8 +166,6 @@ pub fn load_configuration_command(configuration: State<Mutex<Configuration>>) ->
 
     serde_json::to_string(&configuration.inner()).unwrap()
 }
-use std::sync::Mutex;
-
 #[tauri::command]
 pub fn add_project_to_favourites_command(
     configuration: State<Mutex<Configuration>>,

@@ -1,6 +1,9 @@
 start:
 	npm run tauri dev
 
+ios:
+	npm run tauri ios dev
+
 build:
 	npm run tauri build
 

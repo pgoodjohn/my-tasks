@@ -2,16 +2,18 @@ use log;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 
-pub fn setup_database(
-    configuration: &super::configuration::Configuration,
-) -> Result<Pool<SqliteConnectionManager>, String> {
-    log::debug!("Initializing db {:?}", &configuration.db_path);
-    let manager = SqliteConnectionManager::file(std::path::PathBuf::from(&configuration.db_path));
+use crate::configuration;
+
+pub fn setup_database() -> Result<Pool<SqliteConnectionManager>, String> {
+    log::debug!("Initializing old db");
+    let manager = SqliteConnectionManager::file(std::path::PathBuf::from(
+        configuration::Configuration::db_path(cfg!(debug_assertions)),
+    ));
     log::debug!("DB Was initialized");
 
     match r2d2::Pool::new(manager) {
         Ok(pool) => {
-            setup_structure(&pool, configuration).unwrap();
+            // setup_structure(&pool, configuration).unwrap();
             log::debug!("Pool Was initialized");
             Ok(pool)
         }
@@ -22,7 +24,7 @@ pub fn setup_database(
     }
 }
 
-// TODO: Manage db versions
+// // TODO: Manage db versions
 pub fn setup_structure(
     pool: &Pool<SqliteConnectionManager>,
     configuration: &super::configuration::Configuration,
