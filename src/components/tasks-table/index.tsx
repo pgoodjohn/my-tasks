@@ -19,11 +19,8 @@ import {
 import { Button } from '../ui/button';
 import {
     Command,
-    CommandEmpty,
     CommandGroup,
-    CommandInput,
     CommandItem,
-    CommandList,
 } from "@/components/ui/command"
 import { Ellipsis } from 'lucide-react';
 
