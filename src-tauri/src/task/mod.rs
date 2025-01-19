@@ -113,7 +113,7 @@ impl Task {
         Ok(self)
     }
 
-    pub async fn save(
+    pub async fn create_record(
         &self,
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<&Self, sqlx::Error> {
