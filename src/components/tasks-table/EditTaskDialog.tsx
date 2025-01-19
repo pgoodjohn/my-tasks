@@ -29,7 +29,9 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ task }) => {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button>Edit</Button></DialogTrigger>
+            <DialogTrigger asChild>
+                <Button className="w-full text-left" variant="ghost" size="xs">Edit</Button>
+            </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Edit Task</DialogTitle>

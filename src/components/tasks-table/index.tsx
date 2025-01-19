@@ -11,6 +11,21 @@ import EditTaskDialog from '@/components/tasks-table/EditTaskDialog';
 import ProjectTag from '@/components/project-tag';
 import { Badge } from '../ui/badge';
 import { invoke_tauri_command } from '@/lib/utils';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { Button } from '../ui/button';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import { Ellipsis } from 'lucide-react';
 
 
 const columns: ColumnDef<Task>[] = [
@@ -84,11 +99,21 @@ const columns: ColumnDef<Task>[] = [
         id: "actions",
         cell: ({ row }) => {
             const task = row.original
-
             return (
-                <div className='flex justify-end'>
-                    <EditTaskDialog task={task} />
-                </div>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="xs"><Ellipsis /></Button>
+                    </PopoverTrigger>
+                    <PopoverContent>
+                        <Command>
+                            <CommandGroup>
+                                <CommandItem>
+                                    <EditTaskDialog task={task} />
+                                </CommandItem>
+                            </CommandGroup>
+                        </Command>
+                    </PopoverContent>
+                </Popover >
             )
         }
     }

@@ -8,6 +8,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "@/index.css";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
+import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -27,6 +28,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <RouterProvider router={router} />
+          <KeyboardShortcutsDialog />
         </ThemeProvider>
       </QueryClientProvider>
     </SidebarProvider>
