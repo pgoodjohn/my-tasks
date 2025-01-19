@@ -194,19 +194,21 @@ impl Task {
         return Ok(tasks.pop());
     }
 
-    pub fn load_for_project(project_id: Uuid, connection: &Connection) -> Result<Vec<Self>> {
-        let mut stmt = connection
-            .prepare("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY created_at_utc DESC")
-            .unwrap();
-        let task_iter = stmt
-            .query_map(rusqlite::params![project_id.to_string()], |row| {
-                Task::from_row(row, connection)
-            })
-            .unwrap();
+    pub async fn load_for_project(
+        project_id: Uuid,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Self>> {
+        let rows =
+            sqlx::query("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY created_at_utc DESC")
+                .bind(project_id.to_string())
+                .fetch_all(&mut **connection)
+                .await
+                .unwrap();
 
         let mut tasks = Vec::new();
-        for task in task_iter {
-            tasks.push(task.unwrap());
+        for row in rows {
+            let task = Task::from_sqlx_row(row, connection).await.unwrap(); // TODO: unwrap
+            tasks.push(task);
         }
 
         Ok(tasks)

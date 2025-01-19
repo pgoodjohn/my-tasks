@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
 use uuid::Uuid;
 
+use crate::task::Task;
+
 pub mod commands;
-pub mod detail;
 mod test;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -18,6 +19,12 @@ pub struct Project {
     pub created_at_utc: DateTime<Utc>,
     pub updated_at_utc: DateTime<Utc>,
     pub archived_at_utc: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ProjectDetail {
+    pub project: Project,
+    pub tasks: Vec<Task>,
 }
 
 impl Project {

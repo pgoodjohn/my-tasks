@@ -5,7 +5,9 @@ use tauri::State;
 use uuid::Uuid;
 
 use super::Project;
+use super::ProjectDetail;
 use crate::commands::ErrorResponse;
+use crate::task::Task;
 
 struct ProjectsManager<'a> {
     db_pool: &'a SqlitePool,
@@ -30,6 +32,46 @@ impl<'a> ProjectsManager<'a> {
                 return Ok(projects);
             }
         }
+    }
+
+    async fn load_project_details(
+        &self,
+        project_id: Uuid,
+        include_completed_tasks: bool,
+    ) -> Result<ProjectDetail, ()> {
+        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
+            self.db_pool.acquire().await.unwrap();
+
+        let project = Project::load_by_id(project_id, &mut connection)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let tasks = Task::load_for_project(project.id, &mut connection)
+            .await
+            .unwrap();
+
+        let project_detail = ProjectDetail {
+            project: project,
+            tasks: tasks,
+        };
+
+        if include_completed_tasks {
+            return Ok(project_detail);
+        }
+
+        let open_tasks: Vec<Task> = project_detail
+            .tasks
+            .into_iter()
+            .filter(|task| !task.completed_at_utc.is_some())
+            .collect();
+
+        let open_project_detail = ProjectDetail {
+            project: project_detail.project,
+            tasks: open_tasks,
+        };
+
+        return Ok(open_project_detail);
     }
 
     async fn create_project(
@@ -202,4 +244,38 @@ pub async fn archive_project_command(
         .unwrap();
 
     Ok(serde_json::to_string(&project).unwrap())
+}
+
+#[tauri::command]
+pub async fn load_project_details_command(
+    project_id: String,
+    include_completed_tasks: bool,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    log::debug!(
+        "Running load project details command for project ID: {}, include_completed_tasks: {:?}",
+        project_id,
+        include_completed_tasks
+    );
+
+    let projects_manager = ProjectsManager::new(&db).unwrap();
+
+    let project_uuid = Uuid::parse_str(&project_id)
+        .map_err(|e| e.to_string())
+        .unwrap();
+
+    match projects_manager
+        .load_project_details(project_uuid, include_completed_tasks)
+        .await
+    {
+        Ok(project_detail) => Ok(serde_json::to_string(&project_detail).unwrap()),
+        Err(_) => {
+            let error = ErrorResponse::new(
+                "load_project_details_command".to_string(),
+                "Failed to load project details".to_string(),
+                "Failed to load project details".to_string(),
+            );
+            Err(serde_json::to_string(&error).unwrap())
+        }
+    }
 }
