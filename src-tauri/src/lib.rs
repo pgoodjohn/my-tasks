@@ -11,6 +11,7 @@ mod task;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    println!("Preloading Configuration");
     let configuration = configuration::Configuration::init().unwrap();
     log::info!("Starting My Tasks!");
 
