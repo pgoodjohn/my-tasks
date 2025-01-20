@@ -9,16 +9,16 @@ use super::ProjectDetail;
 use crate::commands::ErrorResponse;
 use crate::task::Task;
 
-struct ProjectsManager<'a> {
+pub struct ProjectsManager<'a> {
     db_pool: &'a SqlitePool,
 }
 
 impl<'a> ProjectsManager<'a> {
-    fn new(db_pool: &'a SqlitePool) -> Result<Self, ()> {
+    pub fn new(db_pool: &'a SqlitePool) -> Result<Self, ()> {
         Ok(ProjectsManager { db_pool })
     }
 
-    async fn load_projects(&self, show_archived_projects: bool) -> Result<Vec<Project>, ()> {
+    pub async fn load_projects(&self, show_archived_projects: bool) -> Result<Vec<Project>, ()> {
         let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
             self.db_pool.acquire().await.unwrap();
 
@@ -34,7 +34,7 @@ impl<'a> ProjectsManager<'a> {
         }
     }
 
-    async fn load_project_details(
+    pub async fn load_project_details(
         &self,
         project_id: Uuid,
         include_completed_tasks: bool,
@@ -74,7 +74,7 @@ impl<'a> ProjectsManager<'a> {
         return Ok(open_project_detail);
     }
 
-    async fn create_project(
+    pub async fn create_project(
         &self,
         title: String,
         emoji: Option<String>,
@@ -91,7 +91,7 @@ impl<'a> ProjectsManager<'a> {
         return Ok(project);
     }
 
-    async fn update_project(
+    pub async fn update_project(
         &self,
         project_id: Uuid,
         new_title: Option<String>,
@@ -118,7 +118,7 @@ impl<'a> ProjectsManager<'a> {
         return Ok(project);
     }
 
-    async fn archive_project(
+    pub async fn archive_project(
         &self,
         project_id: Uuid,
         configuration: &mut crate::configuration::Configuration,
