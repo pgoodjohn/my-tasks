@@ -1,11 +1,6 @@
 use chrono::{DateTime, Utc};
-use r2d2::Pool;
-use r2d2_sqlite::SqliteConnectionManager;
-use rusqlite::{Connection, Result, Row};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
-use tauri::State;
-use tokio::task;
 use uuid::Uuid;
 
 use crate::project::Project;
@@ -96,7 +91,7 @@ impl Task {
         &self,
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<bool, sqlx::Error> {
-        let stored_task = Task::load_by_id(self.id, connection).await?;
+        let stored_task = Task::load_by_id(self.id, connection).await.unwrap();
 
         match stored_task {
             Some(_) => Ok(true),
@@ -166,6 +161,8 @@ impl Task {
     ) -> Result<Self, sqlx::Error> {
         let uuid_string: String = row.get("id");
         let project_uuid_string: Option<String> = row.get("project_id");
+        let due_at_utc_string: Option<String> = row.get("due_at_utc");
+        let deadline_at_utc_string: Option<String> = row.get("deadline_at_utc");
         let created_at_string: String = row.get("created_at_utc");
         let updated_at_string: String = row.get("updated_at_utc");
         let completed_at_string: Option<String> = row.get("completed_at_utc");
@@ -175,17 +172,25 @@ impl Task {
             title: row.get("title"),
             description: row.get("description"),
             project: match project_uuid_string {
-                Some(uuid) => Project::load_by_id(Uuid::parse_str(&uuid).unwrap(), &mut connection)
-                    .await
-                    .unwrap(),
+                Some(uuid) => {
+                    Project::load_by_id(Uuid::parse_str(&uuid).unwrap(), &mut *connection)
+                        .await
+                        .unwrap()
+                }
                 None => None,
             },
-            due_at_utc: row.get("due_at_utc").map(|date: String| {
-                DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap())
-            }),
-            deadline_at_utc: row.get("deadline_at_utc").map(|date: String| {
-                DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap())
-            }),
+            due_at_utc: match due_at_utc_string {
+                None => None,
+                Some(s) => Some(DateTime::<Utc>::from(
+                    DateTime::parse_from_rfc3339(&s).unwrap(),
+                )),
+            },
+            deadline_at_utc: match deadline_at_utc_string {
+                None => None,
+                Some(s) => Some(DateTime::<Utc>::from(
+                    DateTime::parse_from_rfc3339(&s).unwrap(),
+                )),
+            },
             created_at_utc: DateTime::<Utc>::from(
                 DateTime::parse_from_rfc3339(&created_at_string).unwrap(),
             ),
@@ -200,7 +205,7 @@ impl Task {
     pub async fn load_by_id(
         id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Option<Self>> {
+    ) -> Result<Option<Self>, ()> {
         let rows = sqlx::query("SELECT * FROM tasks WHERE id = ?1 LIMIT 1")
             .bind(id.to_string())
             .fetch_all(&mut **connection)
@@ -219,7 +224,7 @@ impl Task {
     pub async fn load_filtered_by_completed(
         include_completed: bool,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<Vec<Self>, ()> {
         let query = match include_completed {
             true => "SELECT * FROM tasks ORDER BY created_at_utc DESC",
             false => {
@@ -244,7 +249,7 @@ impl Task {
     pub async fn load_for_project(
         project_id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<Vec<Self>, ()> {
         let rows =
             sqlx::query("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY created_at_utc DESC")
                 .bind(project_id.to_string())
@@ -264,7 +269,7 @@ impl Task {
     pub async fn load_due_before(
         date: DateTime<Utc>,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<Vec<Self>, ()> {
         let rows = sqlx::query(
             "SELECT * FROM tasks WHERE due_at_utc < ?1 AND completed_at_utc IS NULL ORDER BY due_at_utc ASC"
         )
@@ -282,7 +287,9 @@ impl Task {
         Ok(tasks)
     }
 
-    pub async fn load_with_deadlines(connection: &mut PoolConnection<Sqlite>) -> Result<Vec<Self>> {
+    pub async fn load_with_deadlines(
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Self>, ()> {
         let rows = sqlx::query(
             "SELECT * FROM tasks WHERE deadline_at_utc IS NOT NULL AND completed_at_utc IS NULL ORDER BY deadline_at_utc ASC"
         )
@@ -299,7 +306,7 @@ impl Task {
         Ok(tasks)
     }
 
-    pub async fn load_inbox(connection: &mut PoolConnection<Sqlite>) -> Result<Vec<Self>> {
+    pub async fn load_inbox(connection: &mut PoolConnection<Sqlite>) -> Result<Vec<Self>, ()> {
         let rows = sqlx::query(
             "SELECT * FROM tasks WHERE project_id IS NULL AND completed_at_utc IS NULL ORDER BY created_at_utc DESC"
         )
@@ -315,65 +322,4 @@ impl Task {
 
         Ok(tasks)
     }
-}
-
-#[tauri::command]
-pub fn count_open_tasks_for_project_command(
-    project_id: String,
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!(
-        "Running count open tasks for project command for project ID: {}",
-        project_id
-    );
-    let conn = db.get().unwrap(); // Get a connection from the pool
-
-    let uuid = Uuid::parse_str(&project_id)
-        .map_err(|e| e.to_string())
-        .unwrap();
-
-    let project = Project::load_by_id(uuid, &conn).unwrap();
-
-    match project {
-        Some(project) => {
-            let count = project.count_open_tasks_for_project(&conn).unwrap();
-            return Ok(count.to_string());
-        }
-        None => {
-            return Err("Project not found".to_string());
-        }
-    }
-}
-
-#[tauri::command]
-pub fn load_task_activity_statistics_command(
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!("Running load task activity statistics command");
-    let conn = db.get().unwrap(); // Get a connection from the pool
-    let mut stmt = conn.prepare("SELECT COUNT(*) as count, strftime('%Y-%m-%d', completed_at_utc) as date FROM tasks WHERE completed_at_utc IS NOT NULL GROUP BY date ORDER BY date DESC").unwrap();
-    let task_iter = stmt
-        .query_map([], |row| Ok((row.get("date")?, row.get("count")?)))
-        .unwrap();
-
-    let mut statistics = Vec::new();
-    for task in task_iter {
-        let (date, count): (String, i64) = task.unwrap();
-        let level = match count {
-            0 => 0,
-            1..=3 => 1,
-            4..=6 => 2,
-            7..=9 => 3,
-            _ => 4,
-        };
-        let mut entry = serde_json::Map::new();
-        entry.insert("level".to_string(), serde_json::json!(level));
-        entry.insert(
-            "data".to_string(),
-            serde_json::json!({ "completedTasks": count }),
-        );
-        statistics.push(serde_json::json!({ date: entry }));
-    }
-
-    Ok(serde_json::to_string(&statistics).unwrap())
 }

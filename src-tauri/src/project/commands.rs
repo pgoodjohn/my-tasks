@@ -138,6 +138,28 @@ impl<'a> ProjectsManager<'a> {
 
         return Ok(project);
     }
+
+    pub async fn count_open_tasks(&self, project_id: Uuid) -> Result<i64, String> {
+        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
+            self.db_pool.acquire().await.unwrap();
+
+        let project = Project::load_by_id(project_id, &mut connection)
+            .await
+            .unwrap();
+
+        match project {
+            Some(project) => {
+                let count = project
+                    .count_open_tasks_for_project(&mut connection)
+                    .await
+                    .unwrap();
+                return Ok(count);
+            }
+            None => {
+                return Err("Could not find project".to_string());
+            }
+        }
+    }
 }
 
 #[tauri::command]
@@ -278,4 +300,23 @@ pub async fn load_project_details_command(
             Err(serde_json::to_string(&error).unwrap())
         }
     }
+}
+
+#[tauri::command]
+pub async fn count_open_tasks_for_project_command(
+    project_id: String,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    log::debug!(
+        "Running count open tasks for project command for project ID: {}",
+        project_id
+    );
+
+    let manager = ProjectsManager::new(&db).unwrap();
+
+    let uuid = Uuid::parse_str(&project_id)
+        .map_err(|e| e.to_string())
+        .unwrap();
+
+    Ok(manager.count_open_tasks(uuid).await.unwrap().to_string())
 }

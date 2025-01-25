@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, Result, Row};
 use serde::{Deserialize, Serialize};
-use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
+use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite, SqlitePool};
 use uuid::Uuid;
 
 use crate::task::Task;
@@ -167,14 +167,24 @@ impl Project {
         })
     }
 
-    pub fn count_open_tasks_for_project(&self, connection: &Connection) -> Result<i64> {
-        let mut stmt = connection
-            .prepare(
-                "SELECT COUNT(*) FROM tasks WHERE project_id = ?1 AND completed_at_utc IS NULL",
-            )
-            .unwrap();
-        let count = stmt.query_row(rusqlite::params![self.id.to_string()], |row| row.get(0));
+    pub async fn count_open_tasks_for_project(
+        &self,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<i64> {
+        let result = sqlx::query(
+            "SELECT COUNT(*) as `count` FROM tasks WHERE project_id = ?1 AND completed_at_utc IS NULL"
+        ).bind(self.id.to_string())
+        .fetch_all(&mut **connection)
+        .await
+        .unwrap();
 
-        count
+        let mut count: i64 = 0;
+        for row in result {
+            let count_row: sqlx::sqlite::SqliteRow = row; // TODO: unwrap
+            let count_value: i64 = count_row.get("count");
+            count += count_value;
+        }
+
+        Ok(count)
     }
 }

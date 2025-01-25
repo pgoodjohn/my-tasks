@@ -1,4 +1,6 @@
-use sqlx::SqlitePool;
+use std::collections::HashMap;
+
+use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite, SqlitePool};
 use tauri::State;
 use thiserror::Error;
 use uuid::Uuid;
@@ -8,6 +10,7 @@ use crate::commands::ErrorResponse;
 use crate::project::Project;
 use crate::task::Task;
 use chrono::{DateTime, Utc};
+use serde::Serialize;
 
 #[derive(Error, Debug)]
 pub enum TaskError {
@@ -39,12 +42,12 @@ impl TaskError {
     }
 }
 
-struct TaskManager<'a> {
+pub struct TaskManager<'a> {
     db_pool: &'a SqlitePool,
 }
 
 impl<'a> TaskManager<'a> {
-    fn new(db_pool: &'a SqlitePool) -> Result<Self, ()> {
+    pub fn new(db_pool: &'a SqlitePool) -> Result<Self, ()> {
         Ok(TaskManager { db_pool })
     }
 
@@ -92,7 +95,7 @@ impl<'a> TaskManager<'a> {
 
         let mut connection = self.db_pool.acquire().await.unwrap();
 
-        let task = Task::load_by_id(uuid, &mut connection).await?;
+        let task = Task::load_by_id(uuid, &mut connection).await.unwrap();
 
         match task {
             None => return Ok(None),
@@ -108,7 +111,7 @@ impl<'a> TaskManager<'a> {
     async fn delete_task(&self, task_id: Uuid) -> Result<(), TaskError> {
         let mut connection = self.db_pool.acquire().await.unwrap();
 
-        let task = Task::load_by_id(task_id, &mut connection).await?;
+        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
 
         match task {
             Some(t) => {
@@ -132,7 +135,7 @@ impl<'a> TaskManager<'a> {
     async fn complete_task(&self, task_id: Uuid) -> Result<(), TaskError> {
         let mut connection = self.db_pool.acquire().await.unwrap();
 
-        let task = Task::load_by_id(task_id, &mut connection).await?;
+        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
 
         match task {
             None => Err(TaskError::TaskNotFound),
@@ -168,6 +171,74 @@ impl<'a> TaskManager<'a> {
 
         Ok(tasks)
     }
+
+    async fn load_statistics(&self) -> Result<PeriodTaskStatistic, ()> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let statistics = PeriodTaskStatistic::load(&mut connection).await.unwrap();
+
+        Ok(statistics)
+    }
+}
+
+#[derive(Serialize)]
+pub struct PeriodTaskStatistic(HashMap<String, DateTaskStatistic>);
+
+impl PeriodTaskStatistic {
+    pub async fn load(connection: &mut PoolConnection<Sqlite>) -> Result<Self, ()> {
+        let mut statistics = PeriodTaskStatistic(HashMap::<String, DateTaskStatistic>::new());
+
+        let sqlx_result = sqlx::query(
+           "SELECT COUNT(*) as count, strftime('%Y-%m-%d', completed_at_utc) as date FROM tasks WHERE completed_at_utc IS NOT NULL GROUP BY date ORDER BY date DESC",
+        )
+        .fetch_all(&mut **connection)
+        .await.unwrap();
+
+        for row in sqlx_result {
+            let date = row.get("date");
+            let level = match row.get("count") {
+                0 => 0,
+                1..=3 => 1,
+                4..=6 => 2,
+                7..=9 => 3,
+                _ => 4,
+            };
+            let date_statistic = DateTaskStatistic {
+                level: level,
+                data: DateTaskStatisticData {
+                    completed_tasks: row.get("count"),
+                },
+            };
+
+            statistics.0.insert(date, date_statistic);
+        }
+
+        Ok(statistics)
+    }
+}
+
+#[derive(Serialize)]
+pub struct DateTaskStatistic {
+    level: i64,
+    data: DateTaskStatisticData,
+}
+
+#[derive(Serialize)]
+pub struct DateTaskStatisticData {
+    completed_tasks: i64,
+}
+
+#[tauri::command]
+pub async fn load_task_activity_statistics_command(
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    log::debug!("Running load task activity statistics command");
+
+    let manager = TaskManager::new(&db).unwrap();
+
+    let statistics = manager.load_statistics().await.unwrap();
+
+    Ok(serde_json::to_string(&statistics).unwrap())
 }
 
 #[tauri::command]
