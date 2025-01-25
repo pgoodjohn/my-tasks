@@ -306,25 +306,6 @@ impl Task {
 }
 
 #[tauri::command]
-pub fn complete_task_command(
-    task_id: String,
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!("Running complete task command for card ID: {}", task_id);
-    let conn = db.get().unwrap(); // Get a connection from the pool
-
-    let uuid = Uuid::parse_str(&task_id).map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "UPDATE tasks SET completed_at_utc = ?1 WHERE id = ?2",
-        rusqlite::params![Utc::now().to_rfc3339(), &uuid.to_string()],
-    )
-    .map_err(|e| e.to_string())?;
-
-    Ok("{}".to_string())
-}
-
-#[tauri::command]
 pub fn count_open_tasks_for_project_command(
     project_id: String,
     db: State<Pool<SqliteConnectionManager>>,

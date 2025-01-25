@@ -22,6 +22,9 @@ pub enum TaskError {
 
     #[error("Project not found")]
     ProjectNotFound,
+
+    #[error("Task not found")]
+    TaskNotFound,
 }
 
 impl TaskError {
@@ -31,6 +34,7 @@ impl TaskError {
             TaskError::DatabaseError(_) => "Database error".to_string(),
             TaskError::SQLxError(_) => "Database error".to_string(),
             TaskError::ProjectNotFound => "Project not found".to_string(),
+            TaskError::TaskNotFound => "Task not found".to_string(),
         }
     }
 }
@@ -118,12 +122,43 @@ impl<'a> TaskManager<'a> {
     async fn load_tasks(&self, include_completed: bool) -> Result<Vec<Task>, TaskError> {
         let mut connection = self.db_pool.acquire().await.unwrap();
 
-        let tasks = Task::load_filtered_by_completed(include_completed, &mut **connection)
+        let tasks = Task::load_filtered_by_completed(include_completed, &mut connection)
             .await
             .unwrap();
 
         return Ok(tasks);
     }
+
+    async fn complete_task(&self, task_id: Uuid) -> Result<(), TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let task = Task::load_by_id(task_id, &mut connection).await?;
+
+        match task {
+            None => Err(TaskError::TaskNotFound),
+            Some(mut t) => {
+                t.completed_at_utc = Some(Utc::now());
+                t.update_record(&mut connection).await.unwrap();
+
+                return Ok(());
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn complete_task_command(
+    task_id: String,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    log::debug!("Running complete task command for card ID: {}", task_id);
+    let uuid = Uuid::parse_str(&task_id).map_err(|e| e.to_string())?;
+
+    let manager = TaskManager::new(&db).unwrap();
+
+    manager.complete_task(uuid).await.unwrap();
+
+    Ok("{}".to_string())
 }
 
 #[tauri::command]

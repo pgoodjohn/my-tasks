@@ -55,7 +55,7 @@ pub fn run() {
             project::commands::create_project_command,
             project::commands::load_projects_command,
             project::commands::update_project_command,
-            task::complete_task_command,
+            task::commands::complete_task_command,
             task::load_task_activity_statistics_command,
             task::load_tasks_due_today_command,
             task::count_open_tasks_for_project_command,
