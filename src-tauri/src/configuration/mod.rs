@@ -155,8 +155,6 @@ impl Configuration {
 
     pub fn remove_favorite_project(&mut self, project_uuid: &str) {
         self.favorite_projects_uuids.retain(|x| x != project_uuid);
-
-        self.save().unwrap();
     }
 }
 
@@ -189,6 +187,7 @@ pub fn remove_project_from_favourites_command(
 
     let mut config = configuration.lock().unwrap();
     config.remove_favorite_project(&project_uuid);
+    config.save();
 
     Ok(serde_json::to_string(&*config).unwrap())
 }

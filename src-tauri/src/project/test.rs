@@ -3,11 +3,12 @@ mod manager_test {
 
     use crate::configuration::Configuration;
     use crate::project::commands::ProjectsManager;
+    use std::path::PathBuf;
+    use tauri::async_runtime::Mutex;
 
     use chrono::Utc;
     use sqlx::sqlite::SqlitePool;
     use sqlx::Error;
-    use std::path::PathBuf;
 
     async fn create_in_memory_pool() -> Result<SqlitePool, Error> {
         let pool = SqlitePool::connect(":memory:").await?;
@@ -55,15 +56,26 @@ mod manager_test {
         Ok(())
     }
 
+    async fn mock_configuration() -> Result<Configuration, Error> {
+        Ok(Configuration {
+            version: "test".to_string(),
+            development_mode: true,
+            config_path: PathBuf::new(),
+            db_path: PathBuf::new(),
+            favorite_projects_uuids: vec![],
+        })
+    }
+
     #[tokio::test]
     async fn it_creates_a_project() {
         let title = String::from("Test Project");
         let description = Some(String::from("This is a test project."));
+        let configuration = Mutex::new(mock_configuration().await.unwrap());
 
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let project_manager = ProjectsManager::new(&db_pool).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool, &configuration).unwrap();
 
         let project = project_manager
             .create_project(title, None, None, description)
@@ -85,8 +97,9 @@ mod manager_test {
     async fn it_updates_a_project() {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
+        let configuration = Mutex::new(mock_configuration().await.unwrap());
 
-        let project_manager = ProjectsManager::new(&db_pool).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool, &configuration).unwrap();
 
         let project = project_manager
             .create_project(
@@ -125,14 +138,8 @@ mod manager_test {
     async fn it_archives_a_project() {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
-        let project_manager = ProjectsManager::new(&db_pool).unwrap();
-        let mut configuration = Configuration {
-            version: "test".to_string(),
-            development_mode: true,
-            config_path: PathBuf::new(),
-            db_path: PathBuf::new(),
-            favorite_projects_uuids: vec![],
-        };
+        let configuration = Mutex::new(mock_configuration().await.unwrap());
+        let project_manager = ProjectsManager::new(&db_pool, &configuration).unwrap();
 
         let project = project_manager
             .create_project(
@@ -143,10 +150,52 @@ mod manager_test {
             )
             .await
             .unwrap();
-        let archived_project = project_manager
-            .archive_project(project.id, &mut configuration)
+        let archived_project = project_manager.archive_project(project.id).await.unwrap();
+
+        assert!(archived_project.archived_at_utc.is_some());
+    }
+
+    #[tokio::test]
+    async fn it_removes_a_favorite_project_when_it_is_archived() {
+        let db_pool = create_in_memory_pool().await.unwrap();
+        apply_migrations(&db_pool).await.unwrap();
+        let configuration = Mutex::new(mock_configuration().await.unwrap());
+        let project_manager = ProjectsManager::new(&db_pool, &configuration).unwrap();
+
+        let project = project_manager
+            .create_project(
+                "Test Project".to_string(),
+                None,
+                Some("This is a test project.".to_string()),
+                None,
+            )
             .await
             .unwrap();
+
+        let favorite_project = project_manager.favorite_project(project.id).await.unwrap();
+
+        assert_eq!(
+            1,
+            configuration
+                .try_lock()
+                .unwrap()
+                .favorite_projects_uuids
+                .len()
+        );
+
+        let archived_project = project_manager
+            .archive_project(favorite_project.id)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            0,
+            configuration
+                .try_lock()
+                .unwrap()
+                .favorite_projects_uuids
+                .len()
+        );
 
         assert!(archived_project.archived_at_utc.is_some());
     }

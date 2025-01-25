@@ -34,7 +34,7 @@ pub fn run() {
 
                 return db_pool;
             });
-            app.manage(Mutex::new(db_pool.clone()));
+            app.manage(db_pool.clone());
 
             app.manage(Mutex::new(configuration));
 

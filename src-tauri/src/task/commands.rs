@@ -228,11 +228,11 @@ pub struct DateTaskStatisticData {
 
 #[tauri::command]
 pub async fn load_task_activity_statistics_command(
-    db: State<'_, SqlitePool>,
+    db_pool: State<'_, SqlitePool>,
 ) -> Result<String, String> {
     log::debug!("Running load task activity statistics command");
 
-    let manager = TaskManager::new(&db).unwrap();
+    let manager = TaskManager::new(&db_pool).unwrap();
 
     let statistics = manager.load_statistics().await.unwrap();
 
@@ -240,10 +240,10 @@ pub async fn load_task_activity_statistics_command(
 }
 
 #[tauri::command]
-pub async fn load_tasks_inbox_command(db: State<'_, SqlitePool>) -> Result<String, String> {
+pub async fn load_tasks_inbox_command(db_pool: State<'_, SqlitePool>) -> Result<String, String> {
     log::debug!("Running load tasks inbox command");
 
-    let manager = TaskManager::new(&db).unwrap();
+    let manager = TaskManager::new(&db_pool).unwrap();
 
     let tasks = manager.load_inbox().await.unwrap();
 
