@@ -147,6 +147,18 @@ impl Task {
         Ok(self)
     }
 
+    pub async fn delete_record(
+        &self,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<(), sqlx::Error> {
+        let _sql_result = sqlx::query("DELETE FROM tasks WHERE id = ?1")
+            .bind(&self.id.to_string())
+            .execute(&mut **connection)
+            .await?;
+
+        Ok(())
+    }
+
     async fn from_sqlx_row(
         row: sqlx::sqlite::SqliteRow,
         connection: &mut PoolConnection<Sqlite>,
@@ -297,25 +309,6 @@ pub fn load_tasks_command(
     }
 
     Ok(serde_json::to_string(&tasks).unwrap())
-}
-
-#[tauri::command]
-pub fn delete_task_command(
-    task_id: String,
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!("Running delete task command for card ID: {}", task_id);
-    let conn = db.get().unwrap(); // Get a connection from the pool
-
-    let uuid = Uuid::parse_str(&task_id).map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "DELETE FROM tasks WHERE id = ?1",
-        rusqlite::params![&uuid.to_string()],
-    )
-    .map_err(|e| e.to_string())?;
-
-    Ok(format!("Task with ID {} deleted successfully", &task_id))
 }
 
 #[tauri::command]

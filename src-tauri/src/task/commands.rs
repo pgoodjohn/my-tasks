@@ -100,6 +100,34 @@ impl<'a> TaskManager<'a> {
             }
         }
     }
+
+    async fn delete_task(&self, task_id: Uuid) -> Result<(), TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let task = Task::load_by_id(task_id, &mut connection).await?;
+
+        match task {
+            Some(t) => t.delete_record(&mut connection),
+            None => {}
+        }
+
+        Ok(())
+    }
+}
+
+#[tauri::command]
+pub async fn delete_task_command(
+    task_id: String,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    log::debug!("Running delete task command for card ID: {}", task_id);
+
+    let task_manager = TaskManager::new(&db).unwrap();
+    let task_uuid = Uuid::parse_str(&task_id).unwrap();
+
+    task_manager.delete_task(task_uuid).await;
+
+    Ok(format!("Task with ID {} deleted successfully", &task_id))
 }
 
 #[tauri::command]
