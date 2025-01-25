@@ -144,6 +144,63 @@ impl<'a> TaskManager<'a> {
             }
         }
     }
+
+    async fn load_inbox(&self) -> Result<Vec<Task>, TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let tasks = Task::load_inbox(&mut connection).await.unwrap();
+
+        Ok(tasks)
+    }
+
+    async fn load_due_before(&self, date: DateTime<Utc>) -> Result<Vec<Task>, TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let tasks = Task::load_due_before(date, &mut connection).await.unwrap();
+
+        Ok(tasks)
+    }
+
+    async fn load_with_deadline(&self) -> Result<Vec<Task>, TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let tasks = Task::load_with_deadlines(&mut connection).await.unwrap();
+
+        Ok(tasks)
+    }
+}
+
+#[tauri::command]
+pub async fn load_tasks_inbox_command(db: State<'_, SqlitePool>) -> Result<String, String> {
+    log::debug!("Running load tasks inbox command");
+
+    let manager = TaskManager::new(&db).unwrap();
+
+    let tasks = manager.load_inbox().await.unwrap();
+
+    Ok(serde_json::to_string(&tasks).unwrap())
+}
+
+#[tauri::command]
+pub async fn load_tasks_due_today_command(db: State<'_, SqlitePool>) -> Result<String, String> {
+    log::debug!("Running load tasks due today command");
+
+    let manager = TaskManager::new(&db).unwrap();
+
+    let tasks = manager.load_due_before(Utc::now()).await.unwrap();
+
+    Ok(serde_json::to_string(&tasks).unwrap())
+}
+
+#[tauri::command]
+pub async fn load_tasks_with_deadline_command(db: State<'_, SqlitePool>) -> Result<String, String> {
+    log::debug!("Running load tasks with deadline command");
+
+    let manager = TaskManager::new(&db).unwrap();
+
+    let tasks = manager.load_with_deadline().await.unwrap();
+
+    Ok(serde_json::to_string(&tasks).unwrap())
 }
 
 #[tauri::command]

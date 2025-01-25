@@ -5,6 +5,7 @@ use rusqlite::{Connection, Result, Row};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
 use tauri::State;
+use tokio::task;
 use uuid::Uuid;
 
 use crate::project::Project;
@@ -260,45 +261,56 @@ impl Task {
         Ok(tasks)
     }
 
-    pub fn load_due_before(date: DateTime<Utc>, connection: &Connection) -> Result<Vec<Self>> {
-        let mut stmt = connection.prepare("SELECT * FROM tasks WHERE due_at_utc < ?1 AND completed_at_utc IS NULL ORDER BY due_at_utc ASC").unwrap();
-        let task_iter = stmt
-            .query_map(rusqlite::params![date.to_rfc3339()], |row| {
-                Task::from_row(row, connection)
-            })
-            .unwrap();
+    pub async fn load_due_before(
+        date: DateTime<Utc>,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Self>> {
+        let rows = sqlx::query(
+            "SELECT * FROM tasks WHERE due_at_utc < ?1 AND completed_at_utc IS NULL ORDER BY due_at_utc ASC"
+        )
+        .bind(date.to_rfc3339())
+        .fetch_all(&mut **connection)
+        .await
+        .unwrap();
 
         let mut tasks = Vec::new();
-        for task in task_iter {
-            tasks.push(task.unwrap());
+        for row in rows {
+            let task = Task::from_sqlx_row(row, connection).await.unwrap();
+            tasks.push(task);
         }
 
         Ok(tasks)
     }
 
-    pub fn load_with_deadlines(connection: &Connection) -> Result<Vec<Self>> {
-        let mut stmt = connection.prepare("SELECT * FROM tasks WHERE deadline_at_utc IS NOT NULL AND completed_at_utc IS NULL ORDER BY deadline_at_utc ASC").unwrap();
-        let task_iter = stmt
-            .query_map([], |row| Task::from_row(row, connection))
-            .unwrap();
+    pub async fn load_with_deadlines(connection: &mut PoolConnection<Sqlite>) -> Result<Vec<Self>> {
+        let rows = sqlx::query(
+            "SELECT * FROM tasks WHERE deadline_at_utc IS NOT NULL AND completed_at_utc IS NULL ORDER BY deadline_at_utc ASC"
+        )
+        .fetch_all(&mut **connection)
+        .await
+        .unwrap();
 
         let mut tasks = Vec::new();
-        for task in task_iter {
-            tasks.push(task.unwrap());
+        for row in rows {
+            let task = Task::from_sqlx_row(row, connection).await.unwrap();
+            tasks.push(task);
         }
 
         Ok(tasks)
     }
 
-    pub fn load_inbox(connection: &Connection) -> Result<Vec<Self>> {
-        let mut stmt = connection.prepare("SELECT * FROM tasks WHERE project_id IS NULL AND completed_at_utc IS NULL ORDER BY created_at_utc DESC").unwrap();
-        let task_iter = stmt
-            .query_map([], |row| Task::from_row(row, connection))
-            .unwrap();
+    pub async fn load_inbox(connection: &mut PoolConnection<Sqlite>) -> Result<Vec<Self>> {
+        let rows = sqlx::query(
+            "SELECT * FROM tasks WHERE project_id IS NULL AND completed_at_utc IS NULL ORDER BY created_at_utc DESC"
+        )
+        .fetch_all(&mut **connection)
+        .await
+        .unwrap();
 
         let mut tasks = Vec::new();
-        for task in task_iter {
-            tasks.push(task.unwrap());
+        for row in rows {
+            let task = Task::from_sqlx_row(row, connection).await.unwrap();
+            tasks.push(task);
         }
 
         Ok(tasks)
@@ -334,30 +346,6 @@ pub fn count_open_tasks_for_project_command(
 }
 
 #[tauri::command]
-pub fn load_tasks_due_today_command(
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!("Running load tasks due today command");
-    let conn = db.get().unwrap(); // Get a connection from the pool
-
-    let tasks = Task::load_due_before(Utc::now(), &conn).unwrap();
-
-    Ok(serde_json::to_string(&tasks).unwrap())
-}
-
-#[tauri::command]
-pub fn load_tasks_with_deadline_command(
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!("Running load tasks with deadline command");
-    let conn = db.get().unwrap(); // Get a connection from the pool
-
-    let tasks = Task::load_with_deadlines(&conn).unwrap();
-
-    Ok(serde_json::to_string(&tasks).unwrap())
-}
-
-#[tauri::command]
 pub fn load_task_activity_statistics_command(
     db: State<Pool<SqliteConnectionManager>>,
 ) -> Result<String, String> {
@@ -388,16 +376,4 @@ pub fn load_task_activity_statistics_command(
     }
 
     Ok(serde_json::to_string(&statistics).unwrap())
-}
-
-#[tauri::command]
-pub fn load_tasks_inbox_command(
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!("Running load tasks inbox command");
-    let conn = db.get().unwrap(); // Get a connection from the pool
-
-    let tasks = Task::load_inbox(&conn).unwrap();
-
-    Ok(serde_json::to_string(&tasks).unwrap())
 }
