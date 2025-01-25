@@ -114,6 +114,33 @@ impl<'a> TaskManager<'a> {
             None => Ok(()),
         }
     }
+
+    async fn load_tasks(&self, include_completed: bool) -> Result<Vec<Task>, TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let tasks = Task::load_filtered_by_completed(include_completed, &mut **connection)
+            .await
+            .unwrap();
+
+        return Ok(tasks);
+    }
+}
+
+#[tauri::command]
+pub async fn load_tasks_command(
+    include_completed: bool,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    log::debug!(
+        "Running load tasks command - include_completed: {:?}",
+        include_completed
+    );
+
+    let manager = TaskManager::new(&db).unwrap();
+
+    let tasks = manager.load_tasks(include_completed).await.unwrap();
+
+    Ok(serde_json::to_string(&tasks).unwrap())
 }
 
 #[tauri::command]

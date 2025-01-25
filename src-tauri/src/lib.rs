@@ -57,14 +57,14 @@ pub fn run() {
             project::commands::update_project_command,
             task::complete_task_command,
             task::load_task_activity_statistics_command,
-            task::load_tasks_command,
             task::load_tasks_due_today_command,
-            task::commands::create_task_command,
-            task::commands::update_task_command,
-            task::commands::delete_task_command,
             task::count_open_tasks_for_project_command,
             task::load_tasks_with_deadline_command,
             task::load_tasks_inbox_command,
+            task::commands::load_tasks_command,
+            task::commands::create_task_command,
+            task::commands::update_task_command,
+            task::commands::delete_task_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

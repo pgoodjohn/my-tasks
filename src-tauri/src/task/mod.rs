@@ -215,6 +215,31 @@ impl Task {
         return Ok(tasks.pop());
     }
 
+    pub async fn load_filtered_by_completed(
+        include_completed: bool,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Self>> {
+        let query = match include_completed {
+            true => "SELECT * FROM tasks ORDER BY created_at_utc DESC",
+            false => {
+                "SELECT * FROM tasks WHERE completed_at_utc IS NULL ORDER BY created_at_utc DESC"
+            }
+        };
+
+        let rows = sqlx::query(query)
+            .fetch_all(&mut **connection)
+            .await
+            .unwrap();
+
+        let mut tasks = Vec::new();
+        for row in rows {
+            let task = Task::from_sqlx_row(row, connection).await.unwrap(); // TODO: unwrap
+            tasks.push(task);
+        }
+
+        Ok(tasks)
+    }
+
     pub async fn load_for_project(
         project_id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
@@ -278,37 +303,6 @@ impl Task {
 
         Ok(tasks)
     }
-}
-
-#[tauri::command]
-pub fn load_tasks_command(
-    include_completed: bool,
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!(
-        "Running load tasks command - include_completed: {:?}",
-        include_completed
-    );
-
-    let conn = db.get().unwrap(); // Get a connection from the pool
-    let query = if include_completed {
-        "SELECT * FROM tasks WHERE created_at_utc IS NOT NULL ORDER BY created_at_utc DESC"
-    } else {
-        "SELECT * FROM tasks WHERE created_at_utc IS NOT NULL AND completed_at_utc IS NULL ORDER BY created_at_utc DESC"
-    };
-    let mut stmt = conn.prepare(query).unwrap(); // Prepare the SQL statement
-    let task_iter = stmt
-        .query_map([], |row| {
-            Task::from_row(row, &conn) // Map each row to a Card object
-        })
-        .unwrap();
-
-    let mut tasks = Vec::new();
-    for task in task_iter {
-        tasks.push(task.unwrap()); // Collect all cards into a vector
-    }
-
-    Ok(serde_json::to_string(&tasks).unwrap())
 }
 
 #[tauri::command]
