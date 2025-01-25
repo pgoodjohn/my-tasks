@@ -107,11 +107,12 @@ impl<'a> TaskManager<'a> {
         let task = Task::load_by_id(task_id, &mut connection).await?;
 
         match task {
-            Some(t) => t.delete_record(&mut connection),
-            None => {}
+            Some(t) => {
+                t.delete_record(&mut connection).await?;
+                Ok(())
+            }
+            None => Ok(()),
         }
-
-        Ok(())
     }
 }
 
@@ -226,6 +227,7 @@ pub async fn create_task_command(
 
 #[cfg(test)]
 mod tests {
+    use crate::*;
     use sqlx::sqlite::SqlitePool;
     use sqlx::Error;
 
@@ -284,15 +286,16 @@ mod tests {
         apply_migrations(&pool).await.unwrap();
 
         let manager = TaskManager::new(&pool).unwrap();
-        let task = Task::new(
-            "Test Task".to_string(),
-            Some("This is a test task.".to_string()),
-            None,
-            None,
-            None,
-        );
-        let task_id = task.id.clone();
-        manager._save_task(task).await.unwrap();
+
+        let create_task_data = CreateTaskData {
+            title: "Created Task".to_string(),
+            project_id: None,
+            description: None,
+            due_at_utc: None,
+            deadline_at_utc: None,
+        };
+
+        let task = manager.create_task(create_task_data).await.unwrap();
 
         let updated_task_data = UpdatedTaskData {
             title: "Updated task".to_string(),
@@ -303,7 +306,7 @@ mod tests {
         };
 
         let updated_task = manager
-            .update_task(task_id.to_string(), updated_task_data)
+            .update_task(task.id.to_string(), updated_task_data)
             .await
             .unwrap()
             .unwrap();
