@@ -7,6 +7,7 @@ use uuid::Uuid;
 use super::Project;
 use super::ProjectDetail;
 use crate::commands::ErrorResponse;
+use crate::configuration;
 use crate::configuration::Configuration;
 use crate::task::Task;
 
@@ -174,7 +175,7 @@ impl<'a> ProjectsManager<'a> {
         }
     }
 
-    pub async fn favorite_project(&self, project_id: Uuid) -> Result<Project, String> {
+    pub async fn add_favorite(&self, project_id: Uuid) -> Result<Project, String> {
         let mut connection = self.db_pool.acquire().await.unwrap();
 
         let project = Project::load_by_id(project_id, &mut connection)
@@ -194,6 +195,29 @@ impl<'a> ProjectsManager<'a> {
             }
             None => {
                 return Err("Could not find project".to_string());
+            }
+        }
+    }
+
+    pub async fn remove_favorite(&self, project_id: Uuid) -> Result<Project, String> {
+        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
+            self.db_pool.acquire().await.unwrap();
+
+        let project = Project::load_by_id(project_id, &mut connection)
+            .await
+            .unwrap();
+
+        match project {
+            None => {
+                return Err("Project not found".to_string());
+            }
+            Some(mut project) => {
+                let mut locked_configuration = self.configuration.try_lock().unwrap();
+
+                locked_configuration.remove_favorite_project(&project.id.to_string());
+                locked_configuration.save().unwrap();
+
+                return Ok(project);
             }
         }
     }
@@ -361,4 +385,46 @@ pub async fn count_open_tasks_for_project_command(
         .unwrap();
 
     Ok(manager.count_open_tasks(uuid).await.unwrap().to_string())
+}
+
+#[tauri::command]
+pub async fn add_favorite_project_command(
+    project_id: String,
+    db: State<'_, SqlitePool>,
+    configuration: State<'_, Mutex<Configuration>>,
+) -> Result<String, String> {
+    log::debug!(
+        "Running favorite project command for project ID: {}",
+        project_id
+    );
+    let manager = ProjectsManager::new(&db, &configuration).unwrap();
+
+    let uuid = Uuid::parse_str(&project_id)
+        .map_err(|e| e.to_string())
+        .unwrap();
+
+    let favorite_project = manager.add_favorite(uuid).await.unwrap();
+
+    Ok(serde_json::to_string(&favorite_project).unwrap())
+}
+
+#[tauri::command]
+pub async fn remove_favorite_project_command(
+    project_id: String,
+    db: State<'_, SqlitePool>,
+    configuration: State<'_, Mutex<Configuration>>,
+) -> Result<String, String> {
+    log::debug!(
+        "Running favorite project command for project ID: {}",
+        project_id
+    );
+    let manager = ProjectsManager::new(&db, &configuration).unwrap();
+
+    let uuid = Uuid::parse_str(&project_id)
+        .map_err(|e| e.to_string())
+        .unwrap();
+
+    let favorite_project = manager.remove_favorite(uuid).await.unwrap();
+
+    Ok(serde_json::to_string(&favorite_project).unwrap())
 }

@@ -17,9 +17,6 @@ pub enum TaskError {
     #[error("Invalid UUID: {0}")]
     InvalidUUID(#[from] uuid::Error),
 
-    #[error("Database error: {0}")]
-    DatabaseError(#[from] rusqlite::Error),
-
     #[error("SQLx error: {0}")]
     SQLxError(#[from] sqlx::Error),
 
@@ -34,7 +31,6 @@ impl TaskError {
     fn to_display_message(&self) -> String {
         match self {
             TaskError::InvalidUUID(_) => "Invalid UUID".to_string(),
-            TaskError::DatabaseError(_) => "Database error".to_string(),
             TaskError::SQLxError(_) => "Database error".to_string(),
             TaskError::ProjectNotFound => "Project not found".to_string(),
             TaskError::TaskNotFound => "Task not found".to_string(),

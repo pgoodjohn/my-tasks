@@ -40,17 +40,18 @@ pub fn run() {
 
             Ok(())
         })
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
-            configuration::add_project_to_favourites_command,
             configuration::load_configuration_command,
-            configuration::remove_project_from_favourites_command,
             project::commands::archive_project_command,
             project::commands::create_project_command,
             project::commands::load_projects_command,
             project::commands::update_project_command,
             project::commands::count_open_tasks_for_project_command,
             project::commands::load_project_details_command,
+            project::commands::add_favorite_project_command,
+            project::commands::remove_favorite_project_command,
             task::commands::load_task_activity_statistics_command,
             task::commands::load_tasks_due_today_command,
             task::commands::load_tasks_with_deadline_command,

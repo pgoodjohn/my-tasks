@@ -122,9 +122,9 @@ const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
     const favoriteMutation = useMutation({
         mutationFn: async () => {
             if (configurationData.favoriteProjectsUuids?.includes(project.id)) {
-                return invoke_tauri_command('remove_project_from_favourites_command', { projectUuid: project.id })
+                return invoke_tauri_command('remove_favorite_project_command', { projectId: project.id })
             }
-            return invoke_tauri_command('add_project_to_favourites_command', { projectUuid: project.id })
+            return invoke_tauri_command('add_favorite_project_command', { projectId: project.id })
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] })

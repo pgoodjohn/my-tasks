@@ -193,30 +193,3 @@ pub fn load_configuration_command(
 
     Ok(serde_json::to_string(&*config).unwrap())
 }
-#[tauri::command]
-pub fn add_project_to_favourites_command(
-    configuration: State<Mutex<Configuration>>,
-    project_uuid: String,
-) -> Result<String, String> {
-    log::debug!("Adding project to favourites: {:?}", project_uuid);
-
-    let mut config = configuration.try_lock().unwrap();
-    config.favorite_projects_uuids.push(project_uuid);
-    config.save().unwrap();
-
-    Ok(serde_json::to_string(&*config).unwrap())
-}
-
-#[tauri::command]
-pub fn remove_project_from_favourites_command(
-    configuration: State<Mutex<Configuration>>,
-    project_uuid: String,
-) -> Result<String, String> {
-    log::debug!("Removing project from favourites: {:?}", project_uuid);
-
-    let mut config = configuration.try_lock().unwrap();
-    config.remove_favorite_project(&project_uuid);
-    config.save();
-
-    Ok(serde_json::to_string(&*config).unwrap())
-}

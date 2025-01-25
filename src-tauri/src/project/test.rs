@@ -172,7 +172,7 @@ mod manager_test {
             .await
             .unwrap();
 
-        let favorite_project = project_manager.favorite_project(project.id).await.unwrap();
+        let favorite_project = project_manager.add_favorite(project.id).await.unwrap();
 
         assert_eq!(
             1,
