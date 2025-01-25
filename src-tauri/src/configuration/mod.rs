@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use tauri::async_runtime::Mutex;
 use tauri::State;
 use toml;
 
@@ -21,6 +21,29 @@ pub struct Configuration {
 }
 
 impl Configuration {
+    fn ensure_config_file_exists(&self) -> Result<(), ()> {
+        let config_path = self.config_path.clone();
+
+        if let Some(parent) = config_path.parent() {
+            if !parent.exists() {
+                log::info!("Creating configuration directory for {:?}", &config_path);
+                std::fs::create_dir_all(parent).expect("Could not create configuration directory");
+                println!("Directory created: {:?}", parent);
+            }
+        }
+
+        if !config_path.exists() {
+            log::info!("Creating configuration file {:?}", &config_path);
+            OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(&config_path)
+                .expect("Could not create config file with write permissions");
+        }
+
+        Ok(())
+    }
+
     fn config_path(dev_mode: bool) -> PathBuf {
         if dev_mode {
             let mut config_path = PathBuf::new();
@@ -123,7 +146,9 @@ impl Configuration {
         Ok(config)
     }
 
-    fn save(&self) -> Result<(), String> {
+    pub fn save(&self) -> Result<(), String> {
+        self.ensure_config_file_exists().unwrap();
+
         let config_path = PathBuf::from(&self.config_path);
         let config_str = toml::to_string(&self).expect("Could not serialize config");
 
@@ -159,10 +184,14 @@ impl Configuration {
 }
 
 #[tauri::command]
-pub fn load_configuration_command(configuration: State<Mutex<Configuration>>) -> String {
+pub fn load_configuration_command(
+    configuration: State<Mutex<Configuration>>,
+) -> Result<String, String> {
     log::debug!("Running load_configuration_command. {:?}", configuration);
 
-    serde_json::to_string(&configuration.inner()).unwrap()
+    let config = configuration.try_lock().unwrap();
+
+    Ok(serde_json::to_string(&*config).unwrap())
 }
 #[tauri::command]
 pub fn add_project_to_favourites_command(
@@ -171,7 +200,7 @@ pub fn add_project_to_favourites_command(
 ) -> Result<String, String> {
     log::debug!("Adding project to favourites: {:?}", project_uuid);
 
-    let mut config = configuration.lock().unwrap();
+    let mut config = configuration.try_lock().unwrap();
     config.favorite_projects_uuids.push(project_uuid);
     config.save().unwrap();
 
@@ -185,7 +214,7 @@ pub fn remove_project_from_favourites_command(
 ) -> Result<String, String> {
     log::debug!("Removing project from favourites: {:?}", project_uuid);
 
-    let mut config = configuration.lock().unwrap();
+    let mut config = configuration.try_lock().unwrap();
     config.remove_favorite_project(&project_uuid);
     config.save();
 

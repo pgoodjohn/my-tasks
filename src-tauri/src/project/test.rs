@@ -3,7 +3,7 @@ mod manager_test {
 
     use crate::configuration::Configuration;
     use crate::project::commands::ProjectsManager;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use tauri::async_runtime::Mutex;
 
     use chrono::Utc;
@@ -60,7 +60,7 @@ mod manager_test {
         Ok(Configuration {
             version: "test".to_string(),
             development_mode: true,
-            config_path: PathBuf::new(),
+            config_path: Path::new("/tmp/.config/tasks.config").to_path_buf(),
             db_path: PathBuf::new(),
             favorite_projects_uuids: vec![],
         })

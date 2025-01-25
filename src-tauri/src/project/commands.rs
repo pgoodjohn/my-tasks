@@ -145,6 +145,7 @@ impl<'a> ProjectsManager<'a> {
                 let mut locked_configuration = self.configuration.try_lock().unwrap();
 
                 locked_configuration.remove_favorite_project(&project.id.to_string());
+                locked_configuration.save().unwrap();
 
                 return Ok(project);
             }
@@ -186,6 +187,8 @@ impl<'a> ProjectsManager<'a> {
                 locked_configuration
                     .favorite_projects_uuids
                     .push(project.id.to_string());
+
+                locked_configuration.save();
 
                 return Ok(project);
             }

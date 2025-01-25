@@ -1,5 +1,5 @@
 use sqlx::sqlite::SqlitePool;
-use std::sync::Mutex;
+use tauri::async_runtime::Mutex;
 use tauri::Manager;
 use tokio;
 
