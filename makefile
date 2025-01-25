@@ -9,3 +9,6 @@ build:
 
 test:
 	cd src-tauri && cargo test
+
+test-watch:
+	cd src-tauri && cargo watch -x test

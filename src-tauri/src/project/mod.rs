@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
-use rusqlite::{Connection, Result, Row};
 use serde::{Deserialize, Serialize};
-use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite, SqlitePool};
+use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
 use uuid::Uuid;
 
 use crate::task::Task;
@@ -91,7 +90,7 @@ impl Project {
     pub async fn load_by_id(
         id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Option<Self>> {
+    ) -> Result<Option<Self>, ()> {
         let mut rows = sqlx::query("SELECT * FROM projects WHERE id = ?1 LIMIT 1")
             .bind(id.to_string())
             .fetch_all(&mut **connection)
@@ -170,7 +169,7 @@ impl Project {
     pub async fn count_open_tasks_for_project(
         &self,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<i64> {
+    ) -> Result<i64, ()> {
         let result = sqlx::query(
             "SELECT COUNT(*) as `count` FROM tasks WHERE project_id = ?1 AND completed_at_utc IS NULL"
         ).bind(self.id.to_string())

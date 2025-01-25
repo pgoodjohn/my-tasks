@@ -78,7 +78,7 @@ impl Task {
         match data.project_id {
             Some(project_id) => {
                 let project_uuid = Uuid::parse_str(&project_id)?;
-                self.project = Project::load_by_id(project_uuid, connection).await?;
+                self.project = Project::load_by_id(project_uuid, connection).await.unwrap();
             }
             None => {
                 self.project = None;

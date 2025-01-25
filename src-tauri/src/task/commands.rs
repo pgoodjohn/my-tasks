@@ -86,21 +86,19 @@ impl<'a> TaskManager<'a> {
         Ok(project)
     }
 
-    async fn update_task(
+    pub async fn update_task(
         &self,
-        task_id: String,
+        task_id: Uuid,
         update_data: UpdatedTaskData,
     ) -> Result<Option<Task>, TaskError> {
-        let uuid: Uuid = Uuid::parse_str(&task_id)?;
-
         let mut connection = self.db_pool.acquire().await.unwrap();
 
-        let task = Task::load_by_id(uuid, &mut connection).await.unwrap();
+        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
 
         match task {
             None => return Ok(None),
             Some(mut task) => {
-                task.update(update_data, &mut connection);
+                let _ = task.update(update_data, &mut connection).await.unwrap();
                 task.update_record(&mut connection).await?;
 
                 Ok(Some(task))
@@ -316,7 +314,7 @@ pub async fn delete_task_command(
     let task_manager = TaskManager::new(&db).unwrap();
     let task_uuid = Uuid::parse_str(&task_id).unwrap();
 
-    task_manager.delete_task(task_uuid).await;
+    let _ = task_manager.delete_task(task_uuid).await.unwrap();
 
     Ok(format!("Task with ID {} deleted successfully", &task_id))
 }
@@ -347,7 +345,9 @@ pub async fn update_task_command(
 
     let task_manager = TaskManager::new(&db).unwrap();
 
-    match task_manager.update_task(task_id, updated_task_data).await {
+    let uuid: Uuid = Uuid::parse_str(&task_id).unwrap();
+
+    match task_manager.update_task(uuid, updated_task_data).await {
         Ok(task) => Ok(serde_json::to_string(&task).unwrap()),
         Err(e) => {
             let error = ErrorResponse::new(
@@ -496,7 +496,7 @@ mod tests {
         };
 
         let updated_task = manager
-            .update_task(task.id.to_string(), updated_task_data)
+            .update_task(task.id, updated_task_data)
             .await
             .unwrap()
             .unwrap();

@@ -1,16 +1,12 @@
 #[cfg(test)]
 mod test {
     use super::super::commands::TaskManager;
-    use super::super::Project;
     use super::super::Task;
-    use crate::configuration::Configuration;
-    use crate::project::commands::ProjectsManager;
     use crate::task::CreateTaskData;
+    use crate::task::UpdatedTaskData;
 
-    use chrono::Utc;
     use sqlx::sqlite::SqlitePool;
     use sqlx::Error;
-    use std::path::PathBuf;
 
     async fn create_in_memory_pool() -> Result<SqlitePool, Error> {
         let pool = SqlitePool::connect(":memory:").await?;
@@ -86,34 +82,41 @@ mod test {
 
         assert!(loaded_task.is_some());
         assert_eq!(new_task.title, loaded_task.unwrap().title)
+    }
 
-        // let title = String::from("Test Task");
-        // let description = Some(String::from("This is a test task."));
-        // let project = Project::new(String::from("Test Project"), None, None, None);
+    #[tokio::test]
+    async fn it_updates_a_task() {
+        let db_pool = create_in_memory_pool().await.unwrap();
+        apply_migrations(&db_pool).await.unwrap();
 
-        // let mut task = Task::new(
-        //     title.clone(),
-        //     description.clone(),
-        //     Some(project),
-        //     None,
-        //     None,
-        // );
-        // task.create_record(&conn).unwrap();
+        let manager = TaskManager::new(&db_pool).unwrap();
 
-        // let saved_task = Task::load_by_id(task.id, &conn).unwrap().unwrap();
-        // assert_eq!(saved_task.title, title);
-        // assert_eq!(saved_task.description, description);
-        // assert_eq!(saved_task.id, task.id);
-        // assert_eq!(saved_task.created_at_utc, task.created_at_utc);
-        // assert_eq!(saved_task.updated_at_utc, task.updated_at_utc);
-        // assert!(saved_task.completed_at_utc.is_none());
+        let new_task = manager
+            .create_task(CreateTaskData {
+                title: "New Task".to_string(),
+                description: None,
+                project_id: None,
+                deadline_at_utc: None,
+                due_at_utc: None,
+            })
+            .await
+            .unwrap();
 
-        // let new_title = String::from("Updated Task");
-        // task.title = new_title.clone();
-        // task.save(&conn).unwrap();
+        let update_task_data = UpdatedTaskData {
+            title: "Updated Title".to_string(),
+            description: None,
+            project_id: None,
+            due_date: None,
+            deadline: None,
+        };
 
-        // let updated_task = Task::load_by_id(task.id, &conn).unwrap().unwrap();
-        // assert_eq!(updated_task.title, new_title);
+        let updated_task = manager
+            .update_task(new_task.id, update_task_data)
+            .await
+            .unwrap();
+
+        assert!(updated_task.is_some());
+        assert_eq!("Updated Title".to_string(), updated_task.unwrap().title);
     }
 
     // #[test]

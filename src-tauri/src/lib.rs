@@ -1,6 +1,3 @@
-extern crate r2d2;
-extern crate r2d2_sqlite;
-
 use sqlx::sqlite::SqlitePool;
 use std::sync::Mutex;
 use tauri::Manager;
@@ -14,8 +11,6 @@ mod task;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let db_pool = storage::setup_database().expect("Could not set up database.");
-
     tauri::Builder::default()
         .setup(|app| {
             let configuration = configuration::Configuration::init().unwrap();
@@ -46,7 +41,6 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())
-        .manage(db_pool)
         .invoke_handler(tauri::generate_handler![
             configuration::add_project_to_favourites_command,
             configuration::load_configuration_command,
@@ -56,6 +50,7 @@ pub fn run() {
             project::commands::load_projects_command,
             project::commands::update_project_command,
             project::commands::count_open_tasks_for_project_command,
+            project::commands::load_project_details_command,
             task::commands::load_task_activity_statistics_command,
             task::commands::load_tasks_due_today_command,
             task::commands::load_tasks_with_deadline_command,
