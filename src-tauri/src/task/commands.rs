@@ -3,9 +3,11 @@ use tauri::State;
 use thiserror::Error;
 use uuid::Uuid;
 
-use super::UpdatedTaskData;
+use super::{CreateTaskData, UpdatedTaskData};
 use crate::commands::ErrorResponse;
+use crate::project::Project;
 use crate::task::Task;
+use chrono::{DateTime, Utc};
 
 #[derive(Error, Debug)]
 pub enum TaskError {
@@ -17,6 +19,9 @@ pub enum TaskError {
 
     #[error("SQLx error: {0}")]
     SQLxError(#[from] sqlx::Error),
+
+    #[error("Project not found")]
+    ProjectNotFound,
 }
 
 impl TaskError {
@@ -25,6 +30,7 @@ impl TaskError {
             TaskError::InvalidUUID(_) => "Invalid UUID".to_string(),
             TaskError::DatabaseError(_) => "Database error".to_string(),
             TaskError::SQLxError(_) => "Database error".to_string(),
+            TaskError::ProjectNotFound => "Project not found".to_string(),
         }
     }
 }
@@ -36,6 +42,41 @@ struct TaskManager<'a> {
 impl<'a> TaskManager<'a> {
     fn new(db_pool: &'a SqlitePool) -> Result<Self, ()> {
         Ok(TaskManager { db_pool })
+    }
+
+    pub async fn create_task(&self, create_task_data: CreateTaskData) -> Result<Task, TaskError> {
+        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
+            self.db_pool.acquire().await.unwrap();
+
+        let project = match create_task_data.project_id {
+            Some(id) => match self.load_project_by_uuid(&mut connection, id).await {
+                Ok(project) => project,
+                Err(_) => return Err(TaskError::ProjectNotFound),
+            },
+            None => None,
+        };
+
+        let task = Task::new(
+            create_task_data.title,
+            create_task_data.description,
+            project,
+            create_task_data.due_at_utc,
+            create_task_data.deadline_at_utc,
+        );
+        task.create_record(&mut connection).await?;
+
+        Ok(task)
+    }
+
+    async fn load_project_by_uuid(
+        &self,
+        connection: &mut sqlx::pool::PoolConnection<sqlx::Sqlite>,
+        id: Uuid,
+    ) -> Result<Option<Project>, TaskError> {
+        let project = Project::load_by_id(id, connection)
+            .await
+            .map_err(|_| TaskError::ProjectNotFound)?;
+        Ok(project)
     }
 
     async fn update_task(
@@ -53,19 +94,11 @@ impl<'a> TaskManager<'a> {
             None => return Ok(None),
             Some(mut task) => {
                 task.update(update_data, &mut connection);
-                task.save(&mut connection).await?;
+                task.update_record(&mut connection).await?;
 
                 Ok(Some(task))
             }
         }
-    }
-
-    async fn _save_task(&self, task: Task) -> Result<Task, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
-
-        task.save(&mut connection).await?;
-
-        Ok(task)
     }
 }
 
@@ -96,6 +129,60 @@ pub async fn update_task_command(
     let task_manager = TaskManager::new(&db).unwrap();
 
     match task_manager.update_task(task_id, updated_task_data).await {
+        Ok(task) => Ok(serde_json::to_string(&task).unwrap()),
+        Err(e) => {
+            let error = ErrorResponse::new(
+                "update_task_command".to_string(),
+                e.to_string(),
+                e.to_display_message(),
+            );
+            log::error!("Error updating task: {:?}", error);
+            Err(serde_json::to_string(&error).unwrap())
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn create_task_command(
+    title: String,
+    description: Option<String>,
+    due_date: Option<String>,
+    deadline: Option<String>,
+    project_id: Option<String>,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    let due_at_utc = match due_date {
+        Some(date) => Some(DateTime::<Utc>::from(
+            DateTime::parse_from_rfc3339(&date).unwrap(),
+        )),
+        None => None,
+    };
+
+    let deadline_at_utc = match deadline {
+        Some(date) => Some(DateTime::<Utc>::from(
+            DateTime::parse_from_rfc3339(&date).unwrap(),
+        )),
+        None => None,
+    };
+
+    let project_id_uuid = match project_id {
+        Some(s) => Some(Uuid::parse_str(&s).unwrap()),
+        None => None,
+    };
+
+    let create_task_data = CreateTaskData {
+        title,
+        description,
+        due_at_utc,
+        deadline_at_utc,
+        project_id: project_id_uuid,
+    };
+
+    log::debug!("Running update task command for: | {:?}", create_task_data);
+
+    let task_manager = TaskManager::new(&db).unwrap();
+
+    match task_manager.create_task(create_task_data).await {
         Ok(task) => Ok(serde_json::to_string(&task).unwrap()),
         Err(e) => {
             let error = ErrorResponse::new(

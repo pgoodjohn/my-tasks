@@ -22,6 +22,15 @@ pub struct UpdatedTaskData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct CreateTaskData {
+    project_id: Option<Uuid>,
+    title: String,
+    description: Option<String>,
+    due_at_utc: Option<DateTime<Utc>>,
+    deadline_at_utc: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Task {
     pub id: Uuid,
     pub title: String,
@@ -257,59 +266,6 @@ impl Task {
 
         Ok(tasks)
     }
-}
-
-#[tauri::command]
-pub fn save_task_command(
-    title: String,
-    description: Option<String>,
-    due_date: Option<String>,
-    deadline: Option<String>,
-    project_id: Option<String>,
-    db: State<Pool<SqliteConnectionManager>>,
-) -> Result<String, String> {
-    log::debug!(
-        "Running save task command for: {:?} | {:?} | {:?}",
-        title,
-        description,
-        due_date
-    );
-
-    let connection = db.get().unwrap();
-
-    let task = Task::new(
-        title,
-        description,
-        match project_id {
-            Some(id) => {
-                let project =
-                    Project::load_by_id(Uuid::parse_str(&id).unwrap(), &connection).unwrap();
-                match project {
-                    Some(project) => Some(project),
-                    None => {
-                        return Err("Could not find project with id".to_string());
-                    }
-                }
-            }
-            None => None,
-        },
-        match due_date {
-            Some(date) => Some(DateTime::<Utc>::from(
-                DateTime::parse_from_rfc3339(&date).unwrap(),
-            )),
-            None => None,
-        },
-        match deadline {
-            Some(date) => Some(DateTime::<Utc>::from(
-                DateTime::parse_from_rfc3339(&date).unwrap(),
-            )),
-            None => None,
-        },
-    );
-
-    task.save(&connection).unwrap();
-
-    Ok(serde_json::to_string(&task).unwrap())
 }
 
 #[tauri::command]

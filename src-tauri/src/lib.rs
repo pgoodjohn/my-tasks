@@ -61,7 +61,7 @@ pub fn run() {
             task::load_task_activity_statistics_command,
             task::load_tasks_command,
             task::load_tasks_due_today_command,
-            task::save_task_command,
+            task::commands::create_task_command,
             task::commands::update_task_command,
             task::count_open_tasks_for_project_command,
             task::load_tasks_with_deadline_command,

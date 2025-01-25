@@ -28,7 +28,7 @@ const NewTaskForm: React.FC = () => {
 
     const mutation = useMutation({
         mutationFn: async function (value: { title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
-            let res = await invoke_tauri_command('save_task_command', { title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
+            let res = await invoke_tauri_command('create_task_command', { title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
             return res
         },
         onSuccess: () => {

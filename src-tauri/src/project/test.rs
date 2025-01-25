@@ -1,11 +1,13 @@
 #[cfg(test)]
 mod manager_test {
 
+    use crate::configuration::Configuration;
     use crate::project::commands::ProjectsManager;
 
     use chrono::Utc;
     use sqlx::sqlite::SqlitePool;
     use sqlx::Error;
+    use std::path::PathBuf;
 
     async fn create_in_memory_pool() -> Result<SqlitePool, Error> {
         let pool = SqlitePool::connect(":memory:").await?;
@@ -117,5 +119,35 @@ mod manager_test {
             updated_project.created_at_utc
         );
         assert_ne!(updated_project.updated_at_utc, project.updated_at_utc);
+    }
+
+    #[tokio::test]
+    async fn it_archives_a_project() {
+        let db_pool = create_in_memory_pool().await.unwrap();
+        apply_migrations(&db_pool).await.unwrap();
+        let project_manager = ProjectsManager::new(&db_pool).unwrap();
+        let mut configuration = Configuration {
+            version: "test".to_string(),
+            development_mode: true,
+            config_path: PathBuf::new(),
+            db_path: PathBuf::new(),
+            favorite_projects_uuids: vec![],
+        };
+
+        let project = project_manager
+            .create_project(
+                "Test Project".to_string(),
+                None,
+                Some("This is a test project.".to_string()),
+                None,
+            )
+            .await
+            .unwrap();
+        let archived_project = project_manager
+            .archive_project(project.id, &mut configuration)
+            .await
+            .unwrap();
+
+        assert!(archived_project.archived_at_utc.is_some());
     }
 }
