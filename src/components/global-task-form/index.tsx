@@ -6,7 +6,7 @@ const GlobalTaskForm: React.FC = () => {
 
 export default GlobalTaskForm;
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from '@tanstack/react-form'
@@ -56,6 +56,10 @@ const NewTaskForm: React.FC = () => {
             await mutation.mutateAsync(value)
         },
     })
+
+    useEffect(() => {
+        newTaskForm.setFieldValue('projectId', projectId);
+    }, [projectId])
 
     return (
         <div className='py-2 w-full'>

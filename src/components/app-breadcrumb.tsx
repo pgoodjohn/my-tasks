@@ -14,8 +14,6 @@ export default function AppBreadcrumb() {
 
     const routerState = useRouterState();
 
-    console.debug("AppBreadcrumb routerState", routerState.matches[1])
-
     return (
         <Breadcrumb>
             <BreadcrumbList>

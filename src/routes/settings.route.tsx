@@ -25,8 +25,6 @@ function SettingsPreview() {
         return <p>Error loading configuration</p>
     }
 
-    console.log("Loaded configuration data", configuration.data)
-
 
     return (
         <>

@@ -82,7 +82,6 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
             onSuccess(false)
         },
         onError: (error: any) => {
-            console.debug(error)
             toast.error(`Error updating task: ${error.display_message}`)
         }
     })

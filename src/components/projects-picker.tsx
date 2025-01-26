@@ -70,7 +70,6 @@ function ProjectsPickerCommand({ setOpen, onChange, selectedValue }: ProjectsPic
                             value={item.title} // Change this to item.id instead of item.title
                             onSelect={(currentValue) => {
 
-                                console.debug("ProjectsPickerCommand onSelect currentValue", currentValue)
                                 let selectedValueId = projects.data?.find((item) => item.title === currentValue)?.id;
 
                                 onChange(selectedValueId === selectedValue ? "" : selectedValueId) // Change this to selectedValueId instead of currentValue
