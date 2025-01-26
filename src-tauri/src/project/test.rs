@@ -1,10 +1,7 @@
 #[cfg(test)]
 mod manager_test {
 
-    use crate::configuration::Configuration;
     use crate::project::commands::ProjectsManager;
-    use std::path::{Path, PathBuf};
-    use tauri::async_runtime::Mutex;
 
     use chrono::Utc;
     use sqlx::sqlite::SqlitePool;

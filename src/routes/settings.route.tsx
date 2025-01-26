@@ -31,7 +31,10 @@ function SettingsPreview() {
     return (
         <>
             {configuration.data && (
-                <pre>{JSON.stringify(configuration.data)}</pre>
+                <div>
+                    <p>Configuration</p>
+                    <pre>{JSON.stringify(configuration.data)}</pre>
+                </div>
             )
             }
         </>

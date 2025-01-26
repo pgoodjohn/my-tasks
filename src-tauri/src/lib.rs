@@ -9,7 +9,7 @@ mod project;
 mod storage;
 mod task;
 
-use configuration::manager::{ConfigurationMode, ConfigurationStorageManager};
+use configuration::manager::{ConfigurationManager, ConfigurationMode};
 
 fn detect_mode() -> ConfigurationMode {
     if cfg!(debug_assertions) {
@@ -25,8 +25,7 @@ pub fn run() {
         .setup(|app| {
             plogger::init(cfg!(debug_assertions)); // TODO: Stop using plogger
 
-            let configuration_manager =
-                configuration::manager::ConfigurationManager::init(detect_mode()); // TODO: Mode detection
+            let configuration_manager = ConfigurationManager::init(detect_mode()); // TODO: Mode detection
 
             log::info!("Starting My Tasks!");
             log::debug!(
@@ -40,10 +39,7 @@ pub fn run() {
             let db_pool = rt.block_on(async move {
                 log::debug!("Setting up db connection pool");
 
-                let configuration_manager = configuration::manager::ConfigurationManager::load(
-                    ConfigurationMode::Development,
-                )
-                .unwrap();
+                let configuration_manager = ConfigurationManager::load(detect_mode()).unwrap();
 
                 let db_pool = SqlitePool::connect(
                     configuration_manager

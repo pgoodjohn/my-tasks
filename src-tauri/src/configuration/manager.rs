@@ -1,5 +1,3 @@
-use uuid::Uuid;
-
 use crate::configuration::Configuration;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
@@ -8,13 +6,13 @@ use std::path::PathBuf;
 pub enum ConfigurationMode {
     Development,
     Desktop,
-    Test,
+    _Test,
     _IOs,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConfigurationManager {
-    pub storage_manager: ConfigurationStorageManager,
+    pub _storage_manager: ConfigurationStorageManager,
     pub configuration: Configuration,
 }
 
@@ -32,7 +30,7 @@ impl ConfigurationManager {
         };
 
         Self {
-            storage_manager,
+            _storage_manager: storage_manager,
             configuration,
         }
     }
@@ -43,7 +41,7 @@ impl ConfigurationManager {
 
         match toml::from_str::<Configuration>(&configuration_string) {
             Ok(configuration) => Self {
-                storage_manager,
+                _storage_manager: storage_manager,
                 configuration,
             },
             Err(_) => {
@@ -58,7 +56,7 @@ impl ConfigurationManager {
                     toml::to_string(&configuration).expect("Could not serialize config"),
                 );
                 Self {
-                    storage_manager,
+                    _storage_manager: storage_manager,
                     configuration,
                 }
             }
@@ -74,7 +72,7 @@ impl ConfigurationManager {
                 let configuration_string = storage_manager.read_from_file().unwrap();
                 match toml::from_str::<Configuration>(&configuration_string) {
                     Ok(configuration) => Ok(Self {
-                        storage_manager,
+                        _storage_manager: storage_manager,
                         configuration,
                     }),
                     Err(_) => Err(()),
@@ -84,7 +82,7 @@ impl ConfigurationManager {
     }
 
     fn _save_configuration(&self) -> Result<(), ()> {
-        let _ = self.storage_manager.write_to_file(
+        let _ = self._storage_manager.write_to_file(
             toml::to_string(&self.configuration).expect("Could not serialize config"),
         );
 
@@ -104,7 +102,7 @@ impl ConfigurationStorageManager {
         let mut db_path = PathBuf::new();
         match mode {
             ConfigurationMode::Development => db_path.push("file.db"),
-            ConfigurationMode::Test => db_path.push("test-file.db"),
+            ConfigurationMode::_Test => db_path.push("test-file.db"),
             ConfigurationMode::Desktop => {
                 db_path.push(dirs::home_dir().expect("Could not load home dir"));
                 db_path.push(".config/.my-tasks/db.sqlite");
@@ -119,7 +117,7 @@ impl ConfigurationStorageManager {
         let mut config_path = PathBuf::new();
         match mode {
             ConfigurationMode::Development => config_path.push(".config.toml"),
-            ConfigurationMode::Test => config_path.push(".test-config.toml"),
+            ConfigurationMode::_Test => config_path.push(".test-config.toml"),
             ConfigurationMode::Desktop => {
                 config_path.push(dirs::home_dir().expect("Could not load home dir"));
                 config_path.push(".config/.my-tasks/config.toml");

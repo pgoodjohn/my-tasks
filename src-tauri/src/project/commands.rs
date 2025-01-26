@@ -1,13 +1,11 @@
 use chrono::Utc;
 use sqlx::SqlitePool;
-use tauri::async_runtime::Mutex;
 use tauri::State;
 use uuid::Uuid;
 
 use super::Project;
 use super::ProjectDetail;
 use crate::commands::ErrorResponse;
-use crate::configuration::Configuration;
 use crate::task::Task;
 
 pub struct ProjectsManager<'a> {

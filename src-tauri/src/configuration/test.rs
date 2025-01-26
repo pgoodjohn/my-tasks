@@ -9,7 +9,7 @@ mod configuration_manager_tests {
     #[test]
     fn it_intializes_a_configuration_when_there_is_no_file() {
         test_cleanup();
-        let configuration_manager = ConfigurationManager::init(ConfigurationMode::Test);
+        let configuration_manager = ConfigurationManager::init(ConfigurationMode::_Test);
 
         assert_eq!(
             configuration_manager.configuration.version,
