@@ -104,7 +104,7 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<&Self, sqlx::Error> {
         let _sql_result = sqlx::query(
-            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, updated_at_utc = ?4, project_id = ?5, deadline_at_utc = ?6 WHERE id = ?7"
+            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, updated_at_utc = ?4, project_id = ?5, deadline_at_utc = ?6, completed_at_utc =?7 WHERE id = ?8"
         )
         .bind(&self.title)
         .bind(&self.description)
@@ -112,6 +112,7 @@ impl Task {
         .bind(&self.updated_at_utc.to_rfc3339())
         .bind(self.project.as_ref().map(|project| project.id.to_string()))
         .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
+        .bind(self.completed_at_utc.map(|date| date.to_rfc3339()))
         .bind(&self.id.to_string())
         .execute(&mut **connection).await?;
 
