@@ -16,6 +16,16 @@ import {
 } from "@/components/ui/sidebar"
 import { Link } from '@tanstack/react-router'
 import { useConfiguration } from "@/hooks/use-configuration"
+import { useFavoriteProjects } from "@/hooks/use-favorite-projects"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useTheme } from "@/components/theme-provider"
+import { Project } from "@/types"
+
 
 export function AppSidebar() {
 
@@ -57,7 +67,7 @@ export function AppSidebar() {
                                 <Link to='/statistics'>Statistics</Link>
                             </SidebarMenuButton>
                             <SidebarMenuButton asChild>
-                                <Link to='/settings' disabled>Settings</Link>
+                                <Link to='/settings'>Settings</Link>
                             </SidebarMenuButton>
                         </SidebarMenu>
                         <SidebarMenu>
@@ -84,25 +94,21 @@ export function AppSidebar() {
     )
 }
 
-type FavoriteProject = {
-    project: Project
-}
-
 const FavoriteProjects: React.FC = () => {
 
-    const { data, isLoading, error } = useConfiguration();
+    const { data, isLoading, error } = useFavoriteProjects();
 
     if (isLoading || error) {
         return <></>
     }
 
-    return data.favoriteProjects.map((project: FavoriteProject) => {
+    return data?.map((project: Project) => {
         return (
-            <SidebarMenuSub key={project.project.id}>
+            <SidebarMenuSub key={project.id}>
                 <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild>
-                        <Link to="/projects/$projectId" params={{ projectId: project.project.id }}>
-                            {project.project.emoji} {project.project.title}
+                        <Link to="/projects/$projectId" params={{ projectId: project.id }}>
+                            {project.emoji} {project.title}
                         </Link>
                     </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
@@ -139,16 +145,6 @@ const Footer: React.FC = () => {
         </div>
     )
 }
-
-
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useTheme } from "@/components/theme-provider"
-import { Project } from "@/types"
 
 interface ModeToggleProps {
     children: React.ReactNode
