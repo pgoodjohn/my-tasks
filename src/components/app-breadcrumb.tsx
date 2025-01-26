@@ -12,8 +12,6 @@ import { useRouterState } from "@tanstack/react-router"
 
 export default function AppBreadcrumb() {
 
-    const routerState = useRouterState();
-
     return (
         <Breadcrumb>
             <BreadcrumbList>
