@@ -23,6 +23,8 @@ const ContributionsCalendar: React.FC<ContributionCalendarProps> = ({ }) => {
         return <div>Error loading contributions</div>
     }
 
+    console.log(contributionsCalendarDataQuery.data)
+
     return (
         <div>
             <ContributionCalendar

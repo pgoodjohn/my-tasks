@@ -166,7 +166,7 @@ impl<'a> TaskManager<'a> {
         Ok(tasks)
     }
 
-    async fn load_statistics(&self) -> Result<PeriodTaskStatistic, ()> {
+    async fn load_statistics(&self) -> Result<Vec<PeriodTaskStatistic>, ()> {
         let mut connection = self.db_pool.acquire().await.unwrap();
 
         let statistics = PeriodTaskStatistic::load(&mut connection).await.unwrap();
@@ -179,8 +179,8 @@ impl<'a> TaskManager<'a> {
 pub struct PeriodTaskStatistic(HashMap<String, DateTaskStatistic>);
 
 impl PeriodTaskStatistic {
-    pub async fn load(connection: &mut PoolConnection<Sqlite>) -> Result<Self, ()> {
-        let mut statistics = PeriodTaskStatistic(HashMap::<String, DateTaskStatistic>::new());
+    pub async fn load(connection: &mut PoolConnection<Sqlite>) -> Result<Vec<Self>, ()> {
+        let mut statistics = vec![];
 
         let sqlx_result = sqlx::query(
            "SELECT COUNT(*) as count, strftime('%Y-%m-%d', completed_at_utc) as date FROM tasks WHERE completed_at_utc IS NOT NULL GROUP BY date ORDER BY date DESC",
@@ -204,7 +204,11 @@ impl PeriodTaskStatistic {
                 },
             };
 
-            statistics.0.insert(date, date_statistic);
+            let mut period_statistic =
+                PeriodTaskStatistic(HashMap::<String, DateTaskStatistic>::new());
+            period_statistic.0.insert(date, date_statistic);
+
+            statistics.push(period_statistic)
         }
 
         Ok(statistics)
