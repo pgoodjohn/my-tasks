@@ -110,25 +110,21 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
 ]
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useConfiguration } from '@/hooks/use-configuration'
 import ProjectTag from '@/components/project-tag'
 
 const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
-
-    const { data: configurationData } = useConfiguration()
 
     const queryClient = useQueryClient()
 
     const favoriteMutation = useMutation({
         mutationFn: async () => {
-            if (configurationData.favoriteProjectsUuids?.includes(project.id)) {
+            if (project.isFavorite) {
                 return invoke_tauri_command('remove_favorite_project_command', { projectId: project.id })
             }
             return invoke_tauri_command('add_favorite_project_command', { projectId: project.id })
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] })
-            queryClient.invalidateQueries({ queryKey: ['configuration'] })
         }
     })
 
@@ -136,8 +132,8 @@ const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
         <DropdownMenuItem disabled={favoriteMutation.isPending} onClick={() => {
             favoriteMutation.mutateAsync()
         }}>
-            {configurationData.favoriteProjectsUuids?.includes(project.id) && "Unfavorite"}
-            {configurationData.favoriteProjectsUuids?.includes(project.id) === false && "Favorite"}
+            {project.isFavorite && "Unfavorite"}
+            {project.isFavorite === false && "Favorite"}
         </DropdownMenuItem>
     )
 }

@@ -18,6 +18,7 @@ type Project = {
     emoji: string | null
     color: string | null
     description: string | null
+    isFavorite: boolean
 }
 
 export type { Project }

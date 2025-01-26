@@ -7,24 +7,16 @@ use uuid::Uuid;
 use super::Project;
 use super::ProjectDetail;
 use crate::commands::ErrorResponse;
-use crate::configuration;
 use crate::configuration::Configuration;
 use crate::task::Task;
 
 pub struct ProjectsManager<'a> {
     db_pool: &'a SqlitePool,
-    configuration: &'a Mutex<Configuration>,
 }
 
 impl<'a> ProjectsManager<'a> {
-    pub fn new(
-        db_pool: &'a SqlitePool,
-        configuration: &'a Mutex<Configuration>,
-    ) -> Result<Self, ()> {
-        Ok(ProjectsManager {
-            db_pool,
-            configuration,
-        })
+    pub fn new(db_pool: &'a SqlitePool) -> Result<Self, ()> {
+        Ok(ProjectsManager { db_pool })
     }
 
     pub async fn load_projects(&self, show_archived_projects: bool) -> Result<Vec<Project>, ()> {
@@ -143,11 +135,6 @@ impl<'a> ProjectsManager<'a> {
                 project.archived_at_utc = Some(Utc::now());
                 project.save(&mut connection).await.unwrap();
 
-                let mut locked_configuration = self.configuration.try_lock().unwrap();
-
-                locked_configuration.remove_favorite_project(&project.id.to_string());
-                locked_configuration.save().unwrap();
-
                 return Ok(project);
             }
         }
@@ -183,13 +170,9 @@ impl<'a> ProjectsManager<'a> {
             .unwrap();
 
         match project {
-            Some(project) => {
-                let mut locked_configuration = self.configuration.try_lock().unwrap();
-                locked_configuration
-                    .favorite_projects_uuids
-                    .push(project.id.to_string());
-
-                locked_configuration.save();
+            Some(mut project) => {
+                project.is_favorite = true;
+                project.update_record(&mut connection).await.unwrap();
 
                 return Ok(project);
             }
@@ -212,25 +195,44 @@ impl<'a> ProjectsManager<'a> {
                 return Err("Project not found".to_string());
             }
             Some(mut project) => {
-                let mut locked_configuration = self.configuration.try_lock().unwrap();
-
-                locked_configuration.remove_favorite_project(&project.id.to_string());
-                locked_configuration.save().unwrap();
+                project.is_favorite = false;
+                project.update_record(&mut connection).await.unwrap();
 
                 return Ok(project);
             }
         }
     }
+
+    pub async fn load_favorites(&self) -> Result<Vec<Project>, String> {
+        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
+            self.db_pool.acquire().await.unwrap();
+
+        let projects = Project::list_favorite_projects(&mut connection)
+            .await
+            .unwrap();
+
+        return Ok(projects);
+    }
+}
+
+#[tauri::command]
+pub async fn load_favorite_projects_command(db: State<'_, SqlitePool>) -> Result<String, String> {
+    log::debug!("Running load favorite projects command");
+
+    let projects_manager = ProjectsManager::new(&db).unwrap();
+
+    let projects = projects_manager.load_favorites().await.unwrap();
+
+    Ok(serde_json::to_string(&projects).unwrap())
 }
 
 #[tauri::command]
 pub async fn load_projects_command(
     show_archived_projects: bool,
     db: State<'_, SqlitePool>,
-    configuration: State<'_, Mutex<Configuration>>,
 ) -> Result<String, String> {
     log::debug!("Running list projects command");
-    let projects_manager = ProjectsManager::new(&db, &configuration).unwrap();
+    let projects_manager = ProjectsManager::new(&db).unwrap();
 
     match projects_manager.load_projects(show_archived_projects).await {
         Ok(projects) => Ok(serde_json::to_string(&projects).unwrap()),
@@ -252,7 +254,6 @@ pub async fn create_project_command(
     color: Option<String>,
     description: Option<String>,
     db: State<'_, SqlitePool>,
-    configuration: State<'_, Mutex<Configuration>>,
 ) -> Result<String, String> {
     log::debug!(
         "Running create project command for: {:?} | {:?}",
@@ -260,7 +261,7 @@ pub async fn create_project_command(
         description
     );
 
-    let projects_manager = ProjectsManager::new(&db, &configuration).unwrap();
+    let projects_manager = ProjectsManager::new(&db).unwrap();
     let project = projects_manager
         .create_project(title, emoji, color, description)
         .await
@@ -277,7 +278,6 @@ pub async fn update_project_command(
     new_color: Option<String>,
     new_description: Option<String>,
     db: State<'_, SqlitePool>,
-    configuration: State<'_, Mutex<Configuration>>,
 ) -> Result<String, String> {
     log::debug!(
         "Running update project command for: {:?} | {:?}",
@@ -285,7 +285,7 @@ pub async fn update_project_command(
         new_description
     );
 
-    let projects_manager = ProjectsManager::new(&db, &configuration).unwrap();
+    let projects_manager = ProjectsManager::new(&db).unwrap();
 
     let project_uuid = Uuid::parse_str(&project_id)
         .map_err(|e| e.to_string())
@@ -309,14 +309,13 @@ pub async fn update_project_command(
 pub async fn archive_project_command(
     project_id: String,
     db: State<'_, SqlitePool>,
-    configuration: State<'_, Mutex<crate::configuration::Configuration>>,
 ) -> Result<String, String> {
     log::debug!(
         "Running archive project command for project ID: {}",
         project_id
     );
 
-    let projects_manager = ProjectsManager::new(&db, &configuration).unwrap();
+    let projects_manager = ProjectsManager::new(&db).unwrap();
 
     let project_uuid = Uuid::parse_str(&project_id)
         .map_err(|e| e.to_string())
@@ -337,7 +336,6 @@ pub async fn load_project_details_command(
     project_id: String,
     include_completed_tasks: bool,
     db: State<'_, SqlitePool>,
-    configuration: State<'_, Mutex<Configuration>>,
 ) -> Result<String, String> {
     log::debug!(
         "Running load project details command for project ID: {}, include_completed_tasks: {:?}",
@@ -345,7 +343,7 @@ pub async fn load_project_details_command(
         include_completed_tasks
     );
 
-    let projects_manager = ProjectsManager::new(&db, &configuration).unwrap();
+    let projects_manager = ProjectsManager::new(&db).unwrap();
 
     let project_uuid = Uuid::parse_str(&project_id)
         .map_err(|e| e.to_string())
@@ -371,14 +369,13 @@ pub async fn load_project_details_command(
 pub async fn count_open_tasks_for_project_command(
     project_id: String,
     db: State<'_, SqlitePool>,
-    configuration: State<'_, Mutex<Configuration>>,
 ) -> Result<String, String> {
     log::debug!(
         "Running count open tasks for project command for project ID: {}",
         project_id
     );
 
-    let manager = ProjectsManager::new(&db, &configuration).unwrap();
+    let manager = ProjectsManager::new(&db).unwrap();
 
     let uuid = Uuid::parse_str(&project_id)
         .map_err(|e| e.to_string())
@@ -391,13 +388,13 @@ pub async fn count_open_tasks_for_project_command(
 pub async fn add_favorite_project_command(
     project_id: String,
     db: State<'_, SqlitePool>,
-    configuration: State<'_, Mutex<Configuration>>,
 ) -> Result<String, String> {
     log::debug!(
         "Running favorite project command for project ID: {}",
         project_id
     );
-    let manager = ProjectsManager::new(&db, &configuration).unwrap();
+
+    let manager = ProjectsManager::new(&db).unwrap();
 
     let uuid = Uuid::parse_str(&project_id)
         .map_err(|e| e.to_string())
@@ -412,13 +409,13 @@ pub async fn add_favorite_project_command(
 pub async fn remove_favorite_project_command(
     project_id: String,
     db: State<'_, SqlitePool>,
-    configuration: State<'_, Mutex<Configuration>>,
 ) -> Result<String, String> {
     log::debug!(
         "Running favorite project command for project ID: {}",
         project_id
     );
-    let manager = ProjectsManager::new(&db, &configuration).unwrap();
+
+    let manager = ProjectsManager::new(&db).unwrap();
 
     let uuid = Uuid::parse_str(&project_id)
         .map_err(|e| e.to_string())

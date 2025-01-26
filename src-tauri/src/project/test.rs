@@ -46,7 +46,8 @@ mod manager_test {
         description TEXT,
         created_at_utc DATETIME NOT NULL,
         updated_at_utc DATETIME NOT NULL,
-        archived_at_utc DATETIME
+        archived_at_utc DATETIME,
+        is_favorite BOOLEAN DEFAULT FALSE
     )
         "#,
         )
@@ -56,26 +57,15 @@ mod manager_test {
         Ok(())
     }
 
-    async fn mock_configuration() -> Result<Configuration, Error> {
-        Ok(Configuration {
-            version: "test".to_string(),
-            development_mode: true,
-            config_path: Path::new("/tmp/.config/tasks.config").to_path_buf(),
-            db_path: PathBuf::new(),
-            favorite_projects_uuids: vec![],
-        })
-    }
-
     #[tokio::test]
     async fn it_creates_a_project() {
         let title = String::from("Test Project");
         let description = Some(String::from("This is a test project."));
-        let configuration = Mutex::new(mock_configuration().await.unwrap());
 
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let project_manager = ProjectsManager::new(&db_pool, &configuration).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool).unwrap();
 
         let project = project_manager
             .create_project(title, None, None, description)
@@ -97,9 +87,8 @@ mod manager_test {
     async fn it_updates_a_project() {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
-        let configuration = Mutex::new(mock_configuration().await.unwrap());
 
-        let project_manager = ProjectsManager::new(&db_pool, &configuration).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool).unwrap();
 
         let project = project_manager
             .create_project(
@@ -138,8 +127,7 @@ mod manager_test {
     async fn it_archives_a_project() {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
-        let configuration = Mutex::new(mock_configuration().await.unwrap());
-        let project_manager = ProjectsManager::new(&db_pool, &configuration).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool).unwrap();
 
         let project = project_manager
             .create_project(
@@ -156,11 +144,10 @@ mod manager_test {
     }
 
     #[tokio::test]
-    async fn it_removes_a_favorite_project_when_it_is_archived() {
+    async fn it_favorites_and_unfavorites_a_project() {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
-        let configuration = Mutex::new(mock_configuration().await.unwrap());
-        let project_manager = ProjectsManager::new(&db_pool, &configuration).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool).unwrap();
 
         let project = project_manager
             .create_project(
@@ -172,31 +159,19 @@ mod manager_test {
             .await
             .unwrap();
 
+        assert!(!project.is_favorite);
+
         let favorite_project = project_manager.add_favorite(project.id).await.unwrap();
 
-        assert_eq!(
-            1,
-            configuration
-                .try_lock()
-                .unwrap()
-                .favorite_projects_uuids
-                .len()
-        );
+        assert_eq!(project.id, favorite_project.id);
+        assert!(favorite_project.is_favorite);
 
-        let archived_project = project_manager
-            .archive_project(favorite_project.id)
+        let unfavorited_project = project_manager
+            .remove_favorite(favorite_project.id)
             .await
             .unwrap();
 
-        assert_eq!(
-            0,
-            configuration
-                .try_lock()
-                .unwrap()
-                .favorite_projects_uuids
-                .len()
-        );
-
-        assert!(archived_project.archived_at_utc.is_some());
+        assert_eq!(favorite_project.id, unfavorited_project.id);
+        assert!(!unfavorited_project.is_favorite);
     }
 }

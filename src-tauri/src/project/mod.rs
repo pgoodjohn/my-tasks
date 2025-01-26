@@ -18,6 +18,8 @@ pub struct Project {
     pub created_at_utc: DateTime<Utc>,
     pub updated_at_utc: DateTime<Utc>,
     pub archived_at_utc: Option<DateTime<Utc>>,
+    #[serde(rename(serialize = "isFavorite"))]
+    pub is_favorite: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -42,6 +44,7 @@ impl Project {
             created_at_utc: Utc::now(),
             updated_at_utc: Utc::now(),
             archived_at_utc: None,
+            is_favorite: false,
         }
     }
 
@@ -51,7 +54,7 @@ impl Project {
         }
 
         let _sql_result = sqlx::query(
-            "INSERT INTO projects (id, title, color, emoji, description, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
+            "INSERT INTO projects (id, title, color, emoji, description, created_at_utc, updated_at_utc, is_favorite) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)")
             .bind(&self.id.to_string())
             .bind(&self.title)
             .bind(&self.color)
@@ -75,13 +78,14 @@ impl Project {
 
     async fn update_record(&self, connection: &mut PoolConnection<Sqlite>) -> Result<&Self, ()> {
         let _sql_result = sqlx::query(
-            "UPDATE projects SET title = ?1, emoji = ?2, color = ?3, description = ?4, updated_at_utc = ?5, archived_at_utc = ?6 WHERE id = ?7")
+            "UPDATE projects SET title = ?1, emoji = ?2, color = ?3, description = ?4, updated_at_utc = ?5, archived_at_utc = ?6, is_favorite =?7 WHERE id = ?8")
             .bind(&self.title)
             .bind(&self.emoji)
             .bind(&self.color)
             .bind(&self.description)
             .bind(&self.updated_at_utc.to_rfc3339())
             .bind(self.archived_at_utc.map(|date| date.to_rfc3339()))
+            .bind(self.is_favorite)
             .bind(&self.id.to_string())
             .execute(&mut **connection).await.unwrap();
 
@@ -139,6 +143,23 @@ impl Project {
         return Ok(projects);
     }
 
+    pub async fn list_favorite_projects(
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Project>, ()> {
+        let rows = sqlx::query("SELECT * FROM projects WHERE is_favorite = true")
+            .fetch_all(&mut **connection)
+            .await
+            .unwrap();
+
+        let mut projects = Vec::new();
+        for row in rows {
+            let project = Project::from_sqlx_row(row).unwrap(); // TODO: unwrap
+            projects.push(project);
+        }
+
+        return Ok(projects);
+    }
+
     fn from_sqlx_row(row: sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
         let uuid_string: String = row.get("id");
         let created_at_string: String = row.get("created_at_utc");
@@ -163,6 +184,7 @@ impl Project {
                 )),
                 None => None,
             },
+            is_favorite: row.get("is_favorite"),
         })
     }
 
