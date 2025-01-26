@@ -82,11 +82,6 @@ export function AppSidebar() {
                                 <Footer />
                             </SidebarMenuButton>
                         </SidebarMenu>
-                        <SidebarMenu>
-                            <SidebarMenuButton>
-                                <SidebarTrigger />
-                            </SidebarMenuButton>
-                        </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarFooter>

@@ -5,6 +5,7 @@ import { Separator } from './ui/separator'
 import { Button } from './ui/button'
 import { useRouter } from '@tanstack/react-router'
 import AppBreadcrumb from './app-breadcrumb'
+import { SidebarTrigger } from './ui/sidebar'
 
 interface AppContainerProps {
     children: React.ReactNode
@@ -15,6 +16,7 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
         <div className='flex flex-col h-full'>
             <div className='top-0'>
                 <div className='flex items-center p-2'>
+                    <SidebarTrigger />
                     <BackButton />
                     <AppBreadcrumb />
                 </div>
