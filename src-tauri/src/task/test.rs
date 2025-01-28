@@ -1,6 +1,6 @@
 #[cfg(test)]
-mod test {
-    use super::super::commands::TaskManager;
+mod task_tests {
+    use super::super::manager::TaskManager;
     use super::super::Task;
     use crate::task::CreateTaskData;
     use crate::task::UpdatedTaskData;
@@ -23,6 +23,7 @@ mod test {
         title TEXT NOT NULL,
         description TEXT,
         project_id TEXT,
+        parent_task_id TEXT,
         due_at_utc DATETIME,
         deadline_at_utc DATETIME,
         created_at_utc DATETIME NOT NULL,
@@ -117,6 +118,43 @@ mod test {
 
         assert!(updated_task.is_some());
         assert_eq!("Updated Title".to_string(), updated_task.unwrap().title);
+    }
+
+    #[tokio::test]
+    async fn it_creates_a_task_and_a_subtask_for_it() {
+        let db_pool = create_in_memory_pool().await.unwrap();
+        apply_migrations(&db_pool).await.unwrap();
+
+        let manager = TaskManager::new(&db_pool).unwrap();
+
+        let new_task = manager
+            .create_task(CreateTaskData {
+                title: "New Task".to_string(),
+                description: None,
+                project_id: None,
+                deadline_at_utc: None,
+                due_at_utc: None,
+            })
+            .await
+            .unwrap();
+
+        let new_task_id = new_task.id.clone();
+
+        let subtask = manager
+            .create_subtask_for_task(
+                new_task,
+                CreateTaskData {
+                    title: "New Task".to_string(),
+                    description: None,
+                    project_id: None,
+                    deadline_at_utc: None,
+                    due_at_utc: None,
+                },
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(new_task_id, subtask.parent_task_id.unwrap());
     }
 
     // #[test]

@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::project::Project;
 
 pub mod commands;
+pub mod manager;
 mod test;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,6 +33,7 @@ pub struct Task {
     pub title: String,
     pub description: Option<String>,
     pub project: Option<Project>,
+    pub parent_task_id: Option<Uuid>,
     pub due_at_utc: Option<DateTime<Utc>>,
     pub deadline_at_utc: Option<DateTime<Utc>>,
     pub created_at_utc: DateTime<Utc>,
@@ -52,6 +54,7 @@ impl Task {
             title: title,
             description: description,
             project: project,
+            parent_task_id: None,
             due_at_utc: due_at_utc,
             deadline_at_utc: deadline_at_utc,
             created_at_utc: Utc::now(),
@@ -64,7 +67,7 @@ impl Task {
         &mut self,
         data: UpdatedTaskData,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<(), commands::TaskError> {
+    ) -> Result<(), manager::TaskError> {
         self.title = data.title;
         self.description = data.description;
         self.due_at_utc = data
@@ -104,11 +107,12 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<&Self, sqlx::Error> {
         let _sql_result = sqlx::query(
-            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, updated_at_utc = ?4, project_id = ?5, deadline_at_utc = ?6, completed_at_utc =?7 WHERE id = ?8"
+            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, parent_task_id = ?4, updated_at_utc = ?5, project_id = ?6, deadline_at_utc = ?7, completed_at_utc = ?8 WHERE id = ?9"
         )
         .bind(&self.title)
         .bind(&self.description)
         .bind(self.due_at_utc.map(|date| date.to_rfc3339()))
+        .bind(self.parent_task_id.map(|task_uuid| task_uuid.to_string()))
         .bind(&self.updated_at_utc.to_rfc3339())
         .bind(self.project.as_ref().map(|project| project.id.to_string()))
         .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
@@ -129,12 +133,13 @@ impl Task {
         }
 
         let _sql_result = sqlx::query(
-            "INSERT INTO tasks (id, title, description, project_id, due_at_utc, deadline_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"
+            "INSERT INTO tasks (id, title, description, project_id, parent_task_id, due_at_utc, deadline_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)"
         )
         .bind(&self.id.to_string())
         .bind(&self.title)
         .bind(&self.description)
         .bind(self.project.as_ref().map(|project| project.id.to_string()))
+        .bind(self.parent_task_id.map(|id| id.to_string()))
         .bind(self.due_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
         .bind(&self.created_at_utc.to_rfc3339())
@@ -162,6 +167,7 @@ impl Task {
     ) -> Result<Self, sqlx::Error> {
         let uuid_string: String = row.get("id");
         let project_uuid_string: Option<String> = row.get("project_id");
+        let parent_task_uuid_string: Option<String> = row.get("parent_task_id");
         let due_at_utc_string: Option<String> = row.get("due_at_utc");
         let deadline_at_utc_string: Option<String> = row.get("deadline_at_utc");
         let created_at_string: String = row.get("created_at_utc");
@@ -179,6 +185,10 @@ impl Task {
                         .unwrap()
                 }
                 None => None,
+            },
+            parent_task_id: match parent_task_uuid_string {
+                None => None,
+                Some(s) => Some(Uuid::parse_str(&s).unwrap()),
             },
             due_at_utc: match due_at_utc_string {
                 None => None,
