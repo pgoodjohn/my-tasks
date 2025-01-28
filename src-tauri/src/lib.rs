@@ -3,6 +3,7 @@ use tauri::async_runtime::Mutex;
 use tauri::Manager;
 use tokio;
 
+mod chart;
 mod commands;
 mod configuration;
 mod project;
@@ -64,6 +65,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
+            chart::load_rolling_week_day_charts_command,
             configuration::commands::load_configuration_command,
             project::commands::archive_project_command,
             project::commands::create_project_command,
