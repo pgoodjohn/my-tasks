@@ -24,14 +24,20 @@ import {
 import { Checkbox } from '../../components/ui/checkbox';
 import { invoke_tauri_command } from '@/lib/utils';
 import TasksTable from '@/components/tasks-table';
+import { ScrollArea } from "../ui/scroll-area";
 
 interface TaskSubtasksDialogProps {
     task: Task
 }
 
 export function TaskSubtasksDialog({ task }: TaskSubtasksDialogProps) {
+
+    const queryClient = useQueryClient();
+
     return (
-        <Dialog>
+        <Dialog
+            onOpenChange={() => queryClient.invalidateQueries({ queryKey: ['tasks'] })}
+        >
             <DialogTrigger asChild>
                 <Button className="w-full text-left" variant="ghost" size="xs">Subtasks</Button>
             </DialogTrigger>
@@ -45,7 +51,9 @@ export function TaskSubtasksDialog({ task }: TaskSubtasksDialogProps) {
                 <Separator />
                 <CreateSubtaskForm parentTask={task} />
                 <Separator />
-                <SubTasksTable task={task} />
+                <ScrollArea className="max-h-[500px] pr-4">
+                    <SubTasksTable task={task} />
+                </ScrollArea>
             </DialogContent>
         </Dialog>
     )
@@ -86,9 +94,6 @@ function SubTasksTable({ task }: TaskSubtasksDialogProps) {
     )
 }
 
-
-
-
 interface CreateSubtaskFormProps {
     parentTask: Task
 }
@@ -105,7 +110,7 @@ function CreateSubtaskForm({ parentTask }: CreateSubtaskFormProps) {
         },
         onSuccess: () => {
             toast.success("Subtask created")
-            queryClient.invalidateQueries({ queryKey: ['tasks'] })
+            queryClient.invalidateQueries({ queryKey: ['tasks', parentTask.id] })
             newSubtaskForm.reset()
         },
         onError: (error) => {

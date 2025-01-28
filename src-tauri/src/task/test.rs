@@ -161,37 +161,66 @@ mod task_tests {
         assert_eq!(1, new_task_subtasks.len());
     }
 
-    // #[test]
-    // fn test_loads_task_due_today() {
-    //     let conn = _setup_in_memory_db();
-    //     let title = String::from("Test Task");
-    //     let description = Some(String::from("This is a test task."));
+    #[tokio::test]
+    async fn it_completes_a_task() {
+        let db_pool = create_in_memory_pool().await.unwrap();
+        apply_migrations(&db_pool).await.unwrap();
 
-    //     let mut task = Task::new(title.clone(), description.clone(), None, None, None);
-    //     task.due_at_utc = Some(Utc::now());
-    //     task.save(&conn).unwrap();
+        let manager = TaskManager::new(&db_pool).unwrap();
+        let new_task = manager
+            .create_task(CreateTaskData {
+                title: "New Task".to_string(),
+                description: None,
+                project_id: None,
+                deadline_at_utc: None,
+                due_at_utc: None,
+            })
+            .await
+            .unwrap();
 
-    //     let tasks = Task::load_due_before(Utc::now(), &conn).unwrap();
-    //     assert_eq!(tasks.len(), 1);
-    //     assert_eq!(tasks[0].title, title);
-    // }
+        manager.complete_task(new_task.id).await.unwrap();
 
-    // #[test]
-    // fn test_loads_task_due_yesterday() {
-    //     let conn = _setup_in_memory_db();
-    //     let title = String::from("Test Task");
-    //     let description = Some(String::from("This is a test task."));
+        let loaded_task = manager.load_by_id(new_task.id).await.unwrap().unwrap();
+        assert!(loaded_task.completed_at_utc.is_some());
+    }
 
-    //     let mut task = Task::new(title.clone(), description.clone(), None, None, None);
-    //     task.due_at_utc = Some(
-    //         Utc::now()
-    //             .checked_sub_signed(chrono::Duration::days(1))
-    //             .unwrap(),
-    //     );
-    //     task.save(&conn).unwrap();
+    #[tokio::test]
+    async fn completing_a_task_also_completes_all_its_subtasks() {
+        let db_pool = create_in_memory_pool().await.unwrap();
+        apply_migrations(&db_pool).await.unwrap();
 
-    //     let tasks = Task::load_due_before(Utc::now(), &conn).unwrap();
-    //     assert_eq!(tasks.len(), 1);
-    //     assert_eq!(tasks[0].title, title);
-    // }
+        let manager = TaskManager::new(&db_pool).unwrap();
+        let new_task = manager
+            .create_task(CreateTaskData {
+                title: "New Task".to_string(),
+                description: None,
+                project_id: None,
+                deadline_at_utc: None,
+                due_at_utc: None,
+            })
+            .await
+            .unwrap();
+
+        let new_task_uuid = new_task.id.clone();
+
+        let subtask = manager
+            .create_subtask_for_task(
+                new_task,
+                CreateTaskData {
+                    title: "New Task".to_string(),
+                    description: None,
+                    project_id: None,
+                    deadline_at_utc: None,
+                    due_at_utc: None,
+                },
+            )
+            .await
+            .unwrap();
+
+        manager.complete_task(new_task_uuid).await.unwrap();
+
+        let reloaded_subtask = manager.load_by_id(subtask.id).await.unwrap().unwrap();
+
+        assert!(reloaded_subtask.completed_at_utc.is_some());
+    }
 }

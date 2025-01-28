@@ -158,6 +158,24 @@ impl<'a> TaskManager<'a> {
         let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
 
         match task {
+            None => Ok(()),
+            Some(t) => {
+                let task_subtasks = Task::load_for_parent(t.id, &mut connection).await.unwrap();
+
+                for subtask in task_subtasks {
+                    self.mark_task_completed(subtask.id).await.unwrap();
+                }
+
+                self.mark_task_completed(task_id).await
+            }
+        }
+    }
+
+    async fn mark_task_completed(&self, task_id: Uuid) -> Result<(), TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
+
+        match task {
             None => Err(TaskError::TaskNotFound),
             Some(mut t) => {
                 t.completed_at_utc = Some(Utc::now());
