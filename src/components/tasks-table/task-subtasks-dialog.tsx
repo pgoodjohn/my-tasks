@@ -17,7 +17,7 @@ import { DatePicker } from '@/components/datepicker';
 import { toast } from "sonner";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { Separator } from "../ui/separator";
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     useQuery,
 } from '@tanstack/react-query'
