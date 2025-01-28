@@ -1,6 +1,7 @@
 import React from 'react';
 import {
     useMutation,
+    useQuery,
     useQueryClient,
 } from '@tanstack/react-query'
 import { ColumnDef } from "@tanstack/react-table"
@@ -23,6 +24,7 @@ import {
     CommandItem,
 } from "@/components/ui/command"
 import { Ellipsis } from 'lucide-react';
+import { TaskSubtasksDialog } from './task-subtasks-dialog';
 
 
 const columns: ColumnDef<Task>[] = [
@@ -61,6 +63,7 @@ const columns: ColumnDef<Task>[] = [
         header: "Task",
         cell: ({ row }) => {
             return <div className='flex flex-col'>
+                {row.original.parent_task_id && <ParentTaskLabel parentTaskId={row.original.parent_task_id} />}
                 <p>
                     {row.original.title}
                 </p>
@@ -106,6 +109,9 @@ const columns: ColumnDef<Task>[] = [
                             <CommandGroup>
                                 <CommandItem>
                                     <EditTaskDialog task={task} />
+                                </CommandItem>
+                                <CommandItem>
+                                    <TaskSubtasksDialog task={task} />
                                 </CommandItem>
                             </CommandGroup>
                         </Command>
@@ -158,4 +164,22 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString }) => {
     }
 
     return <span>-</span>
+}
+
+function ParentTaskLabel({ parentTaskId }: { parentTaskId: string | null }) {
+    if (parentTaskId !== null) {
+        const query = useQuery({
+            queryKey: ['tasks', parentTaskId],
+            queryFn: async ({ queryKey }) => {
+                const res = await invoke_tauri_command('load_task_by_id_command', { taskId: queryKey[1] })
+                return res
+            },
+        })
+
+        if (query.data) {
+            return <p className="text-gray-500 text-xs">{query.data.title}</p>
+        }
+    }
+
+    return (<></>);
 }
