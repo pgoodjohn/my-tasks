@@ -104,6 +104,14 @@ impl<'a> TaskManager<'a> {
         Ok(project)
     }
 
+    pub async fn load_by_id(&self, task_id: Uuid) -> Result<Option<Task>, TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        Task::load_by_id(task_id, &mut connection)
+            .await
+            .map_err(|e| TaskError::TaskNotFound)
+    }
+
     pub async fn update_task(
         &self,
         task_id: Uuid,

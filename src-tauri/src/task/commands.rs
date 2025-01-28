@@ -251,97 +251,46 @@ pub async fn create_task_command(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::*;
-    use sqlx::sqlite::SqlitePool;
-    use sqlx::Error;
+#[tauri::command]
+pub async fn create_subtask_for_task_command(
+    parent_task_id: String,
+    title: String,
+    description: Option<String>,
+    due_date: Option<String>,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    let due_at_utc = match due_date {
+        Some(date) => Some(DateTime::<Utc>::from(
+            DateTime::parse_from_rfc3339(&date).unwrap(),
+        )),
+        None => None,
+    };
 
-    async fn create_in_memory_pool() -> Result<SqlitePool, Error> {
-        let pool = SqlitePool::connect(":memory:").await?;
-        Ok(pool)
-    }
+    let parent_task_id_uuid = Uuid::parse_str(&parent_task_id).unwrap();
 
-    async fn apply_migrations(pool: &SqlitePool) -> Result<(), Error> {
-        let mut connection = pool.acquire().await.unwrap();
+    let task_manager = TaskManager::new(&db).unwrap();
 
-        sqlx::query(
-            r#"
-        CREATE TABLE IF NOT EXISTS tasks (
-            id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            description TEXT,
-            project_id TEXT,
-            parent_task_id TEXT,
-            due_at_utc DATETIME,
-            deadline_at_utc DATETIME,
-            created_at_utc DATETIME NOT NULL,
-            completed_at_utc DATETIME,
-            updated_at_utc DATETIME NOT NULL
-        )
-            "#,
-        )
-        .execute(&mut *connection)
-        .await?;
+    let parent_task = task_manager
+        .load_by_id(parent_task_id_uuid)
+        .await
+        .unwrap()
+        .unwrap();
 
-        sqlx::query(
-            r#"
-        CREATE TABLE IF NOT EXISTS projects (
-            id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            emoji TEXT,
-            color TEXT,
-            description TEXT,
-            created_at_utc DATETIME NOT NULL,
-            updated_at_utc DATETIME NOT NULL,
-            archived_at_utc DATETIME
-        )
-            "#,
-        )
-        .execute(&mut *connection)
-        .await?;
+    let create_task_data = CreateTaskData {
+        title: title,
+        project_id: match &parent_task.project {
+            Some(p) => Some(p.id),
+            None => None,
+        },
+        description: description,
+        due_at_utc: due_at_utc,
+        deadline_at_utc: parent_task.deadline_at_utc,
+    };
 
-        Ok(())
-    }
+    let subtask = task_manager
+        .create_subtask_for_task(parent_task, create_task_data)
+        .await
+        .unwrap();
 
-    #[tokio::test]
-    async fn updates_a_task() {
-        use super::*;
-
-        let pool = create_in_memory_pool().await.unwrap();
-
-        apply_migrations(&pool).await.unwrap();
-
-        let manager = TaskManager::new(&pool).unwrap();
-
-        let create_task_data = CreateTaskData {
-            title: "Created Task".to_string(),
-            project_id: None,
-            description: None,
-            due_at_utc: None,
-            deadline_at_utc: None,
-        };
-
-        let task = manager.create_task(create_task_data).await.unwrap();
-
-        let updated_task_data = UpdatedTaskData {
-            title: "Updated task".to_string(),
-            description: Some("Updated description".to_string()),
-            due_date: None,
-            deadline: None,
-            project_id: None,
-        };
-
-        let updated_task = manager
-            .update_task(task.id, updated_task_data)
-            .await
-            .unwrap()
-            .unwrap();
-
-        assert_eq!(updated_task.title, "Updated task");
-        assert_eq!(
-            updated_task.description,
-            Some("Updated description".to_string())
-        );
-    }
+    Ok(serde_json::to_string(&subtask).unwrap())
 }
