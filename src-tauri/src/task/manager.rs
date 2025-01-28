@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-
-use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite, SqlitePool};
-use tauri::State;
+use sqlx::SqlitePool;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -9,7 +6,6 @@ use super::{CreateTaskData, UpdatedTaskData};
 use crate::project::Project;
 use crate::task::Task;
 use chrono::{DateTime, Utc};
-use serde::Serialize;
 
 #[derive(Error, Debug)]
 pub enum TaskError {
@@ -109,7 +105,7 @@ impl<'a> TaskManager<'a> {
 
         Task::load_by_id(task_id, &mut connection)
             .await
-            .map_err(|e| TaskError::TaskNotFound)
+            .map_err(|_e| TaskError::TaskNotFound)
     }
 
     pub async fn update_task(
@@ -204,5 +200,23 @@ impl<'a> TaskManager<'a> {
             .unwrap();
 
         Ok(statistics)
+    }
+
+    pub async fn load_subtasks_for_task(
+        &self,
+        parent_task_id: Uuid,
+    ) -> Result<Vec<Task>, TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let parent_task = Task::load_by_id(parent_task_id, &mut connection)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let subtasks = Task::load_for_parent(parent_task.id, &mut connection)
+            .await
+            .unwrap();
+
+        Ok(subtasks)
     }
 }

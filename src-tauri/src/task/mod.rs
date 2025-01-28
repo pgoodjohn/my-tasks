@@ -277,6 +277,27 @@ impl Task {
         Ok(tasks)
     }
 
+    pub async fn load_for_parent(
+        parent_task_id: Uuid,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Self>, ()> {
+        let rows = sqlx::query(
+            "SELECT * FROM tasks WHERE parent_task_id = ?1 ORDER BY created_at_utc DESC",
+        )
+        .bind(parent_task_id.to_string())
+        .fetch_all(&mut **connection)
+        .await
+        .unwrap();
+
+        let mut tasks = Vec::new();
+        for row in rows {
+            let task = Task::from_sqlx_row(row, connection).await.unwrap(); // TODO: unwrap
+            tasks.push(task);
+        }
+
+        Ok(tasks)
+    }
+
     pub async fn load_due_before(
         date: DateTime<Utc>,
         connection: &mut PoolConnection<Sqlite>,

@@ -155,6 +155,10 @@ mod task_tests {
             .unwrap();
 
         assert_eq!(new_task_id, subtask.parent_task_id.unwrap());
+
+        let new_task_subtasks = manager.load_subtasks_for_task(new_task_id).await.unwrap();
+
+        assert_eq!(1, new_task_subtasks.len());
     }
 
     // #[test]

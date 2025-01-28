@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { invoke_tauri_command } from "@/lib/utils";
 import { ProjectsPicker } from "../projects-picker";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import { Separator } from "../ui/separator";
 
 interface TaskSubtasksDialogProps {
     task: Task
@@ -37,6 +38,7 @@ export function TaskSubtasksDialog({ task }: TaskSubtasksDialogProps) {
                         {task.id}
                     </DialogDescription>
                 </DialogHeader>
+                <Separator />
                 <CreateSubtaskForm parentTask={task} />
             </DialogContent>
         </Dialog>
