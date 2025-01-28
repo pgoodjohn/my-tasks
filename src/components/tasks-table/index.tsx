@@ -23,6 +23,7 @@ import {
     CommandItem,
 } from "@/components/ui/command"
 import { Ellipsis } from 'lucide-react';
+import { TaskSubtasksDialog } from './task-subtasks-dialog';
 
 
 const columns: ColumnDef<Task>[] = [
@@ -106,6 +107,9 @@ const columns: ColumnDef<Task>[] = [
                             <CommandGroup>
                                 <CommandItem>
                                     <EditTaskDialog task={task} />
+                                </CommandItem>
+                                <CommandItem>
+                                    <TaskSubtasksDialog task={task} />
                                 </CommandItem>
                             </CommandGroup>
                         </Command>
