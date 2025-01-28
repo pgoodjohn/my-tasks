@@ -35,11 +35,11 @@ export function TaskSubtasksDialog({ task }: TaskSubtasksDialogProps) {
             <DialogTrigger asChild>
                 <Button className="w-full text-left" variant="ghost" size="xs">Subtasks</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="min-w-[720px]">
                 <DialogHeader>
-                    <DialogTitle>Subtasks Management</DialogTitle>
+                    <DialogTitle>{task.title}</DialogTitle>
                     <DialogDescription>
-                        {task.id}
+                        Manage subtasks
                     </DialogDescription>
                 </DialogHeader>
                 <Separator />

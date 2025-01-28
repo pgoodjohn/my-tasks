@@ -310,3 +310,16 @@ pub async fn load_subtasks_for_task_command(
 
     Ok(serde_json::to_string(&subtasks).unwrap())
 }
+
+#[tauri::command]
+pub async fn load_task_by_id_command(
+    task_id: String,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    let uuid = Uuid::parse_str(&task_id).unwrap();
+    let manager = TaskManager::new(&db).unwrap();
+
+    let task = manager.load_by_id(uuid).await.unwrap();
+
+    Ok(serde_json::to_string(&task).unwrap())
+}
