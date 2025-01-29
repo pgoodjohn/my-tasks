@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/command"
 import { Ellipsis } from 'lucide-react';
 import { TaskSubtasksDialog } from './task-subtasks-dialog';
+import { Link } from '@tanstack/react-router'
 
 
 const columns: ColumnDef<Task>[] = [
@@ -107,6 +108,16 @@ const columns: ColumnDef<Task>[] = [
                     <PopoverContent>
                         <Command>
                             <CommandGroup>
+                                <CommandItem>
+                                    <Button className="w-full text-left" variant="ghost" size="xs">
+                                        <Link
+                                            to="/tasks/$taskId" params={{ taskId: task.id }}
+
+                                        >
+                                            Task
+                                        </Link>
+                                    </Button>
+                                </CommandItem>
                                 <CommandItem>
                                     <EditTaskDialog task={task} />
                                 </CommandItem>

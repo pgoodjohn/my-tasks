@@ -1,11 +1,9 @@
 import Tasks from "@/features/index/Tasks"
 
-function Index() {
+export function RouteComponent() {
     return (
         <div>
             <Tasks />
         </div>
     )
 }
-
-export default Index
