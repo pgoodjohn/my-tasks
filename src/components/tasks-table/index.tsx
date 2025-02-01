@@ -24,7 +24,6 @@ import {
     CommandItem,
 } from "@/components/ui/command"
 import { Ellipsis } from 'lucide-react';
-import { TaskSubtasksDialog } from './task-subtasks-dialog';
 import { Link } from '@tanstack/react-router'
 
 
@@ -120,9 +119,6 @@ const columns: ColumnDef<Task>[] = [
                                 </CommandItem>
                                 <CommandItem>
                                     <EditTaskDialog task={task} />
-                                </CommandItem>
-                                <CommandItem>
-                                    <TaskSubtasksDialog task={task} />
                                 </CommandItem>
                             </CommandGroup>
                         </Command>

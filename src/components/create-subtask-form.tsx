@@ -1,11 +1,4 @@
 import { Task } from "@/types";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from '@tanstack/react-form'
@@ -15,50 +8,13 @@ import {
 } from '@tanstack/react-query'
 import { DatePicker } from '@/components/datepicker';
 import { toast } from "sonner";
-import { DialogDescription } from "@radix-ui/react-dialog";
-import { Separator } from "../ui/separator";
 import { invoke_tauri_command } from '@/lib/utils';
-import { ScrollArea } from "../ui/scroll-area";
-import { SubtasksTable } from "../subtasks-table";
-
-interface TaskSubtasksDialogProps {
-    task: Task
-}
-
-export function TaskSubtasksDialog({ task }: TaskSubtasksDialogProps) {
-
-    const queryClient = useQueryClient();
-
-    return (
-        <Dialog
-            onOpenChange={() => queryClient.invalidateQueries({ queryKey: ['tasks'] })}
-        >
-            <DialogTrigger asChild>
-                <Button className="w-full text-left" variant="ghost" size="xs">Subtasks</Button>
-            </DialogTrigger>
-            <DialogContent className="min-w-[720px]">
-                <DialogHeader>
-                    <DialogTitle>{task.title}</DialogTitle>
-                    <DialogDescription>
-                        Manage subtasks
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator />
-                <CreateSubtaskForm parentTask={task} />
-                <Separator />
-                <ScrollArea className="max-h-[500px] pr-4">
-                    <SubtasksTable task={task} />
-                </ScrollArea>
-            </DialogContent>
-        </Dialog>
-    )
-}
 
 interface CreateSubtaskFormProps {
     parentTask: Task
 }
 
-function CreateSubtaskForm({ parentTask }: CreateSubtaskFormProps) {
+export function CreateSubtaskForm({ parentTask }: CreateSubtaskFormProps) {
 
     const queryClient = useQueryClient()
 
