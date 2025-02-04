@@ -54,7 +54,7 @@ impl<'a> TaskManager<'a> {
             None => None,
         };
 
-        let task = Task::new(
+        let mut task = Task::new(
             create_task_data.title,
             create_task_data.description,
             project,
@@ -236,5 +236,20 @@ impl<'a> TaskManager<'a> {
             .unwrap();
 
         Ok(subtasks)
+    }
+
+    pub async fn tick(&self, id: Uuid) -> Result<Task, TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+
+        let task = Task::load_by_id(id, &mut connection).await.unwrap();
+
+        match task {
+            None => Err(TaskError::TaskNotFound),
+            Some(mut t) => {
+                t.update_record(&mut connection).await.unwrap();
+
+                return Ok(t);
+            }
+        }
     }
 }

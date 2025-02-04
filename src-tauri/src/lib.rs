@@ -76,6 +76,7 @@ pub fn run() {
             project::commands::add_favorite_project_command,
             project::commands::remove_favorite_project_command,
             project::commands::load_favorite_projects_command,
+            task::commands::commands::tick_task_command,
             task::commands::create_subtask_for_task_command,
             task::commands::load_subtasks_for_task_command,
             task::commands::load_task_by_id_command,

@@ -120,6 +120,9 @@ const columns: ColumnDef<Task>[] = [
                                 <CommandItem>
                                     <EditTaskDialog task={task} />
                                 </CommandItem>
+                                <CommandItem>
+                                    <TickTaskButton task={task} />
+                                </CommandItem>
                             </CommandGroup>
                         </Command>
                     </PopoverContent>
@@ -128,6 +131,23 @@ const columns: ColumnDef<Task>[] = [
         }
     }
 ]
+
+function TickTaskButton({ task }: { task: Task }) {
+
+    const tickMutation = useMutation({
+        mutationFn: async function () {
+            let res = await invoke_tauri_command('tick_task_command', { taskId: task.id });
+            return res
+        },
+        onSuccess: () => {
+            // don't invalidate and refetch
+        },
+    });
+
+    return (
+        <Button onClick={() => tickMutation.mutateAsync()} className="w-full text-left" variant="ghost" size="xs">Tick</Button>
+    )
+}
 
 interface TasksTableProps {
     tasks: Task[]

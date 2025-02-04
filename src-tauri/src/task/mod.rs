@@ -34,6 +34,7 @@ pub struct Task {
     pub description: Option<String>,
     pub project: Option<Project>,
     pub parent_task_id: Option<Uuid>,
+    pub ticks: i32,
     pub due_at_utc: Option<DateTime<Utc>>,
     pub deadline_at_utc: Option<DateTime<Utc>>,
     pub created_at_utc: DateTime<Utc>,
@@ -55,6 +56,7 @@ impl Task {
             description: description,
             project: project,
             parent_task_id: None,
+            ticks: 0,
             due_at_utc: due_at_utc,
             deadline_at_utc: deadline_at_utc,
             created_at_utc: Utc::now(),
@@ -103,11 +105,14 @@ impl Task {
     }
 
     async fn update_record(
-        &self,
+        &mut self,
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<&Self, sqlx::Error> {
+        self.updated_at_utc = Utc::now();
+        self.ticks += 1;
+
         let _sql_result = sqlx::query(
-            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, parent_task_id = ?4, updated_at_utc = ?5, project_id = ?6, deadline_at_utc = ?7, completed_at_utc = ?8 WHERE id = ?9"
+            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, parent_task_id = ?4, updated_at_utc = ?5, project_id = ?6, deadline_at_utc = ?7, completed_at_utc = ?8, updated_at_utc = ?9, ticks = ?10 WHERE id = ?11"
         )
         .bind(&self.title)
         .bind(&self.description)
@@ -117,6 +122,8 @@ impl Task {
         .bind(self.project.as_ref().map(|project| project.id.to_string()))
         .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.completed_at_utc.map(|date| date.to_rfc3339()))
+        .bind(self.updated_at_utc.to_rfc3339())
+        .bind(self.ticks)
         .bind(&self.id.to_string())
         .execute(&mut **connection).await?;
 
@@ -124,7 +131,7 @@ impl Task {
     }
 
     pub async fn create_record(
-        &self,
+        &mut self,
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<&Self, sqlx::Error> {
         if self.is_stored(connection).await? {
@@ -190,6 +197,7 @@ impl Task {
                 None => None,
                 Some(s) => Some(Uuid::parse_str(&s).unwrap()),
             },
+            ticks: row.get("ticks"),
             due_at_utc: match due_at_utc_string {
                 None => None,
                 Some(s) => Some(DateTime::<Utc>::from(
@@ -237,9 +245,9 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<Vec<Self>, ()> {
         let query = match include_completed {
-            true => "SELECT * FROM tasks ORDER BY updated_at_utc DESC",
+            true => "SELECT * FROM tasks ORDER BY ORDER BY ticks DESC, updated_at_utc DESC",
             false => {
-                "SELECT * FROM tasks WHERE completed_at_utc IS NULL ORDER BY updated_at_utc DESC"
+                "SELECT * FROM tasks WHERE completed_at_utc IS NULL ORDER BY ticks DESC, updated_at_utc DESC"
             }
         };
 
