@@ -269,12 +269,13 @@ impl Task {
         project_id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<Vec<Self>, ()> {
-        let rows =
-            sqlx::query("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY created_at_utc DESC")
-                .bind(project_id.to_string())
-                .fetch_all(&mut **connection)
-                .await
-                .unwrap();
+        let rows = sqlx::query(
+            "SELECT * FROM tasks WHERE project_id = ?1 ORDER BY ticks DESC, updated_at_utc DESC",
+        )
+        .bind(project_id.to_string())
+        .fetch_all(&mut **connection)
+        .await
+        .unwrap();
 
         let mut tasks = Vec::new();
         for row in rows {
@@ -290,7 +291,7 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<Vec<Self>, ()> {
         let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE parent_task_id = ?1 ORDER BY created_at_utc DESC",
+            "SELECT * FROM tasks WHERE parent_task_id = ?1 ORDER BY ticks DESC, updated_at_utc DESC",
         )
         .bind(parent_task_id.to_string())
         .fetch_all(&mut **connection)
