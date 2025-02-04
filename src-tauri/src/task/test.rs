@@ -24,6 +24,7 @@ mod task_tests {
         description TEXT,
         project_id TEXT,
         parent_task_id TEXT,
+        ticks INTEGER DEFAULT 0,
         due_at_utc DATETIME,
         deadline_at_utc DATETIME,
         created_at_utc DATETIME NOT NULL,
