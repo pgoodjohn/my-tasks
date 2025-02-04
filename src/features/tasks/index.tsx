@@ -1,4 +1,4 @@
-import Tasks from "@/features/index/Tasks"
+import Tasks from "@/features/tasks/Tasks"
 
 export function RouteComponent() {
     return (

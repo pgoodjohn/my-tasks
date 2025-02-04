@@ -237,9 +237,9 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<Vec<Self>, ()> {
         let query = match include_completed {
-            true => "SELECT * FROM tasks ORDER BY created_at_utc DESC",
+            true => "SELECT * FROM tasks ORDER BY updated_at_utc DESC",
             false => {
-                "SELECT * FROM tasks WHERE completed_at_utc IS NULL ORDER BY created_at_utc DESC"
+                "SELECT * FROM tasks WHERE completed_at_utc IS NULL ORDER BY updated_at_utc DESC"
             }
         };
 

@@ -184,7 +184,13 @@ function ParentTaskLabel({ parentTaskId }: { parentTaskId: string | null }) {
         })
 
         if (query.data) {
-            return <p className="text-gray-500 text-xs">{query.data.title}</p>
+            return (
+                <p className="text-gray-500 text-xs hover:underline">
+                    <Link to="/tasks/$taskId" params={{ taskId: query.data.id }}>
+                        {query.data.title}
+                    </Link>
+                </p>
+            )
         }
     }
 
