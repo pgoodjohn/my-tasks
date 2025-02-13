@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod chart_manager_test {
-    use super::super::ChartManager;
-    use super::super::RollingWeekDayCharts;
+    use crate::chart::manager::queries::RollingWeekDayCharts;
+    use crate::chart::manager::ChartManager;
     use chrono::Utc;
     use sqlx::sqlite::SqlitePool;
     use sqlx::Error;
@@ -96,7 +96,7 @@ mod chart_manager_test {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let manager = ChartManager::new(&db_pool).unwrap();
+        let manager = ChartManager::new(&db_pool);
 
         let until = Utc::now(); // TODO: make fixd date
 

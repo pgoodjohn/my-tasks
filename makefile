@@ -12,3 +12,6 @@ test:
 
 test-watch:
 	cd src-tauri && cargo watch -x test
+
+lint-rust:
+	cd src-tauri && cargo clippy

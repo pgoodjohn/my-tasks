@@ -38,8 +38,8 @@ pub struct TaskManager<'a> {
 }
 
 impl<'a> TaskManager<'a> {
-    pub fn new(db_pool: &'a SqlitePool) -> Result<Self, ()> {
-        Ok(TaskManager { db_pool })
+    pub fn new(db_pool: &'a SqlitePool) -> Self {
+        TaskManager { db_pool }
     }
 
     pub async fn create_task(&self, create_task_data: CreateTaskData) -> Result<Task, TaskError> {
@@ -83,7 +83,7 @@ impl<'a> TaskManager<'a> {
             None,
             None,
         );
-        task.parent_task_id = Some(parent_task.id.clone());
+        task.parent_task_id = Some(parent_task.id);
         task.create_record(&mut connection).await.unwrap();
 
         Ok(task)
@@ -118,9 +118,9 @@ impl<'a> TaskManager<'a> {
         let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
 
         match task {
-            None => return Ok(None),
+            None => Ok(None),
             Some(mut task) => {
-                let _ = task.update(update_data, &mut connection).await.unwrap();
+                task.update(update_data, &mut connection).await.unwrap();
                 task.update_record(&mut connection).await?;
 
                 Ok(Some(task))
@@ -149,7 +149,7 @@ impl<'a> TaskManager<'a> {
             .await
             .unwrap();
 
-        return Ok(tasks);
+        Ok(tasks)
     }
 
     pub async fn complete_task(&self, task_id: Uuid) -> Result<(), TaskError> {
@@ -181,7 +181,7 @@ impl<'a> TaskManager<'a> {
                 t.completed_at_utc = Some(Utc::now());
                 t.update_record(&mut connection).await.unwrap();
 
-                return Ok(());
+                Ok(())
             }
         }
     }
@@ -248,7 +248,7 @@ impl<'a> TaskManager<'a> {
             Some(mut t) => {
                 t.update_record(&mut connection).await.unwrap();
 
-                return Ok(t);
+                Ok(t)
             }
         }
     }

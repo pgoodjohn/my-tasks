@@ -52,13 +52,13 @@ impl Task {
     ) -> Self {
         Task {
             id: Uuid::now_v7(),
-            title: title,
-            description: description,
-            project: project,
+            title,
+            description,
+            project,
             parent_task_id: None,
             ticks: 0,
-            due_at_utc: due_at_utc,
-            deadline_at_utc: deadline_at_utc,
+            due_at_utc,
+            deadline_at_utc,
             created_at_utc: Utc::now(),
             completed_at_utc: None,
             updated_at_utc: Utc::now(),
@@ -118,13 +118,13 @@ impl Task {
         .bind(&self.description)
         .bind(self.due_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.parent_task_id.map(|task_uuid| task_uuid.to_string()))
-        .bind(&self.updated_at_utc.to_rfc3339())
+        .bind(self.updated_at_utc.to_rfc3339())
         .bind(self.project.as_ref().map(|project| project.id.to_string()))
         .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.completed_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.updated_at_utc.to_rfc3339())
         .bind(self.ticks)
-        .bind(&self.id.to_string())
+        .bind(self.id.to_string())
         .execute(&mut **connection).await?;
 
         Ok(self)
@@ -142,15 +142,15 @@ impl Task {
         let _sql_result = sqlx::query(
             "INSERT INTO tasks (id, title, description, project_id, parent_task_id, due_at_utc, deadline_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)"
         )
-        .bind(&self.id.to_string())
+        .bind(self.id.to_string())
         .bind(&self.title)
         .bind(&self.description)
         .bind(self.project.as_ref().map(|project| project.id.to_string()))
         .bind(self.parent_task_id.map(|id| id.to_string()))
         .bind(self.due_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
-        .bind(&self.created_at_utc.to_rfc3339())
-        .bind(&self.updated_at_utc.to_rfc3339())
+        .bind(self.created_at_utc.to_rfc3339())
+        .bind(self.updated_at_utc.to_rfc3339())
         .execute(&mut **connection).await?;
 
         Ok(self)
@@ -161,7 +161,7 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<(), sqlx::Error> {
         let _sql_result = sqlx::query("DELETE FROM tasks WHERE id = ?1")
-            .bind(&self.id.to_string())
+            .bind(self.id.to_string())
             .execute(&mut **connection)
             .await?;
 
@@ -193,23 +193,12 @@ impl Task {
                 }
                 None => None,
             },
-            parent_task_id: match parent_task_uuid_string {
-                None => None,
-                Some(s) => Some(Uuid::parse_str(&s).unwrap()),
-            },
+            parent_task_id: parent_task_uuid_string.map(|s| Uuid::parse_str(&s).unwrap()),
             ticks: row.get("ticks"),
-            due_at_utc: match due_at_utc_string {
-                None => None,
-                Some(s) => Some(DateTime::<Utc>::from(
-                    DateTime::parse_from_rfc3339(&s).unwrap(),
-                )),
-            },
-            deadline_at_utc: match deadline_at_utc_string {
-                None => None,
-                Some(s) => Some(DateTime::<Utc>::from(
-                    DateTime::parse_from_rfc3339(&s).unwrap(),
-                )),
-            },
+            due_at_utc: due_at_utc_string
+                .map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
+            deadline_at_utc: deadline_at_utc_string
+                .map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
             created_at_utc: DateTime::<Utc>::from(
                 DateTime::parse_from_rfc3339(&created_at_string).unwrap(),
             ),
@@ -237,7 +226,7 @@ impl Task {
             tasks.push(task);
         }
 
-        return Ok(tasks.pop());
+        Ok(tasks.pop())
     }
 
     pub async fn load_filtered_by_completed(

@@ -14,6 +14,7 @@ import {
     ChartTooltipContent,
 } from "@/components/ui/chart"
 import { invoke_tauri_command } from "@/lib/utils";
+import { Spinner } from "@/components/spinner";
 
 export function RollingWeekGraphs() {
     return (
@@ -44,17 +45,21 @@ function useChartsData() {
         queryKey: ['tasks', 'completed', 'chart'],
         queryFn: async () => {
             return invoke_tauri_command('load_rolling_week_day_charts_command', {})
-        }
+        },
     })
 
 }
 
 function CompletedChart() {
 
-    const contributionsCalendarDataQuery = useChartsData()
+    const chartsData = useChartsData()
 
-    if (contributionsCalendarDataQuery.isLoading) {
-        return <></>
+    if (chartsData.isLoading) {
+        return <><Spinner /></>
+    }
+
+    if (chartsData.isError) {
+        return <div>An error occurred while fetching charts data.</div>
     }
 
     return (
@@ -65,8 +70,8 @@ function CompletedChart() {
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig}>
-                    {contributionsCalendarDataQuery.data && (
-                        <BarChart accessibilityLayer data={contributionsCalendarDataQuery.data}>
+                    {chartsData.data && (
+                        <BarChart accessibilityLayer data={chartsData.data}>
                             <CartesianGrid vertical={false} />
                             <XAxis
                                 dataKey="day"
@@ -89,10 +94,14 @@ function CompletedChart() {
 }
 
 function CreatedChart() {
-    const contributionsCalendarDataQuery = useChartsData()
+    const chartsData = useChartsData()
 
-    if (contributionsCalendarDataQuery.isLoading) {
-        return <></>
+    if (chartsData.isLoading) {
+        return <><Spinner /></>
+    }
+
+    if (chartsData.isError) {
+        return <div>An error occurred while fetching charts data.</div>
     }
 
     return (
@@ -103,8 +112,8 @@ function CreatedChart() {
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig}>
-                    {contributionsCalendarDataQuery.data && (
-                        <BarChart accessibilityLayer data={contributionsCalendarDataQuery.data}>
+                    {chartsData.data && (
+                        <BarChart accessibilityLayer data={chartsData.data}>
                             <CartesianGrid vertical={false} />
                             <XAxis
                                 dataKey="day"

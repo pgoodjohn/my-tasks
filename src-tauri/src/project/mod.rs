@@ -37,10 +37,10 @@ impl Project {
     ) -> Self {
         Project {
             id: Uuid::now_v7(),
-            title: title,
-            emoji: emoji,
-            color: color,
-            description: description,
+            title,
+            emoji,
+            color,
+            description,
             created_at_utc: Utc::now(),
             updated_at_utc: Utc::now(),
             archived_at_utc: None,
@@ -55,13 +55,13 @@ impl Project {
 
         let _sql_result = sqlx::query(
             "INSERT INTO projects (id, title, color, emoji, description, created_at_utc, updated_at_utc, is_favorite) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)")
-            .bind(&self.id.to_string())
+            .bind(self.id.to_string())
             .bind(&self.title)
             .bind(&self.color)
             .bind(&self.emoji)
             .bind(&self.description)
-            .bind(&self.created_at_utc.to_rfc3339())
-            .bind(&self.updated_at_utc.to_rfc3339())
+            .bind(self.created_at_utc.to_rfc3339())
+            .bind(self.updated_at_utc.to_rfc3339())
             .execute(&mut **connection).await.unwrap();
 
         Ok(self)
@@ -83,10 +83,10 @@ impl Project {
             .bind(&self.emoji)
             .bind(&self.color)
             .bind(&self.description)
-            .bind(&self.updated_at_utc.to_rfc3339())
+            .bind(self.updated_at_utc.to_rfc3339())
             .bind(self.archived_at_utc.map(|date| date.to_rfc3339()))
             .bind(self.is_favorite)
-            .bind(&self.id.to_string())
+            .bind(self.id.to_string())
             .execute(&mut **connection).await.unwrap();
 
         Ok(self)
@@ -106,7 +106,7 @@ impl Project {
             })
             .collect::<Vec<_>>();
 
-        return Ok(rows.pop());
+        Ok(rows.pop())
     }
 
     pub async fn list_not_archived_projects(
@@ -123,7 +123,7 @@ impl Project {
             projects.push(project);
         }
 
-        return Ok(projects);
+        Ok(projects)
     }
 
     pub async fn list_all_projects(
@@ -140,7 +140,7 @@ impl Project {
             projects.push(project);
         }
 
-        return Ok(projects);
+        Ok(projects)
     }
 
     pub async fn list_favorite_projects(
@@ -157,7 +157,7 @@ impl Project {
             projects.push(project);
         }
 
-        return Ok(projects);
+        Ok(projects)
     }
 
     fn from_sqlx_row(row: sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
@@ -178,12 +178,9 @@ impl Project {
             updated_at_utc: DateTime::<Utc>::from(
                 DateTime::parse_from_rfc3339(&updated_at_string).unwrap(),
             ),
-            archived_at_utc: match archived_at_string {
-                Some(s) => Some(DateTime::<Utc>::from(
+            archived_at_utc: archived_at_string.map(|s| DateTime::<Utc>::from(
                     DateTime::parse_from_rfc3339(&s).unwrap(),
                 )),
-                None => None,
-            },
             is_favorite: row.get("is_favorite"),
         })
     }

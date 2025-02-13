@@ -5,13 +5,11 @@ use tauri::State;
 use uuid::Uuid;
 
 use super::{CreateTaskData, UpdatedTaskData};
-use crate::commands::ErrorResponse;
+use crate::commands::{CommandError, ErrorResponse};
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use super::manager::TaskManager;
-
-pub mod commands;
 
 #[derive(Serialize)]
 pub struct PeriodTaskStatistic(HashMap<String, DateTaskStatistic>);
@@ -36,7 +34,7 @@ impl PeriodTaskStatistic {
                 _ => 4,
             };
             let date_statistic = DateTaskStatistic {
-                level: level,
+                level,
                 data: DateTaskStatisticData {
                     completed_tasks: row.get("count"),
                 },
@@ -70,7 +68,7 @@ pub async fn load_task_activity_statistics_command(
 ) -> Result<String, String> {
     log::debug!("Running load task activity statistics command");
 
-    let manager = TaskManager::new(&db_pool).unwrap();
+    let manager = TaskManager::new(&db_pool);
 
     let statistics = manager.load_statistics().await.unwrap();
 
@@ -81,7 +79,7 @@ pub async fn load_task_activity_statistics_command(
 pub async fn load_tasks_inbox_command(db_pool: State<'_, SqlitePool>) -> Result<String, String> {
     log::debug!("Running load tasks inbox command");
 
-    let manager = TaskManager::new(&db_pool).unwrap();
+    let manager = TaskManager::new(&db_pool);
 
     let tasks = manager.load_inbox().await.unwrap();
 
@@ -92,7 +90,7 @@ pub async fn load_tasks_inbox_command(db_pool: State<'_, SqlitePool>) -> Result<
 pub async fn load_tasks_due_today_command(db: State<'_, SqlitePool>) -> Result<String, String> {
     log::debug!("Running load tasks due today command");
 
-    let manager = TaskManager::new(&db).unwrap();
+    let manager = TaskManager::new(&db);
 
     let tasks = manager.load_due_before(Utc::now()).await.unwrap();
 
@@ -103,7 +101,7 @@ pub async fn load_tasks_due_today_command(db: State<'_, SqlitePool>) -> Result<S
 pub async fn load_tasks_with_deadline_command(db: State<'_, SqlitePool>) -> Result<String, String> {
     log::debug!("Running load tasks with deadline command");
 
-    let manager = TaskManager::new(&db).unwrap();
+    let manager = TaskManager::new(&db);
 
     let tasks = manager.load_with_deadline().await.unwrap();
 
@@ -118,7 +116,7 @@ pub async fn complete_task_command(
     log::debug!("Running complete task command for card ID: {}", task_id);
     let uuid = Uuid::parse_str(&task_id).map_err(|e| e.to_string())?;
 
-    let manager = TaskManager::new(&db).unwrap();
+    let manager = TaskManager::new(&db);
 
     manager.complete_task(uuid).await.unwrap();
 
@@ -135,7 +133,7 @@ pub async fn load_tasks_command(
         include_completed
     );
 
-    let manager = TaskManager::new(&db).unwrap();
+    let manager = TaskManager::new(&db);
 
     let tasks = manager.load_tasks(include_completed).await.unwrap();
 
@@ -149,10 +147,10 @@ pub async fn delete_task_command(
 ) -> Result<String, String> {
     log::debug!("Running delete task command for card ID: {}", task_id);
 
-    let task_manager = TaskManager::new(&db).unwrap();
+    let task_manager = TaskManager::new(&db);
     let task_uuid = Uuid::parse_str(&task_id).unwrap();
 
-    let _ = task_manager.delete_task(task_uuid).await.unwrap();
+    task_manager.delete_task(task_uuid).await.unwrap();
 
     Ok(format!("Task with ID {} deleted successfully", &task_id))
 }
@@ -181,7 +179,7 @@ pub async fn update_task_command(
         updated_task_data,
     );
 
-    let task_manager = TaskManager::new(&db).unwrap();
+    let task_manager = TaskManager::new(&db);
 
     let uuid: Uuid = Uuid::parse_str(&task_id).unwrap();
 
@@ -208,24 +206,13 @@ pub async fn create_task_command(
     project_id: Option<String>,
     db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
-    let due_at_utc = match due_date {
-        Some(date) => Some(DateTime::<Utc>::from(
-            DateTime::parse_from_rfc3339(&date).unwrap(),
-        )),
-        None => None,
-    };
+    let due_at_utc =
+        due_date.map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
 
-    let deadline_at_utc = match deadline {
-        Some(date) => Some(DateTime::<Utc>::from(
-            DateTime::parse_from_rfc3339(&date).unwrap(),
-        )),
-        None => None,
-    };
+    let deadline_at_utc =
+        deadline.map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
 
-    let project_id_uuid = match project_id {
-        Some(s) => Some(Uuid::parse_str(&s).unwrap()),
-        None => None,
-    };
+    let project_id_uuid = project_id.map(|s| Uuid::parse_str(&s).unwrap());
 
     let create_task_data = CreateTaskData {
         title,
@@ -237,7 +224,7 @@ pub async fn create_task_command(
 
     log::debug!("Running update task command for: | {:?}", create_task_data);
 
-    let task_manager = TaskManager::new(&db).unwrap();
+    let task_manager = TaskManager::new(&db);
 
     match task_manager.create_task(create_task_data).await {
         Ok(task) => Ok(serde_json::to_string(&task).unwrap()),
@@ -261,16 +248,12 @@ pub async fn create_subtask_for_task_command(
     due_date: Option<String>,
     db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
-    let due_at_utc = match due_date {
-        Some(date) => Some(DateTime::<Utc>::from(
-            DateTime::parse_from_rfc3339(&date).unwrap(),
-        )),
-        None => None,
-    };
+    let due_at_utc =
+        due_date.map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
 
     let parent_task_id_uuid = Uuid::parse_str(&parent_task_id).unwrap();
 
-    let task_manager = TaskManager::new(&db).unwrap();
+    let task_manager = TaskManager::new(&db);
 
     let parent_task = task_manager
         .load_by_id(parent_task_id_uuid)
@@ -279,13 +262,10 @@ pub async fn create_subtask_for_task_command(
         .unwrap();
 
     let create_task_data = CreateTaskData {
-        title: title,
-        project_id: match &parent_task.project {
-            Some(p) => Some(p.id),
-            None => None,
-        },
-        description: description,
-        due_at_utc: due_at_utc,
+        title,
+        project_id: parent_task.project.as_ref().map(|p| p.id),
+        description,
+        due_at_utc,
         deadline_at_utc: parent_task.deadline_at_utc,
     };
 
@@ -303,7 +283,7 @@ pub async fn load_subtasks_for_task_command(
     db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
     let parent_task_id_uuid = Uuid::parse_str(&parent_task_id).unwrap();
-    let task_manager = TaskManager::new(&db).unwrap();
+    let task_manager = TaskManager::new(&db);
 
     let subtasks = task_manager
         .load_subtasks_for_task(parent_task_id_uuid)
@@ -319,9 +299,24 @@ pub async fn load_task_by_id_command(
     db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
     let uuid = Uuid::parse_str(&task_id).unwrap();
-    let manager = TaskManager::new(&db).unwrap();
+    let manager = TaskManager::new(&db);
 
     let task = manager.load_by_id(uuid).await.unwrap();
 
     Ok(serde_json::to_string(&task).unwrap())
+}
+
+#[tauri::command]
+pub async fn tick_task_command(
+    task_id: String,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    log::debug!("Running tick task command for card ID: {}", task_id);
+    let uuid = Uuid::parse_str(&task_id).map_err(|_| CommandError::InvalidInput.to_string())?;
+
+    let manager = TaskManager::new(&db);
+
+    manager.tick(uuid).await.unwrap();
+
+    Ok("{}".to_string())
 }

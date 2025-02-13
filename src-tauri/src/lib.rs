@@ -1,7 +1,6 @@
 use sqlx::sqlite::SqlitePool;
 use tauri::async_runtime::Mutex;
 use tauri::Manager;
-use tokio;
 
 mod chart;
 mod commands;
@@ -54,7 +53,7 @@ pub fn run() {
                 sqlx::migrate!("./migrations").run(&db_pool).await.unwrap();
                 log::debug!("Migrations run successfully");
 
-                return db_pool;
+                db_pool
             });
             app.manage(db_pool.clone());
 
@@ -65,7 +64,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
-            chart::load_rolling_week_day_charts_command,
+            chart::commands::load_rolling_week_day_charts_command,
             configuration::commands::load_configuration_command,
             project::commands::archive_project_command,
             project::commands::create_project_command,
@@ -76,7 +75,7 @@ pub fn run() {
             project::commands::add_favorite_project_command,
             project::commands::remove_favorite_project_command,
             project::commands::load_favorite_projects_command,
-            task::commands::commands::tick_task_command,
+            task::commands::tick_task_command,
             task::commands::create_subtask_for_task_command,
             task::commands::load_subtasks_for_task_command,
             task::commands::load_task_by_id_command,

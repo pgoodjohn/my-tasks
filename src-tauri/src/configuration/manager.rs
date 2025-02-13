@@ -67,7 +67,7 @@ impl ConfigurationManager {
         let storage_manager = ConfigurationStorageManager::init(mode);
 
         match storage_manager.validate_config_path_exists() {
-            Err(_) => return Err(()),
+            Err(_) => Err(()),
             Ok(_) => {
                 let configuration_string = storage_manager.read_from_file().unwrap();
                 match toml::from_str::<Configuration>(&configuration_string) {
@@ -167,6 +167,7 @@ impl ConfigurationStorageManager {
             OpenOptions::new()
                 .write(true)
                 .create(true)
+                .truncate(true)
                 .open(&config_path)
                 .expect("Could not create config file with write permissions");
         }

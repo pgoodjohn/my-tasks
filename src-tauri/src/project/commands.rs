@@ -24,11 +24,11 @@ impl<'a> ProjectsManager<'a> {
         match show_archived_projects {
             true => {
                 let projects = Project::list_all_projects(&mut connection).await?;
-                return Ok(projects);
+                Ok(projects)
             }
             false => {
                 let projects = Project::list_not_archived_projects(&mut connection).await?;
-                return Ok(projects);
+                Ok(projects)
             }
         }
     }
@@ -51,8 +51,8 @@ impl<'a> ProjectsManager<'a> {
             .unwrap();
 
         let project_detail = ProjectDetail {
-            project: project,
-            tasks: tasks,
+            project,
+            tasks,
         };
 
         if include_completed_tasks {
@@ -62,7 +62,7 @@ impl<'a> ProjectsManager<'a> {
         let open_tasks: Vec<Task> = project_detail
             .tasks
             .into_iter()
-            .filter(|task| !task.completed_at_utc.is_some())
+            .filter(|task| task.completed_at_utc.is_none())
             .collect();
 
         let open_project_detail = ProjectDetail {
@@ -70,7 +70,7 @@ impl<'a> ProjectsManager<'a> {
             tasks: open_tasks,
         };
 
-        return Ok(open_project_detail);
+        Ok(open_project_detail)
     }
 
     pub async fn create_project(
@@ -87,7 +87,7 @@ impl<'a> ProjectsManager<'a> {
 
         project.save(&mut connection).await.unwrap();
 
-        return Ok(project);
+        Ok(project)
     }
 
     pub async fn update_project(
@@ -114,7 +114,7 @@ impl<'a> ProjectsManager<'a> {
 
         project.save(&mut connection).await.unwrap();
 
-        return Ok(project);
+        Ok(project)
     }
 
     pub async fn archive_project(&self, project_id: Uuid) -> Result<Project, String> {
@@ -127,13 +127,13 @@ impl<'a> ProjectsManager<'a> {
 
         match project {
             None => {
-                return Err("Project not found".to_string());
+                Err("Project not found".to_string())
             }
             Some(mut project) => {
                 project.archived_at_utc = Some(Utc::now());
                 project.save(&mut connection).await.unwrap();
 
-                return Ok(project);
+                Ok(project)
             }
         }
     }
@@ -152,10 +152,10 @@ impl<'a> ProjectsManager<'a> {
                     .count_open_tasks_for_project(&mut connection)
                     .await
                     .unwrap();
-                return Ok(count);
+                Ok(count)
             }
             None => {
-                return Err("Could not find project".to_string());
+                Err("Could not find project".to_string())
             }
         }
     }
@@ -172,10 +172,10 @@ impl<'a> ProjectsManager<'a> {
                 project.is_favorite = true;
                 project.update_record(&mut connection).await.unwrap();
 
-                return Ok(project);
+                Ok(project)
             }
             None => {
-                return Err("Could not find project".to_string());
+                Err("Could not find project".to_string())
             }
         }
     }
@@ -190,13 +190,13 @@ impl<'a> ProjectsManager<'a> {
 
         match project {
             None => {
-                return Err("Project not found".to_string());
+                Err("Project not found".to_string())
             }
             Some(mut project) => {
                 project.is_favorite = false;
                 project.update_record(&mut connection).await.unwrap();
 
-                return Ok(project);
+                Ok(project)
             }
         }
     }
@@ -209,7 +209,7 @@ impl<'a> ProjectsManager<'a> {
             .await
             .unwrap();
 
-        return Ok(projects);
+        Ok(projects)
     }
 }
 
