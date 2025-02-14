@@ -61,7 +61,7 @@ mod task_tests {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let manager = TaskManager::new(&db_pool).unwrap();
+        let manager = TaskManager::new(&db_pool);
 
         let new_task = manager
             .create_task(CreateTaskData {
@@ -91,7 +91,7 @@ mod task_tests {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let manager = TaskManager::new(&db_pool).unwrap();
+        let manager = TaskManager::new(&db_pool);
 
         let new_task = manager
             .create_task(CreateTaskData {
@@ -126,7 +126,7 @@ mod task_tests {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let manager = TaskManager::new(&db_pool).unwrap();
+        let manager = TaskManager::new(&db_pool);
 
         let new_task = manager
             .create_task(CreateTaskData {
@@ -167,7 +167,7 @@ mod task_tests {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let manager = TaskManager::new(&db_pool).unwrap();
+        let manager = TaskManager::new(&db_pool);
         let new_task = manager
             .create_task(CreateTaskData {
                 title: "New Task".to_string(),
@@ -190,7 +190,7 @@ mod task_tests {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let manager = TaskManager::new(&db_pool).unwrap();
+        let manager = TaskManager::new(&db_pool);
         let new_task = manager
             .create_task(CreateTaskData {
                 title: "New Task".to_string(),
