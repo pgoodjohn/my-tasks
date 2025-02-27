@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import TasksTable from '@/components/tasks-table'
 import { Checkbox } from '@/components/ui/checkbox'
-import EditProjectDialog from '@/features/projects/EditProjectDialog'
+import EditProjectDialog from '@/features/projects/edit-project-dialog'
 
 interface IndexProps {
     projectID: string

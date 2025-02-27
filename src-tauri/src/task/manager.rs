@@ -160,6 +160,12 @@ impl<'a> TaskManager<'a> {
         match task {
             None => Ok(()),
             Some(t) => {
+                if let Some(_) = t.completed_at_utc {
+                    log::info!("Task was already completed, marking it incomplete");
+                    self.unmark_task_completed(t.id).await?;
+                    return Ok(());
+                }
+
                 let task_subtasks = Task::load_for_parent(t.id, &mut connection).await.unwrap();
 
                 for subtask in task_subtasks {
@@ -179,6 +185,21 @@ impl<'a> TaskManager<'a> {
             None => Err(TaskError::TaskNotFound),
             Some(mut t) => {
                 t.completed_at_utc = Some(Utc::now());
+                t.update_record(&mut connection).await.unwrap();
+
+                Ok(())
+            }
+        }
+    }
+
+    async fn unmark_task_completed(&self, task_id: Uuid) -> Result<(), TaskError> {
+        let mut connection = self.db_pool.acquire().await.unwrap();
+        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
+
+        match task {
+            None => Err(TaskError::TaskNotFound),
+            Some(mut t) => {
+                t.completed_at_utc = None;
                 t.update_record(&mut connection).await.unwrap();
 
                 Ok(())

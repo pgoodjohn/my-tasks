@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
-import EditProjectDialog from '@/features/projects/EditProjectDialog'
+import EditProjectDialog from '@/features/projects/edit-project-dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import {
@@ -96,17 +96,6 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
 
         }
     },
-    {
-        id: "edit",
-        cell: ({ row }) => {
-            const project = row.original
-            return (
-                <div className='max-w-0.5'>
-                    <EditProjectDialog project={project} />
-                </div>
-            )
-        }
-    }
 ]
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -160,7 +149,7 @@ const ArchiveProjectButton: React.FC<{ project: Project }> = ({ project }) => {
 
 import { useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
-import CreateProjectDialog from '@/features/projects/CreateProjectDialog'
+import CreateProjectDialog from '@/features/projects/create-project-dialog'
 
 const ProjectsDetailedList: React.FC = () => {
 

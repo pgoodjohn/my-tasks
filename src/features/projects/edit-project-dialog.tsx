@@ -1,6 +1,7 @@
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -17,41 +18,41 @@ import { Separator } from "../../components/ui/separator"
 import { Textarea } from "../../components/ui/textarea"
 import ProjectColorCombobox from "./project-color-combobox"
 import { toast } from "sonner"
-import { EmojiPickerFormItem } from "@/components/emoji-picker-form-item"
-
 
 interface EditProjectDialogProps {
+    project: any,
 }
 
-const CreateProjectDialog: React.FC<EditProjectDialogProps> = ({ }) => {
+const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
 
     const [open, setOpen] = useState(false)
 
     const queryClient = useQueryClient()
 
 
-    const createProjectForm = useForm({
+    const editProjectForm = useForm({
         defaultValues: {
-            title: "",
-            emoji: "",
-            color: "",
-            description: ""
+            id: project.id,
+            title: project.title,
+            emoji: project.emoji,
+            color: project.color,
+            description: project.description
         },
         onSubmit: async ({ value }) => {
-            await createProjectFormMutation.mutateAsync(value)
+            await editProjectMutation.mutateAsync(value)
             queryClient.invalidateQueries({ queryKey: ['projects'] })
         }
     })
 
-    const createProjectFormMutation = useMutation({
-        mutationFn: async function (value: { title: string, emoji: string, color: string, description: string }) {
-            invoke_tauri_command('create_project_command', { title: value.title, emoji: value.emoji, color: value.color, description: value.description })
+    const editProjectMutation = useMutation({
+        mutationFn: async function (value: { id: string, title: string, emoji: string, color: string, description: string }) {
+            invoke_tauri_command('update_project_command', { projectId: value.id, newTitle: value.title, newEmoji: value.emoji, newColor: value.color, newDescription: value.description })
         },
         onSuccess: () => {
             // Invalidate and refetch
-            toast.success(`Project "${createProjectForm.getFieldValue("title")}" was created`)
+            toast.success(`Project "${editProjectForm.getFieldValue("title")}" was updated`)
             queryClient.invalidateQueries({ queryKey: ['projects'] })
-            createProjectForm.reset()
+            editProjectForm.reset()
             setOpen(false)
         },
     })
@@ -60,7 +61,7 @@ const CreateProjectDialog: React.FC<EditProjectDialogProps> = ({ }) => {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="outline">
-                    New Project
+                    Edit
                 </Button>
             </DialogTrigger>
             <DialogContent>
@@ -68,45 +69,56 @@ const CreateProjectDialog: React.FC<EditProjectDialogProps> = ({ }) => {
                     onSubmit={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        createProjectForm.handleSubmit()
+                        editProjectForm.handleSubmit()
                     }}
                 >
                     <DialogHeader className="py-2">
-                        <DialogTitle>New Project</DialogTitle>
+                        <DialogTitle>Edit Project</DialogTitle>
+                        <DialogDescription className="text-xs">
+                            {project.id}
+                        </DialogDescription>
                     </DialogHeader>
                     <Separator />
                     <div className="py-2">
-                        <div className="flex container p-2">
-                            <createProjectForm.Field
+                        <editProjectForm.Field
+                            name="id"
+                            children={(_field) => (
+                                <></>
+                            )} />
+                        <div className="flex items-center p-2">
+                            <editProjectForm.Field
                                 name="emoji"
                                 children={(field) => {
                                     return (
-                                        <div className="pr-2">
-                                            <EmojiPickerFormItem value={field.state.value} onSelect={(value) => field.setValue(value)} />
-                                        </div>
-                                    )
-                                }}
-                            />
-                            <createProjectForm.Field
-                                name="title"
-                                children={(field) => (
-                                    <div className="container pr-2">
                                         <Input
                                             name={field.name}
                                             value={field.state.value}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => field.setValue(e.target.value)}
                                         />
-                                    </div>
-                                )}
+                                    )
+                                }}
                             />
-                            <createProjectForm.Field
+                            <editProjectForm.Field
                                 name="color"
                                 children={(field) => {
                                     return <ProjectColorCombobox selectedValue={field.state.value} onChange={field.handleChange} />
                                 }} />
                         </div>
-                        <createProjectForm.Field
+                        <editProjectForm.Field
+                            name="title"
+                            children={(field) => (
+                                <div className="p-2">
+                                    <Input
+                                        name={field.name}
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) => field.setValue(e.target.value)}
+                                    />
+                                </div>
+                            )}
+                        />
+                        <editProjectForm.Field
                             name="description"
                             children={(field) => (
                                 <div className="p-2">
@@ -136,4 +148,4 @@ const CreateProjectDialog: React.FC<EditProjectDialogProps> = ({ }) => {
     )
 }
 
-export default CreateProjectDialog
+export default EditProjectDialog
