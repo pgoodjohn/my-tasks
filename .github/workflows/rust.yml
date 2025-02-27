@@ -37,6 +37,6 @@ jobs:
 
       - name: rust test
         working-directory: src-tauri
-        env:
-          SENTRY_DNS: ""
-        run: cargo test
+        run: |
+          cp .env.example .env
+          cargo test
