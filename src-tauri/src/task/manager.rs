@@ -8,6 +8,8 @@ use crate::task::Task;
 use chrono::{DateTime, Utc};
 use std::error::Error;
 
+use crate::task::PeriodTaskStatistic;
+
 #[derive(Error, Debug)]
 pub enum TaskError {
     #[error("Invalid UUID: {0}")]
@@ -217,12 +219,10 @@ impl<'a> TaskManager<'a> {
         Ok(tasks)
     }
 
-    pub async fn load_statistics(
-        &self,
-    ) -> Result<Vec<super::commands::PeriodTaskStatistic>, Box<dyn Error>> {
+    pub async fn load_statistics(&self) -> Result<Vec<PeriodTaskStatistic>, Box<dyn Error>> {
         let mut connection = self.db_pool.acquire().await?;
 
-        let statistics = super::commands::PeriodTaskStatistic::load(&mut connection).await?;
+        let statistics = PeriodTaskStatistic::load(&mut connection).await?;
 
         Ok(statistics)
     }
