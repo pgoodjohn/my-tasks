@@ -3,7 +3,8 @@ use sqlx::SqlitePool;
 
 use tauri::State;
 
-use crate::{chart::manager::ChartManager, commands::CommandError};
+use crate::chart::manager::ChartManager;
+use crate::errors::handle_error;
 
 #[tauri::command]
 pub async fn load_rolling_week_day_charts_command(
@@ -16,7 +17,7 @@ pub async fn load_rolling_week_day_charts_command(
     let day_charts = manager
         .load_rolling_week_day_charts(Utc::now())
         .await
-        .map_err(|_| CommandError::InternalError.to_string())?;
+        .map_err(|e| handle_error(&*e))?;
 
     Ok(serde_json::to_string(&day_charts).unwrap())
 }

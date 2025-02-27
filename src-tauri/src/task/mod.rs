@@ -71,7 +71,7 @@ impl Task {
         &mut self,
         data: UpdatedTaskData,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<(), manager::TaskError> {
+    ) -> Result<(), Box<dyn Error>> {
         self.title = data.title;
         self.description = data.description;
         self.due_at_utc = data
@@ -173,7 +173,7 @@ impl Task {
     async fn from_sqlx_row(
         row: sqlx::sqlite::SqliteRow,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self, Box<dyn Error>> {
         let uuid_string: String = row.get("id");
         let project_uuid_string: Option<String> = row.get("project_id");
         let parent_task_uuid_string: Option<String> = row.get("parent_task_id");
@@ -184,7 +184,7 @@ impl Task {
         let completed_at_string: Option<String> = row.get("completed_at_utc");
 
         Ok(Task {
-            id: Uuid::parse_str(&uuid_string).unwrap(),
+            id: Uuid::parse_str(&uuid_string)?,
             title: row.get("title"),
             description: row.get("description"),
             project: match project_uuid_string {
@@ -233,7 +233,7 @@ impl Task {
     pub async fn load_filtered_by_completed(
         include_completed: bool,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, ()> {
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
         let query = match include_completed {
             true => "SELECT * FROM tasks ORDER BY ORDER BY ticks DESC, updated_at_utc DESC",
             false => {
@@ -241,14 +241,11 @@ impl Task {
             }
         };
 
-        let rows = sqlx::query(query)
-            .fetch_all(&mut **connection)
-            .await
-            .unwrap();
+        let rows = sqlx::query(query).fetch_all(&mut **connection).await?;
 
         let mut tasks = Vec::new();
         for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await.unwrap(); // TODO: unwrap
+            let task = Task::from_sqlx_row(row, connection).await?;
             tasks.push(task);
         }
 
@@ -258,18 +255,17 @@ impl Task {
     pub async fn load_for_project(
         project_id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, ()> {
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
         let rows = sqlx::query(
             "SELECT * FROM tasks WHERE project_id = ?1 ORDER BY ticks DESC, updated_at_utc DESC",
         )
         .bind(project_id.to_string())
         .fetch_all(&mut **connection)
-        .await
-        .unwrap();
+        .await?;
 
         let mut tasks = Vec::new();
         for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await.unwrap(); // TODO: unwrap
+            let task = Task::from_sqlx_row(row, connection).await?;
             tasks.push(task);
         }
 
@@ -285,12 +281,11 @@ impl Task {
         )
         .bind(parent_task_id.to_string())
         .fetch_all(&mut **connection)
-        .await
-        .unwrap();
+        .await?;
 
         let mut tasks = Vec::new();
         for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await.unwrap(); // TODO: unwrap
+            let task = Task::from_sqlx_row(row, connection).await?;
             tasks.push(task);
         }
 
@@ -300,18 +295,17 @@ impl Task {
     pub async fn load_due_before(
         date: DateTime<Utc>,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, ()> {
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
         let rows = sqlx::query(
             "SELECT * FROM tasks WHERE due_at_utc < ?1 AND completed_at_utc IS NULL ORDER BY due_at_utc ASC"
         )
         .bind(date.to_rfc3339())
         .fetch_all(&mut **connection)
-        .await
-        .unwrap();
+        .await?;
 
         let mut tasks = Vec::new();
         for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await.unwrap();
+            let task = Task::from_sqlx_row(row, connection).await?;
             tasks.push(task);
         }
 
@@ -320,34 +314,34 @@ impl Task {
 
     pub async fn load_with_deadlines(
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, ()> {
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
         let rows = sqlx::query(
             "SELECT * FROM tasks WHERE deadline_at_utc IS NOT NULL AND completed_at_utc IS NULL ORDER BY deadline_at_utc ASC"
         )
         .fetch_all(&mut **connection)
-        .await
-        .unwrap();
+        .await?;
 
         let mut tasks = Vec::new();
         for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await.unwrap();
+            let task = Task::from_sqlx_row(row, connection).await?;
             tasks.push(task);
         }
 
         Ok(tasks)
     }
 
-    pub async fn load_inbox(connection: &mut PoolConnection<Sqlite>) -> Result<Vec<Self>, ()> {
+    pub async fn load_inbox(
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
         let rows = sqlx::query(
             "SELECT * FROM tasks WHERE project_id IS NULL AND completed_at_utc IS NULL ORDER BY created_at_utc DESC"
         )
         .fetch_all(&mut **connection)
-        .await
-        .unwrap();
+        .await?;
 
         let mut tasks = Vec::new();
         for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await.unwrap();
+            let task = Task::from_sqlx_row(row, connection).await?;
             tasks.push(task);
         }
 

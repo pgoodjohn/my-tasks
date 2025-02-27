@@ -23,17 +23,6 @@ pub enum TaskError {
     TaskNotFound,
 }
 
-impl TaskError {
-    pub fn to_display_message(&self) -> String {
-        match self {
-            TaskError::InvalidUUID(_) => "Invalid UUID".to_string(),
-            TaskError::SQLxError(_) => "Database error".to_string(),
-            TaskError::ProjectNotFound => "Project not found".to_string(),
-            TaskError::TaskNotFound => "Task not found".to_string(),
-        }
-    }
-}
-
 pub struct TaskManager<'a> {
     db_pool: &'a SqlitePool,
 }
@@ -43,15 +32,15 @@ impl<'a> TaskManager<'a> {
         TaskManager { db_pool }
     }
 
-    pub async fn create_task(&self, create_task_data: CreateTaskData) -> Result<Task, TaskError> {
+    pub async fn create_task(
+        &self,
+        create_task_data: CreateTaskData,
+    ) -> Result<Task, Box<dyn Error>> {
         let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await.unwrap();
+            self.db_pool.acquire().await?;
 
         let project = match create_task_data.project_id {
-            Some(id) => match self.load_project_by_uuid(&mut connection, id).await {
-                Ok(project) => project,
-                Err(_) => return Err(TaskError::ProjectNotFound),
-            },
+            Some(id) => self.load_project_by_uuid(&mut connection, id).await?,
             None => None,
         };
 
@@ -71,9 +60,9 @@ impl<'a> TaskManager<'a> {
         &self,
         parent_task: Task,
         create_task_data: CreateTaskData,
-    ) -> Result<Task, TaskError> {
+    ) -> Result<Task, Box<dyn Error>> {
         let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await.unwrap();
+            self.db_pool.acquire().await?;
 
         let project = parent_task.project;
 
@@ -85,7 +74,7 @@ impl<'a> TaskManager<'a> {
             None,
         );
         task.parent_task_id = Some(parent_task.id);
-        task.create_record(&mut connection).await.unwrap();
+        task.create_record(&mut connection).await?;
 
         Ok(task)
     }
@@ -101,27 +90,25 @@ impl<'a> TaskManager<'a> {
         Ok(project)
     }
 
-    pub async fn load_by_id(&self, task_id: Uuid) -> Result<Option<Task>, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    pub async fn load_by_id(&self, task_id: Uuid) -> Result<Option<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        Task::load_by_id(task_id, &mut connection)
-            .await
-            .map_err(|_e| TaskError::TaskNotFound)
+        Task::load_by_id(task_id, &mut connection).await
     }
 
     pub async fn update_task(
         &self,
         task_id: Uuid,
         update_data: UpdatedTaskData,
-    ) -> Result<Option<Task>, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    ) -> Result<Option<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
+        let task = Task::load_by_id(task_id, &mut connection).await?;
 
         match task {
             None => Ok(None),
             Some(mut task) => {
-                task.update(update_data, &mut connection).await.unwrap();
+                task.update(update_data, &mut connection).await?;
                 task.update_record(&mut connection).await?;
 
                 Ok(Some(task))
@@ -129,10 +116,10 @@ impl<'a> TaskManager<'a> {
         }
     }
 
-    pub async fn delete_task(&self, task_id: Uuid) -> Result<(), TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    pub async fn delete_task(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
+        let task = Task::load_by_id(task_id, &mut connection).await?;
 
         match task {
             Some(t) => {
@@ -143,12 +130,10 @@ impl<'a> TaskManager<'a> {
         }
     }
 
-    pub async fn load_tasks(&self, include_completed: bool) -> Result<Vec<Task>, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    pub async fn load_tasks(&self, include_completed: bool) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        let tasks = Task::load_filtered_by_completed(include_completed, &mut connection)
-            .await
-            .unwrap();
+        let tasks = Task::load_filtered_by_completed(include_completed, &mut connection).await?;
 
         Ok(tasks)
     }
@@ -208,36 +193,36 @@ impl<'a> TaskManager<'a> {
         }
     }
 
-    pub async fn load_inbox(&self) -> Result<Vec<Task>, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    pub async fn load_inbox(&self) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        let tasks = Task::load_inbox(&mut connection).await.unwrap();
-
-        Ok(tasks)
-    }
-
-    pub async fn load_due_before(&self, date: DateTime<Utc>) -> Result<Vec<Task>, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
-
-        let tasks = Task::load_due_before(date, &mut connection).await.unwrap();
+        let tasks = Task::load_inbox(&mut connection).await?;
 
         Ok(tasks)
     }
 
-    pub async fn load_with_deadline(&self) -> Result<Vec<Task>, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    pub async fn load_due_before(&self, date: DateTime<Utc>) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        let tasks = Task::load_with_deadlines(&mut connection).await.unwrap();
+        let tasks = Task::load_due_before(date, &mut connection).await?;
 
         Ok(tasks)
     }
 
-    pub async fn load_statistics(&self) -> Result<Vec<super::commands::PeriodTaskStatistic>, ()> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    pub async fn load_with_deadline(&self) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        let statistics = super::commands::PeriodTaskStatistic::load(&mut connection)
-            .await
-            .unwrap();
+        let tasks = Task::load_with_deadlines(&mut connection).await?;
+
+        Ok(tasks)
+    }
+
+    pub async fn load_statistics(
+        &self,
+    ) -> Result<Vec<super::commands::PeriodTaskStatistic>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
+
+        let statistics = super::commands::PeriodTaskStatistic::load(&mut connection).await?;
 
         Ok(statistics)
     }
@@ -245,30 +230,27 @@ impl<'a> TaskManager<'a> {
     pub async fn load_subtasks_for_task(
         &self,
         parent_task_id: Uuid,
-    ) -> Result<Vec<Task>, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    ) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
         let parent_task = Task::load_by_id(parent_task_id, &mut connection)
-            .await
-            .unwrap()
-            .unwrap();
+            .await?
+            .unwrap(); // remove this unwrap if parent task doesnt exist anymore (shouldnt happen)
 
-        let subtasks = Task::load_for_parent(parent_task.id, &mut connection)
-            .await
-            .unwrap();
+        let subtasks = Task::load_for_parent(parent_task.id, &mut connection).await?;
 
         Ok(subtasks)
     }
 
-    pub async fn tick(&self, id: Uuid) -> Result<Task, TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    pub async fn tick(&self, id: Uuid) -> Result<Task, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        let task = Task::load_by_id(id, &mut connection).await.unwrap();
+        let task = Task::load_by_id(id, &mut connection).await?;
 
         match task {
-            None => Err(TaskError::TaskNotFound),
+            None => Err(Box::new(TaskError::TaskNotFound)),
             Some(mut t) => {
-                t.update_record(&mut connection).await.unwrap();
+                t.update_record(&mut connection).await?;
 
                 Ok(t)
             }

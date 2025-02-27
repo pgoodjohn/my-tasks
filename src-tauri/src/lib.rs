@@ -25,8 +25,6 @@ fn detect_mode() -> ConfigurationMode {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // dotenv().ok();
-
     tauri::Builder::default()
         .setup(|app| {
             plogger::init(cfg!(debug_assertions)); // TODO: Stop using plogger
