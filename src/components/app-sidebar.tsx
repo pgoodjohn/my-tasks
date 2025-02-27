@@ -45,8 +45,8 @@ export function AppSidebar() {
                                 <Link to='/tasks' className="flex justify-between items-center w-full">
                                     Tasks
                                     {
-                                        tasks && tasks.data && tasks.data.length > 0 && (
-                                            <Badge variant="small">{tasks.data.length}</Badge>
+                                        tasks && tasks.data && tasks.data.filter(task => task.parent_task_id === null).length > 0 && (
+                                            <Badge variant="small">{tasks.data.filter(task => task.parent_task_id === null).length}</Badge>
                                         )
                                     }
                                 </Link>
