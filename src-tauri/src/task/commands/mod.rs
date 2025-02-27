@@ -9,6 +9,8 @@ use crate::commands::{CommandError, ErrorResponse};
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
+use crate::errors::handle_error;
+
 use super::manager::TaskManager;
 
 #[derive(Serialize)]
@@ -118,7 +120,10 @@ pub async fn complete_task_command(
 
     let manager = TaskManager::new(&db);
 
-    manager.complete_task(uuid).await.unwrap();
+    manager
+        .complete_task(uuid)
+        .await
+        .map_err(|e| handle_error(&*e))?;
 
     Ok("{}".to_string())
 }

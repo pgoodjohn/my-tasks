@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
@@ -213,16 +215,15 @@ impl Task {
     pub async fn load_by_id(
         id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Option<Self>, ()> {
+    ) -> Result<Option<Self>, Box<dyn Error>> {
         let rows = sqlx::query("SELECT * FROM tasks WHERE id = ?1 LIMIT 1")
             .bind(id.to_string())
             .fetch_all(&mut **connection)
-            .await
-            .unwrap();
+            .await?;
 
         let mut tasks = Vec::new();
         for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await.unwrap(); // TODO: unwrap
+            let task = Task::from_sqlx_row(row, connection).await?;
             tasks.push(task);
         }
 
@@ -278,7 +279,7 @@ impl Task {
     pub async fn load_for_parent(
         parent_task_id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, ()> {
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
         let rows = sqlx::query(
             "SELECT * FROM tasks WHERE parent_task_id = ?1 ORDER BY ticks DESC, updated_at_utc DESC",
         )

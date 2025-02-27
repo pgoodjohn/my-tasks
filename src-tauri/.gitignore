@@ -8,3 +8,4 @@
 
 file.db
 .config.toml
+.env

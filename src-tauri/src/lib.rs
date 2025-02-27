@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate dotenvy_macro;
+
 use sqlx::sqlite::SqlitePool;
 use tauri::async_runtime::Mutex;
 use tauri::Manager;
@@ -5,6 +8,7 @@ use tauri::Manager;
 mod chart;
 mod commands;
 mod configuration;
+mod errors;
 mod project;
 mod storage;
 mod task;
@@ -21,9 +25,15 @@ fn detect_mode() -> ConfigurationMode {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // dotenv().ok();
+
     tauri::Builder::default()
         .setup(|app| {
             plogger::init(cfg!(debug_assertions)); // TODO: Stop using plogger
+
+            // Register Sentry
+            let error_handler = errors::ErrorHandler::initialise(detect_mode());
+            app.manage(error_handler);
 
             let configuration_manager = ConfigurationManager::init(detect_mode()); // TODO: Mode detection
 
@@ -32,6 +42,7 @@ pub fn run() {
                 "Initialising app with configuration: {:?}",
                 configuration_manager.configuration
             );
+
             // Create a new Tokio runtime
             let rt = tokio::runtime::Runtime::new().unwrap();
 

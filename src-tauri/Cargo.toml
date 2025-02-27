@@ -32,4 +32,8 @@ thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["full"] }
 sqlx = { version = "0.8.3", features = ["migrate", "runtime-tokio", "sqlite"] }
 tauri-plugin-opener = "2.2.5"
+sentry = "0.36.0"
+strum_macros = "0.27.1"
+strum = { version = "0.27.1", features = ["derive"] }
+dotenvy_macro = "0.15"
 

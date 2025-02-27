@@ -6,6 +6,7 @@ use super::{CreateTaskData, UpdatedTaskData};
 use crate::project::Project;
 use crate::task::Task;
 use chrono::{DateTime, Utc};
+use std::error::Error;
 
 #[derive(Error, Debug)]
 pub enum TaskError {
@@ -152,10 +153,10 @@ impl<'a> TaskManager<'a> {
         Ok(tasks)
     }
 
-    pub async fn complete_task(&self, task_id: Uuid) -> Result<(), TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
+    pub async fn complete_task(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
 
-        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
+        let task = Task::load_by_id(task_id, &mut connection).await?;
 
         match task {
             None => Ok(()),
@@ -166,10 +167,10 @@ impl<'a> TaskManager<'a> {
                     return Ok(());
                 }
 
-                let task_subtasks = Task::load_for_parent(t.id, &mut connection).await.unwrap();
+                let task_subtasks = Task::load_for_parent(t.id, &mut connection).await?;
 
                 for subtask in task_subtasks {
-                    self.mark_task_completed(subtask.id).await.unwrap();
+                    self.mark_task_completed(subtask.id).await?;
                 }
 
                 self.mark_task_completed(task_id).await
@@ -177,15 +178,15 @@ impl<'a> TaskManager<'a> {
         }
     }
 
-    async fn mark_task_completed(&self, task_id: Uuid) -> Result<(), TaskError> {
+    async fn mark_task_completed(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
         let mut connection = self.db_pool.acquire().await.unwrap();
         let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
 
         match task {
-            None => Err(TaskError::TaskNotFound),
+            None => Err(Box::new(TaskError::TaskNotFound)),
             Some(mut t) => {
                 t.completed_at_utc = Some(Utc::now());
-                t.update_record(&mut connection).await.unwrap();
+                t.update_record(&mut connection).await?;
 
                 Ok(())
             }
