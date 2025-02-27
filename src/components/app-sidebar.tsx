@@ -24,9 +24,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/theme-provider"
 import { Project } from "@/types"
-
+import { Badge } from "./ui/badge"
+import { useTasks } from "@/hooks/use-tasks"
 
 export function AppSidebar() {
+    const tasks = useTasks(false);
 
     return (
         <Sidebar>
@@ -40,7 +42,14 @@ export function AppSidebar() {
                                 <Link to='/'>Home</Link>
                             </SidebarMenuButton>
                             <SidebarMenuButton asChild>
-                                <Link to='/tasks'>Tasks</Link>
+                                <Link to='/tasks' className="flex justify-between items-center w-full">
+                                    Tasks
+                                    {
+                                        tasks && tasks.data && tasks.data.length > 0 && (
+                                            <Badge variant="small">{tasks.data.length}</Badge>
+                                        )
+                                    }
+                                </Link>
                             </SidebarMenuButton>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild>

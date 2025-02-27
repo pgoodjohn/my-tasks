@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
-import EditProjectDialog from '@/features/projects/edit-project-dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import {

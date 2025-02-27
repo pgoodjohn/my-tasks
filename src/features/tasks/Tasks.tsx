@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
-import {
-    useQuery,
-} from '@tanstack/react-query'
 import { Checkbox } from '../../components/ui/checkbox';
-import { invoke_tauri_command } from '@/lib/utils';
 import TasksTable from '@/components/tasks-table';
+import { useTasks } from '@/hooks/use-tasks';
 
 const Tasks: React.FC = () => {
 
@@ -22,20 +19,13 @@ export default Tasks;
 const TasksList: React.FC = () => {
 
     const [showCompleted, setShowCompleted] = useState(false)
+    const tasks = useTasks(showCompleted)
 
-    const taskListQuery = useQuery({
-        queryKey: ['tasks', showCompleted],
-        queryFn: async () => {
-            let data = await invoke_tauri_command('load_tasks_command', { includeCompleted: showCompleted })
-            return data
-        }
-    })
-
-    if (taskListQuery.isLoading) {
+    if (tasks.isLoading) {
         return <div>Loading...</div>
     }
 
-    if (taskListQuery.isError) {
+    if (tasks.isError) {
         return <div>Error loading tasks</div>
     }
 
@@ -50,7 +40,7 @@ const TasksList: React.FC = () => {
                     Show Completed
                 </label>
             </div>
-            {taskListQuery.data ? <TasksTable tasks={taskListQuery.data} hiddenColumns={[]} /> : <div>No Data</div>}
+            {tasks.data ? <TasksTable tasks={tasks.data} hiddenColumns={[]} /> : <div>No Data</div>}
         </div>
     )
 }
