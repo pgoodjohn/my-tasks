@@ -9,6 +9,7 @@ use crate::project::Project;
 
 pub mod commands;
 pub mod manager;
+pub mod tauri;
 mod test;
 
 #[derive(Debug, Serialize, Deserialize)]
