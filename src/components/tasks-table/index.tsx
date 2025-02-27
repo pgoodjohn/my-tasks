@@ -64,9 +64,14 @@ const columns: ColumnDef<Task>[] = [
         cell: ({ row }) => {
             return <div className='flex flex-col'>
                 {row.original.parent_task_id && <ParentTaskLabel parentTaskId={row.original.parent_task_id} />}
-                <p>
-                    {row.original.title}
-                </p>
+                <Link
+                    to="/tasks/$taskId" params={{ taskId: row.original.id }}
+
+                >
+                    <p className='hover:underline'>
+                        {row.original.title}
+                    </p>
+                </Link>
                 {row.original.description && <p className="text-gray-500 text-sm">{row.original.description}</p>}
             </div>
         }
@@ -107,16 +112,6 @@ const columns: ColumnDef<Task>[] = [
                     <PopoverContent>
                         <Command>
                             <CommandGroup>
-                                <CommandItem>
-                                    <Button className="w-full text-left" variant="ghost" size="xs">
-                                        <Link
-                                            to="/tasks/$taskId" params={{ taskId: task.id }}
-
-                                        >
-                                            Task
-                                        </Link>
-                                    </Button>
-                                </CommandItem>
                                 <CommandItem>
                                     <EditTaskDialog task={task} />
                                 </CommandItem>
