@@ -37,7 +37,6 @@ pub struct Task {
     pub description: Option<String>,
     pub project: Option<Project>,
     pub parent_task_id: Option<Uuid>,
-    pub ticks: i32,
     pub due_at_utc: Option<DateTime<Utc>>,
     pub deadline_at_utc: Option<DateTime<Utc>>,
     pub created_at_utc: DateTime<Utc>,
@@ -59,7 +58,6 @@ impl Task {
             description,
             project,
             parent_task_id: None,
-            ticks: 0,
             due_at_utc,
             deadline_at_utc,
             created_at_utc: Utc::now(),
@@ -112,10 +110,9 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<&Self, sqlx::Error> {
         self.updated_at_utc = Utc::now();
-        self.ticks += 1;
 
         let _sql_result = sqlx::query(
-            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, parent_task_id = ?4, updated_at_utc = ?5, project_id = ?6, deadline_at_utc = ?7, completed_at_utc = ?8, updated_at_utc = ?9, ticks = ?10 WHERE id = ?11"
+            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, parent_task_id = ?4, updated_at_utc = ?5, project_id = ?6, deadline_at_utc = ?7, completed_at_utc = ?8, updated_at_utc = ?9 WHERE id = ?10"
         )
         .bind(&self.title)
         .bind(&self.description)
@@ -126,7 +123,6 @@ impl Task {
         .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.completed_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.updated_at_utc.to_rfc3339())
-        .bind(self.ticks)
         .bind(self.id.to_string())
         .execute(&mut **connection).await?;
 
@@ -197,7 +193,6 @@ impl Task {
                 None => None,
             },
             parent_task_id: parent_task_uuid_string.map(|s| Uuid::parse_str(&s).unwrap()),
-            ticks: row.get("ticks"),
             due_at_utc: due_at_utc_string
                 .map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
             deadline_at_utc: deadline_at_utc_string
@@ -236,9 +231,9 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
         let query = match include_completed {
-            true => "SELECT * FROM tasks ORDER BY ORDER BY ticks DESC, updated_at_utc DESC",
+            true => "SELECT * FROM tasks ORDER BY ORDER BY updated_at_utc DESC",
             false => {
-                "SELECT * FROM tasks WHERE completed_at_utc IS NULL ORDER BY ticks DESC, updated_at_utc DESC"
+                "SELECT * FROM tasks WHERE completed_at_utc IS NULL ORDER BY updated_at_utc DESC"
             }
         };
 
@@ -257,12 +252,11 @@ impl Task {
         project_id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE project_id = ?1 ORDER BY ticks DESC, updated_at_utc DESC",
-        )
-        .bind(project_id.to_string())
-        .fetch_all(&mut **connection)
-        .await?;
+        let rows =
+            sqlx::query("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY updated_at_utc DESC")
+                .bind(project_id.to_string())
+                .fetch_all(&mut **connection)
+                .await?;
 
         let mut tasks = Vec::new();
         for row in rows {
@@ -278,7 +272,7 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
         let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE parent_task_id = ?1 ORDER BY ticks DESC, updated_at_utc DESC",
+            "SELECT * FROM tasks WHERE parent_task_id = ?1 ORDER BY updated_at_utc DESC",
         )
         .bind(parent_task_id.to_string())
         .fetch_all(&mut **connection)

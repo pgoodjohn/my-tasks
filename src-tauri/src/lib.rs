@@ -86,7 +86,6 @@ pub fn run() {
             task::tauri::actions::create_task_command,
             task::tauri::actions::update_task_command,
             task::tauri::actions::delete_task_command,
-            task::tauri::actions::tick_task_command,
             task::tauri::actions::create_subtask_for_task_command,
             task::tauri::actions::complete_task_command,
             task::tauri::queries::load_subtasks_for_task_command,

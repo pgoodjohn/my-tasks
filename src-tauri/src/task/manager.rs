@@ -241,19 +241,4 @@ impl<'a> TaskManager<'a> {
 
         Ok(subtasks)
     }
-
-    pub async fn tick(&self, id: Uuid) -> Result<Task, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        let task = Task::load_by_id(id, &mut connection).await?;
-
-        match task {
-            None => Err(Box::new(TaskError::TaskNotFound)),
-            Some(mut t) => {
-                t.update_record(&mut connection).await?;
-
-                Ok(t)
-            }
-        }
-    }
 }

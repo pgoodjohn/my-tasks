@@ -128,21 +128,6 @@ pub async fn complete_task_command(
 }
 
 #[tauri::command]
-pub async fn tick_task_command(
-    task_id: String,
-    db: State<'_, SqlitePool>,
-) -> Result<String, String> {
-    log::debug!("Running tick task command for card ID: {}", task_id);
-    let uuid = Uuid::parse_str(&task_id).map_err(|e| handle_error(&e))?;
-
-    let manager = TaskManager::new(&db);
-
-    manager.tick(uuid).await.map_err(|e| handle_error(&*e))?;
-
-    Ok("{}".to_string())
-}
-
-#[tauri::command]
 pub async fn create_subtask_for_task_command(
     parent_task_id: String,
     title: String,
