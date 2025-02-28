@@ -148,7 +148,7 @@ impl<'a> TaskManager<'a> {
         match task {
             None => Ok(()),
             Some(t) => {
-                if let Some(_) = t.completed_at_utc {
+                if t.completed_at_utc.is_some() {
                     log::info!("Task was already completed, marking it incomplete");
                     self.unmark_task_completed(t.id).await?;
                     return Ok(());

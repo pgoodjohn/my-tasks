@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod manager_test {
 
-    use crate::project::commands::ProjectsManager;
+    use crate::project::manager::ProjectsManager;
 
     use chrono::Utc;
     use sqlx::sqlite::SqlitePool;
@@ -62,7 +62,7 @@ mod manager_test {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let project_manager = ProjectsManager::new(&db_pool).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool);
 
         let project = project_manager
             .create_project(title, None, None, description)
@@ -85,7 +85,7 @@ mod manager_test {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
 
-        let project_manager = ProjectsManager::new(&db_pool).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool);
 
         let project = project_manager
             .create_project(
@@ -124,7 +124,7 @@ mod manager_test {
     async fn it_archives_a_project() {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
-        let project_manager = ProjectsManager::new(&db_pool).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool);
 
         let project = project_manager
             .create_project(
@@ -144,7 +144,7 @@ mod manager_test {
     async fn it_favorites_and_unfavorites_a_project() {
         let db_pool = create_in_memory_pool().await.unwrap();
         apply_migrations(&db_pool).await.unwrap();
-        let project_manager = ProjectsManager::new(&db_pool).unwrap();
+        let project_manager = ProjectsManager::new(&db_pool);
 
         let project = project_manager
             .create_project(

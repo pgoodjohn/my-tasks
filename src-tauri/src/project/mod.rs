@@ -1,11 +1,13 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
+use std::error::Error;
 use uuid::Uuid;
 
 use crate::task::Task;
 
-pub mod commands;
+pub mod manager;
+pub mod tauri;
 mod test;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -48,8 +50,11 @@ impl Project {
         }
     }
 
-    pub async fn save(&mut self, connection: &mut PoolConnection<Sqlite>) -> Result<&Self, ()> {
-        if self.exists(connection).await.unwrap() {
+    pub async fn save(
+        &mut self,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<&Self, Box<dyn Error>> {
+        if self.exists(connection).await? {
             return self.update_record(connection).await;
         }
 
@@ -62,13 +67,16 @@ impl Project {
             .bind(&self.description)
             .bind(self.created_at_utc.to_rfc3339())
             .bind(self.updated_at_utc.to_rfc3339())
-            .execute(&mut **connection).await.unwrap();
+            .execute(&mut **connection).await?;
 
         Ok(self)
     }
 
-    async fn exists(&self, connection: &mut PoolConnection<Sqlite>) -> Result<bool, String> {
-        let stored_task = Project::load_by_id(self.id, connection).await.unwrap();
+    async fn exists(
+        &self,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<bool, Box<dyn Error>> {
+        let stored_task = Project::load_by_id(self.id, connection).await?;
 
         match stored_task {
             Some(_) => Ok(true),
@@ -76,7 +84,10 @@ impl Project {
         }
     }
 
-    async fn update_record(&self, connection: &mut PoolConnection<Sqlite>) -> Result<&Self, ()> {
+    async fn update_record(
+        &self,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<&Self, Box<dyn Error>> {
         let _sql_result = sqlx::query(
             "UPDATE projects SET title = ?1, emoji = ?2, color = ?3, description = ?4, updated_at_utc = ?5, archived_at_utc = ?6, is_favorite =?7 WHERE id = ?8")
             .bind(&self.title)
@@ -87,19 +98,18 @@ impl Project {
             .bind(self.archived_at_utc.map(|date| date.to_rfc3339()))
             .bind(self.is_favorite)
             .bind(self.id.to_string())
-            .execute(&mut **connection).await.unwrap();
+            .execute(&mut **connection).await?;
 
         Ok(self)
     }
     pub async fn load_by_id(
         id: Uuid,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Option<Self>, ()> {
+    ) -> Result<Option<Self>, Box<dyn std::error::Error>> {
         let mut rows = sqlx::query("SELECT * FROM projects WHERE id = ?1 LIMIT 1")
             .bind(id.to_string())
             .fetch_all(&mut **connection)
-            .await
-            .unwrap()
+            .await?
             .into_iter()
             .map(|row: sqlx::sqlite::SqliteRow| {
                 Project::from_sqlx_row(row).unwrap() // TODO: unwrap
@@ -111,15 +121,14 @@ impl Project {
 
     pub async fn list_not_archived_projects(
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Project>, ()> {
+    ) -> Result<Vec<Project>, Box<dyn Error>> {
         let rows = sqlx::query("SELECT * FROM projects WHERE archived_at_utc IS NULL")
             .fetch_all(&mut **connection)
-            .await
-            .unwrap();
+            .await?;
 
         let mut projects = Vec::new();
         for row in rows {
-            let project = Project::from_sqlx_row(row).unwrap(); // TODO: unwrap
+            let project = Project::from_sqlx_row(row)?;
             projects.push(project);
         }
 
@@ -128,15 +137,14 @@ impl Project {
 
     pub async fn list_all_projects(
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Project>, ()> {
+    ) -> Result<Vec<Project>, Box<dyn Error>> {
         let rows = sqlx::query("SELECT * FROM projects")
             .fetch_all(&mut **connection)
-            .await
-            .unwrap();
+            .await?;
 
         let mut projects = Vec::new();
         for row in rows {
-            let project = Project::from_sqlx_row(row).unwrap(); // TODO: unwrap
+            let project = Project::from_sqlx_row(row)?;
             projects.push(project);
         }
 
@@ -145,15 +153,14 @@ impl Project {
 
     pub async fn list_favorite_projects(
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Project>, ()> {
+    ) -> Result<Vec<Project>, Box<dyn Error>> {
         let rows = sqlx::query("SELECT * FROM projects WHERE is_favorite = true")
             .fetch_all(&mut **connection)
-            .await
-            .unwrap();
+            .await?;
 
         let mut projects = Vec::new();
         for row in rows {
-            let project = Project::from_sqlx_row(row).unwrap(); // TODO: unwrap
+            let project = Project::from_sqlx_row(row)?;
             projects.push(project);
         }
 
@@ -178,9 +185,8 @@ impl Project {
             updated_at_utc: DateTime::<Utc>::from(
                 DateTime::parse_from_rfc3339(&updated_at_string).unwrap(),
             ),
-            archived_at_utc: archived_at_string.map(|s| DateTime::<Utc>::from(
-                    DateTime::parse_from_rfc3339(&s).unwrap(),
-                )),
+            archived_at_utc: archived_at_string
+                .map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
             is_favorite: row.get("is_favorite"),
         })
     }
@@ -188,13 +194,12 @@ impl Project {
     pub async fn count_open_tasks_for_project(
         &self,
         connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<i64, ()> {
+    ) -> Result<i64, Box<dyn Error>> {
         let result = sqlx::query(
             "SELECT COUNT(*) as `count` FROM tasks WHERE project_id = ?1 AND completed_at_utc IS NULL"
         ).bind(self.id.to_string())
         .fetch_all(&mut **connection)
-        .await
-        .unwrap();
+        .await?;
 
         let mut count: i64 = 0;
         for row in result {

@@ -58,7 +58,7 @@ impl RollingWeekDayCharts {
     }
 }
 
-impl<'a> ChartManager<'a> {
+impl ChartManager<'_> {
     pub async fn load_rolling_week_day_charts(
         &self,
         until: DateTime<Utc>,

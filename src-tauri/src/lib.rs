@@ -6,7 +6,6 @@ use tauri::async_runtime::Mutex;
 use tauri::Manager;
 
 mod chart;
-mod commands;
 mod configuration;
 mod errors;
 mod project;
@@ -75,15 +74,15 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             chart::commands::load_rolling_week_day_charts_command,
             configuration::commands::load_configuration_command,
-            project::commands::archive_project_command,
-            project::commands::create_project_command,
-            project::commands::load_projects_command,
-            project::commands::update_project_command,
-            project::commands::count_open_tasks_for_project_command,
-            project::commands::load_project_details_command,
-            project::commands::add_favorite_project_command,
-            project::commands::remove_favorite_project_command,
-            project::commands::load_favorite_projects_command,
+            project::tauri::actions::archive_project_command,
+            project::tauri::actions::create_project_command,
+            project::tauri::actions::update_project_command,
+            project::tauri::queries::load_projects_command,
+            project::tauri::queries::count_open_tasks_for_project_command,
+            project::tauri::queries::load_project_details_command,
+            project::tauri::queries::add_favorite_project_command,
+            project::tauri::queries::remove_favorite_project_command,
+            project::tauri::queries::load_favorite_projects_command,
             task::tauri::actions::create_task_command,
             task::tauri::actions::update_task_command,
             task::tauri::actions::delete_task_command,
