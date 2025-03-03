@@ -109,6 +109,13 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                                 value={field.state.value}
                                 onBlur={field.handleBlur}
                                 onChange={(e) => field.handleChange(e.target.value)}
+                                placeholder="Enter task title"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        editTaskForm.handleSubmit();
+                                    }
+                                }}
                             />
                         </div>
                     )}
@@ -123,6 +130,13 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                                 value={field.state.value}
                                 onBlur={field.handleBlur}
                                 onChange={(e) => field.handleChange(e.target.value)}
+                                placeholder="Enter task description"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        editTaskForm.handleSubmit();
+                                    }
+                                }}
                             />
                         </div>
                     )}
@@ -148,9 +162,9 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                         </div>
                     )}
                 />
-                <div className=''>
-                    <Button variant="outline" className='m-2' onClick={(_e) => onSuccess(false)}>Cancel</Button>
-                    <Button className="m-2" type="submit">Save</Button>
+                <div className='flex justify-end space-x-2'>
+                    <Button variant="outline" onClick={(_e) => onSuccess(false)}>Cancel</Button>
+                    <Button type="submit">Save</Button>
                 </div>
             </form>
         </div>

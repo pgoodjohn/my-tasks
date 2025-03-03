@@ -22,11 +22,20 @@ import {
     CommandGroup,
     CommandItem,
 } from "@/components/ui/command"
-import { Ellipsis } from 'lucide-react';
+import { Ellipsis, Trash2, Pencil } from 'lucide-react';
 import { Link } from '@tanstack/react-router'
 import { format, startOfWeek, addWeeks } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { toast } from "sonner"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 
 
 const columns: ColumnDef<Task>[] = [
@@ -123,21 +132,84 @@ const columns: ColumnDef<Task>[] = [
         size: 50,
         cell: ({ row }) => {
             const task = row.original
+            const queryClient = useQueryClient()
+            const [open, setOpen] = React.useState(false)
+            const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+
+            const deleteTaskMutation = useMutation({
+                mutationFn: async function () {
+                    console.log('Deleting task:', task.id);
+                    let res = await invoke_tauri_command('delete_task_command', { taskId: task.id });
+                    console.log('Delete response:', res);
+                    return res;
+                },
+                onSuccess: () => {
+                    console.log('Delete mutation succeeded');
+                    queryClient.invalidateQueries({ queryKey: ['tasks'] })
+                    toast.success(`Task "${task.title}" was deleted`)
+                    setOpen(false)
+                    setDeleteDialogOpen(false)
+                },
+                onError: (error) => {
+                    console.error('Delete mutation failed:', error);
+                    toast.error(`Failed to delete task: ${error.message}`)
+                }
+            });
+
             return (
-                <Popover>
+                <Popover open={open} onOpenChange={setOpen}>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" size="xs"><Ellipsis /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Ellipsis className="h-4 w-4" />
+                        </Button>
                     </PopoverTrigger>
-                    <PopoverContent>
+                    <PopoverContent className="w-48 p-0" align="end">
                         <Command>
                             <CommandGroup>
-                                <CommandItem>
+                                <CommandItem className="flex items-center gap-2">
+                                    <Pencil className="h-4 w-4" />
                                     <EditTaskDialog task={task} />
                                 </CommandItem>
+                                <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <CommandItem
+                                            className="flex items-center gap-2 text-red-600"
+                                            onSelect={() => setDeleteDialogOpen(true)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            Delete Task
+                                        </CommandItem>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Delete Task</DialogTitle>
+                                            <DialogDescription>
+                                                Are you sure you want to delete "{task.title}"? This action cannot be undone.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                onClick={async () => {
+                                                    try {
+                                                        await deleteTaskMutation.mutateAsync();
+                                                    } catch (error) {
+                                                        console.error('Delete failed:', error);
+                                                    }
+                                                }}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             </CommandGroup>
                         </Command>
                     </PopoverContent>
-                </Popover >
+                </Popover>
             )
         }
     }
