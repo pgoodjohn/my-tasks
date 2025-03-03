@@ -61,8 +61,13 @@ jobs:
           cp src-tauri/.env.example src-tauri/.env
           make build
 
+      - name: Create tarball
+        run: |
+          cd src-tauri/target/release/bundle/macos
+          tar -czf my-tasks.tar.gz my-tasks.app
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: my-tasks.app
-          path: src-tauri/target/release/bundle/macos/my-tasks.app 
+          name: my-tasks.tar.gz
+          path: src-tauri/target/release/bundle/macos/my-tasks.tar.gz 
