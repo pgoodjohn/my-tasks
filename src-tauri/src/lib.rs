@@ -92,6 +92,7 @@ pub fn run() {
             task::tauri::actions::promote_task_to_project_command,
             task::tauri::queries::load_subtasks_for_task_command,
             task::tauri::queries::load_task_by_id_command,
+            task::tauri::queries::load_completed_subtasks_for_task_command,
             task::tauri::queries::load_task_activity_statistics_command,
             task::tauri::queries::load_tasks_due_today_command,
             task::tauri::queries::load_tasks_inbox_command,

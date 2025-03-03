@@ -239,4 +239,19 @@ impl<'a> TaskManager<'a> {
 
         Ok(subtasks)
     }
+
+    pub async fn load_completed_subtasks_for_task(
+        &self,
+        parent_task_id: Uuid,
+    ) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
+
+        let parent_task = Task::load_by_id(parent_task_id, &mut connection)
+            .await?
+            .unwrap();
+
+        let subtasks = Task::load_completed_for_parent(parent_task.id, &mut connection).await?;
+
+        Ok(subtasks)
+    }
 }

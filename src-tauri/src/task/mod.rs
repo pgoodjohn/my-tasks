@@ -277,7 +277,27 @@ impl Task {
         connection: &mut PoolConnection<Sqlite>,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
         let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE parent_task_id = ?1 ORDER BY updated_at_utc DESC",
+            "SELECT * FROM tasks WHERE parent_task_id = ?1 AND completed_at_utc IS NULL ORDER BY updated_at_utc DESC",
+        )
+        .bind(parent_task_id.to_string())
+        .fetch_all(&mut **connection)
+        .await?;
+
+        let mut tasks = Vec::new();
+        for row in rows {
+            let task = Task::from_sqlx_row(row, connection).await?;
+            tasks.push(task);
+        }
+
+        Ok(tasks)
+    }
+
+    pub async fn load_completed_for_parent(
+        parent_task_id: Uuid,
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
+        let rows = sqlx::query(
+            "SELECT * FROM tasks WHERE parent_task_id = ?1 AND completed_at_utc IS NOT NULL ORDER BY completed_at_utc DESC",
         )
         .bind(parent_task_id.to_string())
         .fetch_all(&mut **connection)

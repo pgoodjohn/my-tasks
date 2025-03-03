@@ -85,6 +85,22 @@ pub async fn load_subtasks_for_task_command(
 }
 
 #[tauri::command]
+pub async fn load_completed_subtasks_for_task_command(
+    parent_task_id: String,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    let parent_task_id_uuid = Uuid::parse_str(&parent_task_id).map_err(|e| handle_error(&e))?;
+    let task_manager = TaskManager::new(&db);
+
+    let subtasks = task_manager
+        .load_completed_subtasks_for_task(parent_task_id_uuid)
+        .await
+        .map_err(|e| handle_error(&*e))?;
+
+    Ok(serde_json::to_string(&subtasks).unwrap())
+}
+
+#[tauri::command]
 pub async fn load_task_by_id_command(
     task_id: String,
     db: State<'_, SqlitePool>,

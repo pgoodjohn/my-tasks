@@ -7,6 +7,7 @@ import { Route } from "@/routes/tasks/$taskId.route"
 import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { CalendarIcon } from "lucide-react"
 
 export function RouteComponent() {
     const { taskId } = Route.useParams()
@@ -16,7 +17,6 @@ export function RouteComponent() {
         queryKey: ["tasks", taskId],
         queryFn: async ({ queryKey }) => {
             let taskId = queryKey[1];
-
             return invoke_tauri_command("load_task_by_id_command", { taskId: taskId })
         }
     })
@@ -39,20 +39,35 @@ export function RouteComponent() {
     }
 
     return (
-        <div>
-            <div className="flex items-center gap-4">
-                <p className="text-lg">{taskQuery.data.title}</p>
-                <div className="flex-grow" />
-                <p>{taskQuery.data.due_at_utc ? (new Date(taskQuery.data.due_at_utc).toDateString()) : "-"}</p>
+        <div className="space-y-6">
+            {/* Header Section */}
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h1 className="text-xl font-semibold">{taskQuery.data.title}</h1>
+                    {taskQuery.data.due_at_utc && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>Due {new Date(taskQuery.data.due_at_utc).toLocaleDateString()}</span>
+                        </div>
+                    )}
+                </div>
                 <Button variant="outline" onClick={handlePromoteToProject}>
                     Promote to Project
                 </Button>
             </div>
-            <p>{taskQuery.data.description}</p>
-            <Separator className="my-2" />
-            <p>Subtasks</p>
-            <CreateSubtaskForm parentTask={taskQuery.data} />
-            <SubtasksTable task={taskQuery.data} />
+
+            {/* Description */}
+            {taskQuery.data.description && (
+                <p className="text-muted-foreground whitespace-pre-wrap">{taskQuery.data.description}</p>
+            )}
+
+            <Separator />
+
+            {/* Subtasks Section */}
+            <div className="space-y-4">
+                <CreateSubtaskForm parentTask={taskQuery.data} />
+                <SubtasksTable task={taskQuery.data} />
+            </div>
         </div>
     )
 }
