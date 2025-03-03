@@ -41,7 +41,7 @@ function BreadcrumbItems() {
     return (
         <>
             <BreadcrumbItem>
-                <BreadcrumbLink>
+                <BreadcrumbLink asChild>
                     <Link to='/'>Home</Link>
                 </BreadcrumbLink>
             </BreadcrumbItem>
@@ -159,10 +159,6 @@ function TaskBreadcrumb({ taskId }: { taskId: string | undefined }) {
             </BreadcrumbItem>
         );
     }
-
-    console.log('Current task:', task);
-    console.log('Parent task ID:', task.parent_task_id);
-    console.log('All tasks:', tasks);
 
     // Build the task hierarchy chain
     const taskChain: typeof task[] = [];
