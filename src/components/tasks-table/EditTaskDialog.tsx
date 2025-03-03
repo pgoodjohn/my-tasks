@@ -62,11 +62,11 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
         },
         onSubmit: async (values) => {
             try {
-                await updateTaskMutation.mutateAsync({
+                await mutation.mutateAsync({
                     id: task.id,
                     title: values.value.title,
                     description: values.value.description,
-                    dueDate: values.value.dueDate?.toISOString(),
+                    dueDate: values.value.dueDate,
                     projectId: values.value.projectId,
                 });
                 onSuccess(false);
@@ -77,16 +77,10 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
         },
     });
 
-    const updateTaskMutation = useMutation({
-        mutationFn: async function (value: { id: string, title: string, description: string, dueDate: string | undefined, projectId: string | undefined }) {
-            const res = await invoke_tauri_command('update_task_command', {
-                taskId: value.id,
-                title: value.title,
-                description: value.description,
-                dueDate: value.dueDate,
-                projectId: value.projectId
-            });
-            return res;
+    const mutation = useMutation({
+        mutationFn: async function (value: { id: string, title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
+            const res = await invoke_tauri_command('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
+            return res
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
