@@ -48,7 +48,7 @@ const columns: ColumnDef<Task>[] = [
 
             return (
                 <Checkbox
-                    checked={row.getValue("completed_at_utc") != null}
+                    checked={row.original.completed_at_utc != null}
                     onCheckedChange={() => {
                         markCompleteMutation.mutateAsync()
                     }}

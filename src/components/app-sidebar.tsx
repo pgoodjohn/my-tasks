@@ -27,10 +27,14 @@ import { useTheme } from "@/components/theme-provider"
 import { Project } from "@/types"
 import { Badge } from "./ui/badge"
 import { useTasks } from "@/hooks/use-tasks"
+import { useRouterState } from "@tanstack/react-router"
 
 export function AppSidebar() {
     const tasks = useTasks(false);
     const tasksDueToday = useTasksDueToday();
+    const routerState = useRouterState();
+    const currentRoute = routerState.matches[1]?.routeId;
+    const currentPath = routerState.location.pathname;
 
     return (
         <Sidebar>
@@ -40,7 +44,7 @@ export function AppSidebar() {
                     <SidebarGroupLabel>My Tasks</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            <SidebarMenuButton asChild>
+                            <SidebarMenuButton asChild isActive={currentRoute === "/"}>
                                 <Link to='/' className="flex justify-between items-center w-full">
                                     Home
                                     {
@@ -50,7 +54,7 @@ export function AppSidebar() {
                                     }
                                 </Link>
                             </SidebarMenuButton>
-                            <SidebarMenuButton asChild>
+                            <SidebarMenuButton asChild isActive={currentRoute === "/tasks/"}>
                                 <Link to='/tasks' className="flex justify-between items-center w-full">
                                     Tasks
                                     {
@@ -61,10 +65,10 @@ export function AppSidebar() {
                                 </Link>
                             </SidebarMenuButton>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild>
+                                <SidebarMenuButton asChild isActive={currentRoute === "/projects/"}>
                                     <Link to='/projects'>Projects</Link>
                                 </SidebarMenuButton>
-                                <FavoriteProjects />
+                                <FavoriteProjects currentPath={currentPath} />
                             </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>
@@ -80,10 +84,10 @@ export function AppSidebar() {
                                     <ContributionsCalendar variant="monthly" />
                                 </SidebarMenuButton>
                             </SidebarMenuItem> */}
-                            <SidebarMenuButton asChild>
+                            <SidebarMenuButton asChild isActive={currentRoute === "/statistics"}>
                                 <Link to='/statistics'>Statistics</Link>
                             </SidebarMenuButton>
-                            <SidebarMenuButton asChild>
+                            <SidebarMenuButton asChild isActive={currentRoute === "/settings"}>
                                 <Link to='/settings'>Settings</Link>
                             </SidebarMenuButton>
                         </SidebarMenu>
@@ -106,8 +110,11 @@ export function AppSidebar() {
     )
 }
 
-const FavoriteProjects: React.FC = () => {
+interface FavoriteProjectsProps {
+    currentPath: string;
+}
 
+const FavoriteProjects: React.FC<FavoriteProjectsProps> = ({ currentPath }) => {
     const { data, isLoading, error } = useFavoriteProjects();
 
     if (isLoading || error) {
@@ -115,10 +122,11 @@ const FavoriteProjects: React.FC = () => {
     }
 
     return data?.map((project: Project) => {
+        const isActive = currentPath === `/projects/${project.id}`;
         return (
             <SidebarMenuSub key={project.id}>
                 <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
+                    <SidebarMenuSubButton asChild isActive={isActive}>
                         <Link to="/projects/$projectId" params={{ projectId: project.id }}>
                             {project.emoji} {project.title}
                         </Link>
