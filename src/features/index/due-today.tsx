@@ -34,7 +34,7 @@ const DueTodayTable = () => {
 
     return (
         <div className="py-2">
-            <TasksTable tasks={overdueTasksQuery.data} hiddenColumns={[]} />
+            <TasksTable tasks={overdueTasksQuery.data} hiddenColumns={[]} showHeaders={false} />
         </div>
     )
 

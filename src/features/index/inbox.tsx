@@ -34,7 +34,7 @@ const InboxTaskList: React.FC = () => {
 
     return (
         <div className='py-2 max-h-full'>
-            {taskListQuery.data ? <TasksTable tasks={taskListQuery.data} hiddenColumns={[]} /> : <div>No Data</div>}
+            {taskListQuery.data ? <TasksTable tasks={taskListQuery.data} hiddenColumns={[]} showHeaders={false} /> : <div>No Data</div>}
         </div>
     )
 }

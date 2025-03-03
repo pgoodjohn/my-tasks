@@ -29,9 +29,8 @@ import { Link } from '@tanstack/react-router'
 
 const columns: ColumnDef<Task>[] = [
     {
-        id: "completed_at_utc",
-        accessorKey: "completed_at_utc",
-        header: () => <div className="p-0" />,
+        id: "complete",
+        size: 10,
         cell: ({ row }) => {
             const queryClient = useQueryClient()
 
@@ -61,12 +60,12 @@ const columns: ColumnDef<Task>[] = [
         id: "title",
         accessorKey: "title",
         header: "Task",
+        size: 300,
         cell: ({ row }) => {
-            return <div className='flex flex-col'>
+            return <div className='flex-col'>
                 {row.original.parent_task_id && <ParentTaskLabel parentTaskId={row.original.parent_task_id} />}
                 <Link
                     to="/tasks/$taskId" params={{ taskId: row.original.id }}
-
                 >
                     <p className='hover:underline'>
                         {row.original.title}
@@ -127,9 +126,10 @@ const columns: ColumnDef<Task>[] = [
 interface TasksTableProps {
     tasks: Task[]
     hiddenColumns: string[]
+    showHeaders?: boolean
 }
 
-const TasksTable: React.FC<TasksTableProps> = ({ tasks, hiddenColumns }) => {
+const TasksTable: React.FC<TasksTableProps> = ({ tasks, hiddenColumns, showHeaders = true }) => {
 
     // filter out hidden columns
     const filteredColumns = columns.filter((column) => {
@@ -137,7 +137,7 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, hiddenColumns }) => {
     })
 
     return (
-        <DataTable data={tasks} columns={filteredColumns} />
+        <DataTable data={tasks} columns={filteredColumns} showHeaders={showHeaders} />
     )
 }
 
