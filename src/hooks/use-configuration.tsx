@@ -5,7 +5,7 @@ export function useConfiguration() {
     return useQuery({
         queryKey: ['configuration'],
         queryFn: async () => {
-            let configuration = await invoke_tauri_command('load_configuration_command', {});
+            const configuration = await invoke_tauri_command('load_configuration_command', {});
 
             return configuration
         }

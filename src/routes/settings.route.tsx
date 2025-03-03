@@ -1,5 +1,5 @@
-import { useConfiguration } from '@/hooks/use-configuration'
 import { createFileRoute } from '@tanstack/react-router'
+import { useConfiguration } from '@/hooks/use-configuration'
 
 export const Route = createFileRoute('/settings')({
     component: RouteComponent,

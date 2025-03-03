@@ -1,13 +1,13 @@
+import { useNavigate } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { CalendarIcon } from "lucide-react"
 import { CreateSubtaskForm } from "@/components/create-subtask-form";
 import { SubtasksTable } from "@/components/subtasks-table";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { invoke_tauri_command } from "@/lib/utils";
 import { Route } from "@/routes/tasks/$taskId.route"
-import { useNavigate } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { CalendarIcon } from "lucide-react"
 
 export function RouteComponent() {
     const { taskId } = Route.useParams()
@@ -16,7 +16,7 @@ export function RouteComponent() {
     const taskQuery = useQuery({
         queryKey: ["tasks", taskId],
         queryFn: async ({ queryKey }) => {
-            let taskId = queryKey[1];
+            const taskId = queryKey[1];
             return invoke_tauri_command("load_task_by_id_command", { taskId: taskId })
         }
     })

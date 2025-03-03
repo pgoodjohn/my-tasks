@@ -1,9 +1,9 @@
-import { useFavoriteProjects } from "@/hooks/use-favorite-projects"
-import { useTasks } from "@/hooks/use-tasks"
-import { Project } from "@/types"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
+import type { Project } from "@/types"
+import { useFavoriteProjects } from "@/hooks/use-favorite-projects"
+import { useTasks } from "@/hooks/use-tasks"
 import TasksTable from "@/components/tasks-table"
 
 function FavoriteProjects() {

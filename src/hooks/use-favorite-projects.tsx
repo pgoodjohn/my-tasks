@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import type { Project } from '@/types';
 import { invoke_tauri_command } from '@/lib/utils';
-import { Project } from '@/types';
 
-export function useFavoriteProjects(): { data: Project[] | undefined, error: unknown, isLoading: boolean } {
-    return useQuery<Project[]>({
+export function useFavoriteProjects(): { data: Array<Project> | undefined, error: unknown, isLoading: boolean } {
+    return useQuery<Array<Project>>({
         queryKey: ['projects', 'favorites'],
         queryFn: async () => {
-            let projects = await invoke_tauri_command('load_favorite_projects_command', {});
+            const projects = await invoke_tauri_command('load_favorite_projects_command', {});
             return projects;
         }
     });

@@ -5,12 +5,12 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
 import "@/index.css";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
 
-import { routeTree } from "./routeTree.gen";
 
 const router = createRouter({ routeTree });
 

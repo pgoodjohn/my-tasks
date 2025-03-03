@@ -1,4 +1,12 @@
-import { Task } from "@/types";
+import React, { useState } from 'react';
+import { useForm } from '@tanstack/react-form'
+import {
+    useMutation,
+    useQueryClient,
+} from '@tanstack/react-query'
+import { toast } from "sonner";
+import { ProjectsPicker } from "../projects-picker";
+import type { Task } from "@/types";
 import {
     Dialog,
     DialogContent,
@@ -6,18 +14,10 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useForm } from '@tanstack/react-form'
-import {
-    useMutation,
-    useQueryClient,
-} from '@tanstack/react-query'
 import { DatePicker } from '@/components/datepicker';
-import { toast } from "sonner";
 import { invoke_tauri_command } from "@/lib/utils";
-import { ProjectsPicker } from "../projects-picker";
 
 interface EditTaskDialogProps {
     task: Task;
@@ -69,7 +69,7 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
 
     const mutation = useMutation({
         mutationFn: async function (value: { id: string, title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
-            let res = await invoke_tauri_command('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
+            const res = await invoke_tauri_command('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
             return res
         },
         onSuccess: () => {

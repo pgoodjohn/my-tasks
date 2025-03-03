@@ -1,19 +1,21 @@
+import { Link, useRouterState  } from '@tanstack/react-router'
+import { Badge } from "./ui/badge"
+import type { Project } from "@/types"
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
-    SidebarHeader,
-    SidebarGroupLabel,
     SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
     SidebarMenu,
-    SidebarMenuItem,
     SidebarMenuButton,
+    SidebarMenuItem,
     SidebarMenuSub,
-    SidebarMenuSubItem,
     SidebarMenuSubButton,
+    SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import { Link } from '@tanstack/react-router'
 import { useConfiguration } from "@/hooks/use-configuration"
 import { useFavoriteProjects } from "@/hooks/use-favorite-projects"
 import { useTasksDueToday } from "@/hooks/use-tasks-due-today"
@@ -24,10 +26,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/theme-provider"
-import { Project } from "@/types"
-import { Badge } from "./ui/badge"
 import { useTasks } from "@/hooks/use-tasks"
-import { useRouterState } from "@tanstack/react-router"
 
 export function AppSidebar() {
     const tasks = useTasks(false);

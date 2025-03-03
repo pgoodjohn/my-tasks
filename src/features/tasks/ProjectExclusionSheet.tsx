@@ -6,8 +6,8 @@ import { useProjects } from "@/hooks/use-projects";
 import ProjectTag from "@/components/project-tag";
 
 interface ProjectExclusionSheetProps {
-    excludedProjects: string[];
-    onExcludedProjectsChange: (projects: string[]) => void;
+    excludedProjects: Array<string>;
+    onExcludedProjectsChange: (projects: Array<string>) => void;
 }
 
 export const ProjectExclusionSheet: React.FC<ProjectExclusionSheetProps> = ({ excludedProjects, onExcludedProjectsChange }) => {

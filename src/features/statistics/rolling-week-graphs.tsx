@@ -1,5 +1,10 @@
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 import { useQuery } from '@tanstack/react-query';
+import { useState } from "react";
+import { endOfMonth, endOfWeek, startOfMonth, startOfWeek, subMonths, subWeeks } from "date-fns";
+import type { DateRange } from "react-day-picker";
+import type {
+    ChartConfig} from "@/components/ui/chart";
 import {
     Card,
     CardContent,
@@ -8,7 +13,6 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import {
-    ChartConfig,
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
@@ -16,10 +20,7 @@ import {
 import { invoke_tauri_command } from "@/lib/utils";
 import { Spinner } from "@/components/spinner";
 import { DateRangePicker } from "@/components/date-range-picker";
-import { DateRange } from "react-day-picker";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from "date-fns";
 
 interface ProjectActivityStats {
     project_id: string;
@@ -85,7 +86,7 @@ export function RollingWeekGraphs() {
     };
 
     const isActivePeriod = (period: 'last-7-days' | 'last-14-days' | 'last-30-days' | 'this-week' | 'last-week' | 'this-month' | 'last-month') => {
-        if (!dateRange?.from || !dateRange?.to) return false;
+        if (!dateRange?.from || !dateRange.to) return false;
 
         const now = new Date();
         switch (period) {
@@ -217,7 +218,7 @@ function useChartsData(dateRange: DateRange | undefined) {
     return useQuery({
         queryKey: ['tasks', 'completed', 'chart', dateRange],
         queryFn: async () => {
-            if (!dateRange?.from || !dateRange?.to) {
+            if (!dateRange?.from || !dateRange.to) {
                 throw new Error("Date range is required");
             }
             return invoke_tauri_command('load_rolling_week_day_charts_command', {
@@ -225,7 +226,7 @@ function useChartsData(dateRange: DateRange | undefined) {
                 until: dateRange.to.toISOString(),
             })
         },
-        enabled: !!dateRange?.from && !!dateRange?.to,
+        enabled: !!dateRange?.from && !!dateRange.to,
     })
 }
 
@@ -314,10 +315,10 @@ function CreatedChart({ dateRange }: { dateRange: DateRange | undefined }) {
 }
 
 function ProjectCompletedChart({ dateRange }: { dateRange: DateRange | undefined }) {
-    const chartsData = useQuery<ProjectActivityStats[]>({
+    const chartsData = useQuery<Array<ProjectActivityStats>>({
         queryKey: ['tasks', 'project', 'activity', dateRange],
         queryFn: async () => {
-            if (!dateRange?.from || !dateRange?.to) {
+            if (!dateRange?.from || !dateRange.to) {
                 throw new Error("Date range is required");
             }
             return invoke_tauri_command('load_project_activity_stats_command', {
@@ -325,7 +326,7 @@ function ProjectCompletedChart({ dateRange }: { dateRange: DateRange | undefined
                 until: dateRange.to.toISOString(),
             })
         },
-        enabled: !!dateRange?.from && !!dateRange?.to,
+        enabled: !!dateRange?.from && !!dateRange.to,
     })
 
     if (chartsData.isLoading) {
@@ -376,10 +377,10 @@ function ProjectCompletedChart({ dateRange }: { dateRange: DateRange | undefined
 }
 
 function ProjectCreatedChart({ dateRange }: { dateRange: DateRange | undefined }) {
-    const chartsData = useQuery<ProjectActivityStats[]>({
+    const chartsData = useQuery<Array<ProjectActivityStats>>({
         queryKey: ['tasks', 'project', 'activity', dateRange],
         queryFn: async () => {
-            if (!dateRange?.from || !dateRange?.to) {
+            if (!dateRange?.from || !dateRange.to) {
                 throw new Error("Date range is required");
             }
             return invoke_tauri_command('load_project_activity_stats_command', {
@@ -387,7 +388,7 @@ function ProjectCreatedChart({ dateRange }: { dateRange: DateRange | undefined }
                 until: dateRange.to.toISOString(),
             })
         },
-        enabled: !!dateRange?.from && !!dateRange?.to,
+        enabled: !!dateRange?.from && !!dateRange.to,
     })
 
     if (chartsData.isLoading) {

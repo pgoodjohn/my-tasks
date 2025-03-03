@@ -1,5 +1,10 @@
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Check } from "lucide-react"
+import { toast } from "sonner"
+import ProjectTag from "./project-tag"
+import type { Project, Task } from "@/types"
 import {
     CommandDialog,
     CommandEmpty,
@@ -9,12 +14,7 @@ import {
     CommandList,
     CommandSeparator,
 } from "@/components/ui/command"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { invoke_tauri_command } from "@/lib/utils"
-import ProjectTag from "./project-tag"
-import { Task, Project } from "@/types"
-import { Check } from "lucide-react"
-import { toast } from "sonner"
 
 export function CommandBar() {
     const [open, setOpen] = useState(false)

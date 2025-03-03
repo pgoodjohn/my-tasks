@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import type { Task } from '@/types';
 import { invoke_tauri_command } from '@/lib/utils';
-import { Task } from '@/types';
 
-export function useTasksDueToday(): { data: Task[] | undefined, error: unknown, isLoading: boolean, isError: boolean } {
-    return useQuery<Task[]>({
+export function useTasksDueToday(): { data: Array<Task> | undefined, error: unknown, isLoading: boolean, isError: boolean } {
+    return useQuery<Array<Task>>({
         queryKey: ['tasks', 'due-today'],
         queryFn: async () => {
-            let tasks = await invoke_tauri_command('load_tasks_due_today_command', { filter: 'overdue' });
+            const tasks = await invoke_tauri_command('load_tasks_due_today_command', { filter: 'overdue' });
             return tasks;
         }
     });

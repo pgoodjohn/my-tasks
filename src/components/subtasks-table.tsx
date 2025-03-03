@@ -1,7 +1,7 @@
-import { Task } from "@/types"
 import { useQuery } from "@tanstack/react-query"
-import { invoke_tauri_command } from "@/lib/utils"
 import TasksTable from "./tasks-table"
+import type { Task } from "@/types"
+import { invoke_tauri_command } from "@/lib/utils"
 
 interface SubtasksTableProps {
     task: Task
@@ -11,7 +11,7 @@ export function SubtasksTable({ task }: SubtasksTableProps) {
     const incompleteTasksQuery = useQuery({
         queryKey: ['tasks', task.id, 'subtask', false],
         queryFn: async () => {
-            let data = await invoke_tauri_command('load_subtasks_for_task_command', { parentTaskId: task.id })
+            const data = await invoke_tauri_command('load_subtasks_for_task_command', { parentTaskId: task.id })
             return data
         }
     })
@@ -19,7 +19,7 @@ export function SubtasksTable({ task }: SubtasksTableProps) {
     const completedTasksQuery = useQuery({
         queryKey: ['tasks', task.id, 'completed-subtask'],
         queryFn: async () => {
-            let data = await invoke_tauri_command('load_completed_subtasks_for_task_command', { parentTaskId: task.id })
+            const data = await invoke_tauri_command('load_completed_subtasks_for_task_command', { parentTaskId: task.id })
             return data
         }
     })
