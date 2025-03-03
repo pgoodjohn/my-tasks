@@ -71,7 +71,28 @@ const columns: ColumnDef<Task>[] = [
                         {row.original.title}
                     </p>
                 </Link>
-                {row.original.description && <p className="text-gray-500 text-sm">{row.original.description}</p>}
+                {row.original.description && (
+                    <p className="text-gray-500 text-sm">
+                        {row.original.description.split(/(\s+)/).map((part, i) => {
+                            const urlMatch = part.match(/^(https?:\/\/[^\s]+)$/);
+                            if (urlMatch) {
+                                return (
+                                    <a
+                                        key={i}
+                                        href={urlMatch[1]}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-500 hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {urlMatch[1]}
+                                    </a>
+                                );
+                            }
+                            return part;
+                        })}
+                    </p>
+                )}
             </div>
         }
     },
