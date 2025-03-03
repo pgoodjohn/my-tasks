@@ -58,9 +58,8 @@ jobs:
 
       - name: Build the app
         run: |
-          cd src-tauri
-          cp .env.example .env
-          cargo tauri build --target aarch64-apple-darwin
+          cp src-tauri/.env.example src-tauri/.env
+          npm run tauri bundle -- --bundles app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
