@@ -9,18 +9,18 @@ import {
 import { useProjects } from "@/hooks/use-projects";
 import { Link } from '@tanstack/react-router'
 import { useRouterState } from "@tanstack/react-router"
-import { useTasks } from "@/hooks/use-tasks";
+import { useTaskTree } from "@/hooks/use-task-tree";
 import React from "react";
 
 export default function AppBreadcrumb() {
-
     return (
-        <Breadcrumb>
-            <BreadcrumbList>
-                <BreadcrumbItems />
-            </BreadcrumbList>
-        </Breadcrumb>
-
+        <div className="overflow-x-auto">
+            <Breadcrumb>
+                <BreadcrumbList className="flex-nowrap">
+                    <BreadcrumbItems />
+                </BreadcrumbList>
+            </Breadcrumb>
+        </div>
     )
 }
 
@@ -155,7 +155,7 @@ function ProjectBreadcrumb({ projectId }: { projectId: string | undefined }) {
 }
 
 function TaskBreadcrumb({ taskId }: { taskId: string | undefined }) {
-    const { data: tasks } = useTasks(true);
+    const { data: tasks } = useTaskTree();
 
     if (!taskId) {
         return (
@@ -185,13 +185,10 @@ function TaskBreadcrumb({ taskId }: { taskId: string | undefined }) {
 
     while (currentTask.parent_task_id) {
         const parentTask = tasks?.find(t => t.id === currentTask.parent_task_id);
-        console.log('Looking for parent:', currentTask.parent_task_id, 'Found:', parentTask);
         if (!parentTask) break;
         taskChain.push(parentTask);
         currentTask = parentTask;
     }
-
-    console.log('Task chain:', taskChain);
 
     // Reverse the chain so it goes from root to leaf
     taskChain.reverse();

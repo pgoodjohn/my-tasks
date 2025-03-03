@@ -27,6 +27,7 @@ export function CreateSubtaskForm({ parentTask }: CreateSubtaskFormProps) {
         onSuccess: () => {
             toast.success("Subtask created")
             queryClient.invalidateQueries({ queryKey: ['tasks', parentTask.id] })
+            queryClient.invalidateQueries({ queryKey: ['tasks', 'tree'] })
             newSubtaskForm.reset()
         },
         onError: (error) => {
