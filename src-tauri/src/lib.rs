@@ -73,6 +73,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             chart::commands::load_rolling_week_day_charts_command,
+            chart::commands::load_project_activity_stats_command,
             configuration::commands::load_configuration_command,
             project::tauri::actions::archive_project_command,
             project::tauri::actions::create_project_command,
