@@ -5,6 +5,7 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { useConfiguration } from '@/hooks/use-configuration'
 import AppContainer from '@/components/app-container'
 import { Toaster } from '@/components/ui/sonner'
+import { CommandBar } from '@/components/command-bar'
 
 export const Route = createRootRoute({
     component: RootComponent,
@@ -25,6 +26,7 @@ function RootComponent() {
             </div>
             {data?.developmentMode && <TanStackRouterDevtools position='bottom-right' />}
             <Toaster />
+            <CommandBar />
         </React.Fragment >
     )
 }
