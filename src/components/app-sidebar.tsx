@@ -16,6 +16,7 @@ import {
 import { Link } from '@tanstack/react-router'
 import { useConfiguration } from "@/hooks/use-configuration"
 import { useFavoriteProjects } from "@/hooks/use-favorite-projects"
+import { useTasksDueToday } from "@/hooks/use-tasks-due-today"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,6 +30,7 @@ import { useTasks } from "@/hooks/use-tasks"
 
 export function AppSidebar() {
     const tasks = useTasks(false);
+    const tasksDueToday = useTasksDueToday();
 
     return (
         <Sidebar>
@@ -39,7 +41,14 @@ export function AppSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuButton asChild>
-                                <Link to='/'>Home</Link>
+                                <Link to='/' className="flex justify-between items-center w-full">
+                                    Home
+                                    {
+                                        tasksDueToday && tasksDueToday.data && tasksDueToday.data.length > 0 && (
+                                            <Badge variant="small-red">{tasksDueToday.data.length}</Badge>
+                                        )
+                                    }
+                                </Link>
                             </SidebarMenuButton>
                             <SidebarMenuButton asChild>
                                 <Link to='/tasks' className="flex justify-between items-center w-full">
