@@ -10,7 +10,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Task } from '@/types';
 import EditTaskDialog from '@/components/tasks-table/EditTaskDialog';
 import ProjectTag from '@/components/project-tag';
-import { Badge } from '../ui/badge';
 import { invoke_tauri_command } from '@/lib/utils';
 import {
     Popover,
@@ -25,6 +24,9 @@ import {
 } from "@/components/ui/command"
 import { Ellipsis } from 'lucide-react';
 import { Link } from '@tanstack/react-router'
+import { format, startOfWeek, addWeeks } from "date-fns"
+import { Calendar } from "@/components/ui/calendar"
+import { toast } from "sonner"
 
 
 const columns: ColumnDef<Task>[] = [
@@ -109,7 +111,7 @@ const columns: ColumnDef<Task>[] = [
         accessorKey: "due_at_utc",
         header: "Due Date",
         cell: ({ row }) => {
-            return <DueDateColumn dateString={row.original.due_at_utc} />
+            return <DueDateColumn dateString={row.original.due_at_utc} taskId={row.original.id} task={row.original} />
         }
     },
     {
@@ -117,7 +119,7 @@ const columns: ColumnDef<Task>[] = [
         accessorKey: "deadline_at_utc",
         header: "Deadline",
         cell: ({ row }) => {
-            return <DueDateColumn dateString={row.original.deadline_at_utc} />
+            return <DueDateColumn dateString={row.original.deadline_at_utc} taskId={row.original.id} task={row.original} />
         }
     },
     {
@@ -166,27 +168,75 @@ export default TasksTable;
 
 interface DueDateColumnProps {
     dateString: string | null,
+    taskId: string,
+    task: Task,
 }
 
-const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString }) => {
-    if (dateString !== null) {
-        const date = new Date(dateString)
+const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task }) => {
+    const [date, setDate] = React.useState<Date | undefined>(dateString ? new Date(dateString) : undefined)
+    const [open, setOpen] = React.useState(false)
 
-        // if date is today, show it in a red Badge
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        if (date.getTime() <= today.getTime()) {
-            return <span>
-                <Badge variant="destructive">{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</Badge>
-            </span>
-        }
+    const updateDueDateMutation = useMutation({
+        mutationFn: async function (newDate: Date | undefined) {
+            let res = await invoke_tauri_command('update_task_command', {
+                taskId: taskId,
+                title: task.title,
+                description: task.description || '',
+                dueDate: newDate?.toISOString(),
+                deadline: task.deadline_at_utc,
+                projectId: task.project?.id
+            });
+            return res
+        },
+        onSuccess: () => {
+            toast.success(`Due date updated to ${date ? format(date, "MMM d") : "none"}`)
+            setOpen(false)
+        },
+    });
 
-        return <span>
-            <p>{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}</p>
-        </span>
+    const handleDateChange = (newDate: Date | undefined) => {
+        setDate(newDate)
+        updateDueDateMutation.mutateAsync(newDate)
     }
 
-    return <span>-</span>
+    const setQuickDate = (days: number) => {
+        const newDate = new Date()
+        newDate.setHours(0, 0, 0, 0)
+        newDate.setDate(newDate.getDate() + days)
+        handleDateChange(newDate)
+    }
+
+    const setNextSunday = () => {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const nextSunday = startOfWeek(addWeeks(today, 1), { weekStartsOn: 0 })
+        handleDateChange(nextSunday)
+    }
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm">
+                    {date ? format(date, "MMM d") : "-"}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+                <div className="flex flex-col gap-2 p-2">
+                    <div className="flex flex-wrap gap-1">
+                        <Button variant="outline" size="sm" onClick={() => setQuickDate(0)}>Today</Button>
+                        <Button variant="outline" size="sm" onClick={() => setQuickDate(1)}>Tomorrow</Button>
+                        <Button variant="outline" size="sm" onClick={setNextSunday}>Next Sunday</Button>
+                    </div>
+                    <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={handleDateChange}
+                        initialFocus
+                    />
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
 }
 
 function ParentTaskLabel({ parentTaskId }: { parentTaskId: string | null }) {
