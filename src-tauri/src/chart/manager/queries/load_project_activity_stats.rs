@@ -1,4 +1,4 @@
-use chrono::{DateTime, Days, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
 use std::error::Error;
 
