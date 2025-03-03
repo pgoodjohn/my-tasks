@@ -61,23 +61,23 @@ impl RollingWeekDayCharts {
 impl ChartManager<'_> {
     pub async fn load_rolling_week_day_charts(
         &self,
+        since: DateTime<Utc>,
         until: DateTime<Utc>,
     ) -> Result<Vec<RollingWeekDayCharts>, Box<dyn std::error::Error>> {
         let mut connection = self.db_pool.acquire().await?;
 
         let mut charts = vec![];
+        let days = until.signed_duration_since(since).num_days() + 1;
 
-        for i in 0..7 {
-            let query_date = until
-                .checked_sub_days(Days::new(i))
+        for i in 0..days {
+            let query_date = since
+                .checked_add_days(Days::new((i as u32).into()))
                 .ok_or("Unable to calculate date")?;
             let charts_data =
                 RollingWeekDayCharts::load_for_date(query_date, &mut connection).await?;
 
             charts.push(charts_data)
         }
-
-        charts.reverse(); // TODO: Silly hack
 
         Ok(charts)
     }

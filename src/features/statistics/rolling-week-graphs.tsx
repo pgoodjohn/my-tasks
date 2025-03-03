@@ -15,6 +15,11 @@ import {
 } from "@/components/ui/chart"
 import { invoke_tauri_command } from "@/lib/utils";
 import { Spinner } from "@/components/spinner";
+import { DateRangePicker } from "@/components/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from "date-fns";
 
 interface ProjectActivityStats {
     project_id: string;
@@ -24,22 +29,131 @@ interface ProjectActivityStats {
 }
 
 export function RollingWeekGraphs() {
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        to: new Date(),
+    });
+
+    const setDateRangeForPeriod = (period: 'last-7-days' | 'this-week' | 'last-week' | 'this-month' | 'last-month') => {
+        const now = new Date();
+        switch (period) {
+            case 'last-7-days':
+                setDateRange({
+                    from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                    to: now,
+                });
+                break;
+            case 'this-week':
+                setDateRange({
+                    from: startOfWeek(now),
+                    to: endOfWeek(now),
+                });
+                break;
+            case 'last-week':
+                const lastWeekStart = startOfWeek(subWeeks(now, 1));
+                setDateRange({
+                    from: lastWeekStart,
+                    to: endOfWeek(lastWeekStart),
+                });
+                break;
+            case 'this-month':
+                setDateRange({
+                    from: startOfMonth(now),
+                    to: endOfMonth(now),
+                });
+                break;
+            case 'last-month':
+                const lastMonthStart = startOfMonth(subMonths(now, 1));
+                setDateRange({
+                    from: lastMonthStart,
+                    to: endOfMonth(lastMonthStart),
+                });
+                break;
+        }
+    };
+
+    const isActivePeriod = (period: 'last-7-days' | 'this-week' | 'last-week' | 'this-month' | 'last-month') => {
+        if (!dateRange?.from || !dateRange?.to) return false;
+
+        const now = new Date();
+        switch (period) {
+            case 'last-7-days':
+                const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                return dateRange.from.getTime() === last7Days.getTime() &&
+                    dateRange.to.getTime() === now.getTime();
+            case 'this-week':
+                return dateRange.from.getTime() === startOfWeek(now).getTime() &&
+                    dateRange.to.getTime() === endOfWeek(now).getTime();
+            case 'last-week':
+                const lastWeekStart = startOfWeek(subWeeks(now, 1));
+                return dateRange.from.getTime() === lastWeekStart.getTime() &&
+                    dateRange.to.getTime() === endOfWeek(lastWeekStart).getTime();
+            case 'this-month':
+                return dateRange.from.getTime() === startOfMonth(now).getTime() &&
+                    dateRange.to.getTime() === endOfMonth(now).getTime();
+            case 'last-month':
+                const lastMonthStart = startOfMonth(subMonths(now, 1));
+                return dateRange.from.getTime() === lastMonthStart.getTime() &&
+                    dateRange.to.getTime() === endOfMonth(lastMonthStart).getTime();
+        }
+    };
+
     return (
         <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center mb-4">
+                <div className="flex gap-2">
+                    <Button
+                        variant={isActivePeriod('last-7-days') ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDateRangeForPeriod('last-7-days')}
+                    >
+                        Last 7 Days
+                    </Button>
+                    <Button
+                        variant={isActivePeriod('this-week') ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDateRangeForPeriod('this-week')}
+                    >
+                        This Week
+                    </Button>
+                    <Button
+                        variant={isActivePeriod('last-week') ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDateRangeForPeriod('last-week')}
+                    >
+                        Last Week
+                    </Button>
+                    <Button
+                        variant={isActivePeriod('this-month') ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDateRangeForPeriod('this-month')}
+                    >
+                        This Month
+                    </Button>
+                    <Button
+                        variant={isActivePeriod('last-month') ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDateRangeForPeriod('last-month')}
+                    >
+                        Last Month
+                    </Button>
+                </div>
+                <DateRangePicker value={dateRange} onChange={setDateRange} />
+            </div>
             <div className="flex justify-around">
                 <div className="container max-w-[500px]">
-                    <CompletedChart />
+                    <CompletedChart dateRange={dateRange} />
                 </div>
                 <div className="container max-w-[500px]">
-                    <CreatedChart />
+                    <CreatedChart dateRange={dateRange} />
                 </div>
             </div>
             <div className="flex justify-around">
                 <div className="container max-w-[500px]">
-                    <ProjectCompletedChart />
+                    <ProjectCompletedChart dateRange={dateRange} />
                 </div>
                 <div className="container max-w-[500px]">
-                    <ProjectCreatedChart />
+                    <ProjectCreatedChart dateRange={dateRange} />
                 </div>
             </div>
         </div>
@@ -65,19 +179,24 @@ const chartConfig = {
     }
 } satisfies ChartConfig
 
-function useChartsData() {
+function useChartsData(dateRange: DateRange | undefined) {
     return useQuery({
-        queryKey: ['tasks', 'completed', 'chart'],
+        queryKey: ['tasks', 'completed', 'chart', dateRange],
         queryFn: async () => {
-            return invoke_tauri_command('load_rolling_week_day_charts_command', {})
+            if (!dateRange?.from || !dateRange?.to) {
+                throw new Error("Date range is required");
+            }
+            return invoke_tauri_command('load_rolling_week_day_charts_command', {
+                since: dateRange.from.toISOString(),
+                until: dateRange.to.toISOString(),
+            })
         },
+        enabled: !!dateRange?.from && !!dateRange?.to,
     })
-
 }
 
-function CompletedChart() {
-
-    const chartsData = useChartsData()
+function CompletedChart({ dateRange }: { dateRange: DateRange | undefined }) {
+    const chartsData = useChartsData(dateRange)
 
     if (chartsData.isLoading) {
         return <><Spinner /></>
@@ -91,7 +210,7 @@ function CompletedChart() {
         <Card>
             <CardHeader>
                 <CardTitle>Completed Tasks</CardTitle>
-                <CardDescription>Last 7 days</CardDescription>
+                <CardDescription>Selected date range</CardDescription>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig}>
@@ -118,8 +237,8 @@ function CompletedChart() {
     )
 }
 
-function CreatedChart() {
-    const chartsData = useChartsData()
+function CreatedChart({ dateRange }: { dateRange: DateRange | undefined }) {
+    const chartsData = useChartsData(dateRange)
 
     if (chartsData.isLoading) {
         return <><Spinner /></>
@@ -133,7 +252,7 @@ function CreatedChart() {
         <Card>
             <CardHeader>
                 <CardTitle>Created Tasks</CardTitle>
-                <CardDescription>Last 7 days</CardDescription>
+                <CardDescription>Selected date range</CardDescription>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig}>
@@ -160,12 +279,19 @@ function CreatedChart() {
     )
 }
 
-function ProjectCompletedChart() {
+function ProjectCompletedChart({ dateRange }: { dateRange: DateRange | undefined }) {
     const chartsData = useQuery<ProjectActivityStats[]>({
-        queryKey: ['tasks', 'project', 'activity'],
+        queryKey: ['tasks', 'project', 'activity', dateRange],
         queryFn: async () => {
-            return invoke_tauri_command('load_project_activity_stats_command', {})
+            if (!dateRange?.from || !dateRange?.to) {
+                throw new Error("Date range is required");
+            }
+            return invoke_tauri_command('load_project_activity_stats_command', {
+                since: dateRange.from.toISOString(),
+                until: dateRange.to.toISOString(),
+            })
         },
+        enabled: !!dateRange?.from && !!dateRange?.to,
     })
 
     if (chartsData.isLoading) {
@@ -182,7 +308,7 @@ function ProjectCompletedChart() {
         <Card>
             <CardHeader>
                 <CardTitle>Completed Tasks by Project</CardTitle>
-                <CardDescription>Last 7 days</CardDescription>
+                <CardDescription>Selected date range</CardDescription>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig}>
@@ -206,7 +332,7 @@ function ProjectCompletedChart() {
                         </BarChart>
                     ) : (
                         <div className="flex items-center justify-center h-[200px] text-muted-foreground">
-                            No completed tasks in the last 7 days
+                            No completed tasks in the selected date range
                         </div>
                     )}
                 </ChartContainer>
@@ -215,12 +341,19 @@ function ProjectCompletedChart() {
     )
 }
 
-function ProjectCreatedChart() {
+function ProjectCreatedChart({ dateRange }: { dateRange: DateRange | undefined }) {
     const chartsData = useQuery<ProjectActivityStats[]>({
-        queryKey: ['tasks', 'project', 'activity'],
+        queryKey: ['tasks', 'project', 'activity', dateRange],
         queryFn: async () => {
-            return invoke_tauri_command('load_project_activity_stats_command', {})
+            if (!dateRange?.from || !dateRange?.to) {
+                throw new Error("Date range is required");
+            }
+            return invoke_tauri_command('load_project_activity_stats_command', {
+                since: dateRange.from.toISOString(),
+                until: dateRange.to.toISOString(),
+            })
         },
+        enabled: !!dateRange?.from && !!dateRange?.to,
     })
 
     if (chartsData.isLoading) {
@@ -237,7 +370,7 @@ function ProjectCreatedChart() {
         <Card>
             <CardHeader>
                 <CardTitle>Created Tasks by Project</CardTitle>
-                <CardDescription>Last 7 days</CardDescription>
+                <CardDescription>Selected date range</CardDescription>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig}>
@@ -261,7 +394,7 @@ function ProjectCreatedChart() {
                         </BarChart>
                     ) : (
                         <div className="flex items-center justify-center h-[200px] text-muted-foreground">
-                            No created tasks in the last 7 days
+                            No created tasks in the selected date range
                         </div>
                     )}
                 </ChartContainer>
