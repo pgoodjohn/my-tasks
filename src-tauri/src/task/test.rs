@@ -25,7 +25,6 @@ mod task_tests {
         project_id TEXT,
         parent_task_id TEXT,
         due_at_utc DATETIME,
-        deadline_at_utc DATETIME,
         created_at_utc DATETIME NOT NULL,
         completed_at_utc DATETIME,
         updated_at_utc DATETIME NOT NULL
@@ -67,7 +66,6 @@ mod task_tests {
                 title: "New Task".to_string(),
                 description: None,
                 project_id: None,
-                deadline_at_utc: None,
                 due_at_utc: None,
             })
             .await
@@ -97,7 +95,6 @@ mod task_tests {
                 title: "New Task".to_string(),
                 description: None,
                 project_id: None,
-                deadline_at_utc: None,
                 due_at_utc: None,
             })
             .await
@@ -108,7 +105,6 @@ mod task_tests {
             description: None,
             project_id: None,
             due_date: None,
-            deadline: None,
         };
 
         let updated_task = manager
@@ -132,7 +128,6 @@ mod task_tests {
                 title: "New Task".to_string(),
                 description: None,
                 project_id: None,
-                deadline_at_utc: None,
                 due_at_utc: None,
             })
             .await
@@ -147,7 +142,6 @@ mod task_tests {
                     title: "New Task".to_string(),
                     description: None,
                     project_id: None,
-                    deadline_at_utc: None,
                     due_at_utc: None,
                 },
             )
@@ -172,7 +166,6 @@ mod task_tests {
                 title: "New Task".to_string(),
                 description: None,
                 project_id: None,
-                deadline_at_utc: None,
                 due_at_utc: None,
             })
             .await
@@ -195,7 +188,6 @@ mod task_tests {
                 title: "New Task".to_string(),
                 description: None,
                 project_id: None,
-                deadline_at_utc: None,
                 due_at_utc: None,
             })
             .await
@@ -210,7 +202,6 @@ mod task_tests {
                     title: "New Task".to_string(),
                     description: None,
                     project_id: None,
-                    deadline_at_utc: None,
                     due_at_utc: None,
                 },
             )

@@ -99,8 +99,12 @@ mod chart_manager_test {
         let manager = ChartManager::new(&db_pool);
 
         let until = Utc::now(); // TODO: make fixd date
+        let since = until - chrono::Duration::days(6); // Get last 7 days (including both start and end)
 
-        let actual = manager.load_rolling_week_day_charts(until).await.unwrap();
+        let actual = manager
+            .load_rolling_week_day_charts(since, until)
+            .await
+            .unwrap();
 
         assert_eq!(expected.len(), actual.len());
     }

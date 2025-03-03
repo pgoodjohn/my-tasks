@@ -17,7 +17,6 @@ pub struct UpdatedTaskData {
     title: String,
     description: Option<String>,
     due_date: Option<String>,
-    deadline: Option<String>,
     project_id: Option<String>,
 }
 
@@ -27,7 +26,6 @@ pub struct CreateTaskData {
     title: String,
     description: Option<String>,
     due_at_utc: Option<DateTime<Utc>>,
-    deadline_at_utc: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,7 +36,6 @@ pub struct Task {
     pub project: Option<Project>,
     pub parent_task_id: Option<Uuid>,
     pub due_at_utc: Option<DateTime<Utc>>,
-    pub deadline_at_utc: Option<DateTime<Utc>>,
     pub created_at_utc: DateTime<Utc>,
     pub completed_at_utc: Option<DateTime<Utc>>,
     pub updated_at_utc: DateTime<Utc>,
@@ -50,7 +47,6 @@ impl Task {
         description: Option<String>,
         project: Option<Project>,
         due_at_utc: Option<DateTime<Utc>>,
-        deadline_at_utc: Option<DateTime<Utc>>,
     ) -> Self {
         Task {
             id: Uuid::now_v7(),
@@ -59,7 +55,6 @@ impl Task {
             project,
             parent_task_id: None,
             due_at_utc,
-            deadline_at_utc,
             created_at_utc: Utc::now(),
             completed_at_utc: None,
             updated_at_utc: Utc::now(),
@@ -75,9 +70,6 @@ impl Task {
         self.description = data.description;
         self.due_at_utc = data
             .due_date
-            .map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
-        self.deadline_at_utc = data
-            .deadline
             .map(|date| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&date).unwrap()));
         self.updated_at_utc = Utc::now();
 
@@ -112,7 +104,7 @@ impl Task {
         self.updated_at_utc = Utc::now();
 
         let _sql_result = sqlx::query(
-            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, parent_task_id = ?4, updated_at_utc = ?5, project_id = ?6, deadline_at_utc = ?7, completed_at_utc = ?8, updated_at_utc = ?9 WHERE id = ?10"
+            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, parent_task_id = ?4, updated_at_utc = ?5, project_id = ?6, completed_at_utc = ?7, updated_at_utc = ?8 WHERE id = ?9"
         )
         .bind(&self.title)
         .bind(&self.description)
@@ -120,7 +112,6 @@ impl Task {
         .bind(self.parent_task_id.map(|task_uuid| task_uuid.to_string()))
         .bind(self.updated_at_utc.to_rfc3339())
         .bind(self.project.as_ref().map(|project| project.id.to_string()))
-        .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.completed_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.updated_at_utc.to_rfc3339())
         .bind(self.id.to_string())
@@ -139,7 +130,7 @@ impl Task {
         }
 
         let _sql_result = sqlx::query(
-            "INSERT INTO tasks (id, title, description, project_id, parent_task_id, due_at_utc, deadline_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)"
+            "INSERT INTO tasks (id, title, description, project_id, parent_task_id, due_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"
         )
         .bind(self.id.to_string())
         .bind(&self.title)
@@ -147,7 +138,6 @@ impl Task {
         .bind(self.project.as_ref().map(|project| project.id.to_string()))
         .bind(self.parent_task_id.map(|id| id.to_string()))
         .bind(self.due_at_utc.map(|date| date.to_rfc3339()))
-        .bind(self.deadline_at_utc.map(|date| date.to_rfc3339()))
         .bind(self.created_at_utc.to_rfc3339())
         .bind(self.updated_at_utc.to_rfc3339())
         .execute(&mut **connection).await?;
@@ -175,7 +165,6 @@ impl Task {
         let project_uuid_string: Option<String> = row.get("project_id");
         let parent_task_uuid_string: Option<String> = row.get("parent_task_id");
         let due_at_utc_string: Option<String> = row.get("due_at_utc");
-        let deadline_at_utc_string: Option<String> = row.get("deadline_at_utc");
         let created_at_string: String = row.get("created_at_utc");
         let updated_at_string: String = row.get("updated_at_utc");
         let completed_at_string: Option<String> = row.get("completed_at_utc");
@@ -194,8 +183,6 @@ impl Task {
             },
             parent_task_id: parent_task_uuid_string.map(|s| Uuid::parse_str(&s).unwrap()),
             due_at_utc: due_at_utc_string
-                .map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
-            deadline_at_utc: deadline_at_utc_string
                 .map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
             created_at_utc: DateTime::<Utc>::from(
                 DateTime::parse_from_rfc3339(&created_at_string).unwrap(),
@@ -313,24 +300,6 @@ impl Task {
             "SELECT * FROM tasks WHERE due_at_utc < ?1 AND completed_at_utc IS NULL ORDER BY due_at_utc ASC"
         )
         .bind(date.to_rfc3339())
-        .fetch_all(&mut **connection)
-        .await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
-    }
-
-    pub async fn load_with_deadlines(
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE deadline_at_utc IS NOT NULL AND completed_at_utc IS NULL ORDER BY deadline_at_utc ASC"
-        )
         .fetch_all(&mut **connection)
         .await?;
 

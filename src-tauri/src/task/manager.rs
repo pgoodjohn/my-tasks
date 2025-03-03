@@ -51,7 +51,6 @@ impl<'a> TaskManager<'a> {
             create_task_data.description,
             project,
             create_task_data.due_at_utc,
-            create_task_data.deadline_at_utc,
         );
         task.create_record(&mut connection).await?;
 
@@ -72,7 +71,6 @@ impl<'a> TaskManager<'a> {
             create_task_data.title,
             create_task_data.description,
             project,
-            None,
             None,
         );
         task.parent_task_id = Some(parent_task.id);
@@ -207,14 +205,6 @@ impl<'a> TaskManager<'a> {
         let mut connection = self.db_pool.acquire().await?;
 
         let tasks = Task::load_due_before(date, &mut connection).await?;
-
-        Ok(tasks)
-    }
-
-    pub async fn load_with_deadline(&self) -> Result<Vec<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        let tasks = Task::load_with_deadlines(&mut connection).await?;
 
         Ok(tasks)
     }

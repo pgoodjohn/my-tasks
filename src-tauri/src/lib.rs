@@ -72,8 +72,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
-            chart::commands::load_rolling_week_day_charts_command,
-            chart::commands::load_project_activity_stats_command,
+            chart::tauri::queries::load_rolling_week_day_charts_command,
+            chart::tauri::queries::load_project_activity_stats_command,
             configuration::commands::load_configuration_command,
             project::tauri::actions::archive_project_command,
             project::tauri::actions::create_project_command,
@@ -94,7 +94,6 @@ pub fn run() {
             task::tauri::queries::load_task_by_id_command,
             task::tauri::queries::load_task_activity_statistics_command,
             task::tauri::queries::load_tasks_due_today_command,
-            task::tauri::queries::load_tasks_with_deadline_command,
             task::tauri::queries::load_tasks_inbox_command,
             task::tauri::queries::load_tasks_command,
             task::tauri::queries::load_completed_tasks_command,

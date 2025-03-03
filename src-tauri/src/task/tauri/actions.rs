@@ -13,18 +13,10 @@ pub async fn create_task_command(
     title: String,
     description: Option<String>,
     due_date: Option<String>,
-    deadline: Option<String>,
     project_id: Option<String>,
     db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
     let due_at_utc = match due_date {
-        Some(date) => Some(DateTime::<Utc>::from(
-            DateTime::parse_from_rfc3339(&date).map_err(|e| handle_error(&e))?,
-        )),
-        None => None,
-    };
-
-    let deadline_at_utc = match deadline {
         Some(date) => Some(DateTime::<Utc>::from(
             DateTime::parse_from_rfc3339(&date).map_err(|e| handle_error(&e))?,
         )),
@@ -40,7 +32,6 @@ pub async fn create_task_command(
         title,
         description,
         due_at_utc,
-        deadline_at_utc,
         project_id: project_id_uuid,
     };
 
@@ -62,7 +53,6 @@ pub async fn update_task_command(
     title: String,
     description: Option<String>,
     due_date: Option<String>,
-    deadline: Option<String>,
     project_id: Option<String>,
     db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
@@ -70,7 +60,6 @@ pub async fn update_task_command(
         title,
         description,
         due_date,
-        deadline,
         project_id,
     };
 
@@ -158,7 +147,6 @@ pub async fn create_subtask_for_task_command(
         project_id: parent_task.project.as_ref().map(|p| p.id),
         description,
         due_at_utc,
-        deadline_at_utc: parent_task.deadline_at_utc,
     };
 
     let subtask = task_manager

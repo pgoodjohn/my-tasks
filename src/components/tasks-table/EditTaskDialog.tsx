@@ -60,7 +60,6 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
             description: task.description || '',
             projectId: task.project?.id || undefined,
             dueDate: task.due_at_utc ? new Date(task.due_at_utc) : undefined,
-            deadline: task.deadline_at_utc ? new Date(task.deadline_at_utc) : undefined,
         },
         onSubmit: async ({ value }) => {
             // Do something with form data
@@ -69,9 +68,8 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
     })
 
     const mutation = useMutation({
-        mutationFn: async function (value: { id: string, title: string, description: string, dueDate: Date | undefined, projectId: string | undefined, deadline: Date | undefined }) {
-            // let res = await invoke('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, deadline: value.deadline, projectId: value.projectId });
-            let res = await invoke_tauri_command('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, deadline: value.deadline, projectId: value.projectId });
+        mutationFn: async function (value: { id: string, title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
+            let res = await invoke_tauri_command('update_task_command', { taskId: value.id, title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
             return res
         },
         onSuccess: () => {
@@ -143,18 +141,6 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                     children={(field) => (
                         <div className='flex flex-col'>
                             <label className='text-sm font-medium'>Due Date</label>
-                            <DatePicker
-                                value={field.state.value}
-                                onChange={field.handleChange}
-                            />
-                        </div>
-                    )}
-                />
-                <editTaskForm.Field
-                    name="deadline"
-                    children={(field) => (
-                        <div className='flex flex-col'>
-                            <label className='text-sm font-medium'>Deadline</label>
                             <DatePicker
                                 value={field.state.value}
                                 onChange={field.handleChange}

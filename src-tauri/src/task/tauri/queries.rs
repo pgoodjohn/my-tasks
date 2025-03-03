@@ -49,20 +49,6 @@ pub async fn load_tasks_due_today_command(db: State<'_, SqlitePool>) -> Result<S
 }
 
 #[tauri::command]
-pub async fn load_tasks_with_deadline_command(db: State<'_, SqlitePool>) -> Result<String, String> {
-    log::debug!("Running load tasks with deadline command");
-
-    let manager = TaskManager::new(&db);
-
-    let tasks = manager
-        .load_with_deadline()
-        .await
-        .map_err(|e| handle_error(&*e))?;
-
-    Ok(serde_json::to_string(&tasks).unwrap())
-}
-
-#[tauri::command]
 pub async fn load_tasks_command(
     include_completed: bool,
     db: State<'_, SqlitePool>,

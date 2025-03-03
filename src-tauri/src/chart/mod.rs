@@ -1,3 +1,3 @@
-pub mod commands;
-mod manager;
-mod test;
+pub mod manager;
+pub mod tauri;
+pub mod test;

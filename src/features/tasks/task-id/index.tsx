@@ -44,7 +44,6 @@ export function RouteComponent() {
                 <p className="text-lg">{taskQuery.data.title}</p>
                 <div className="flex-grow" />
                 <p>{taskQuery.data.due_at_utc ? (new Date(taskQuery.data.due_at_utc).toDateString()) : "-"}</p>
-                <p>{taskQuery.data.deadline_at_utc ? (new Date(taskQuery.data.deadline_at_utc).toDateString()) : "-"}</p>
                 <Button variant="outline" onClick={handlePromoteToProject}>
                     Promote to Project
                 </Button>

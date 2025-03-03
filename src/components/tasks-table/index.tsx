@@ -49,12 +49,14 @@ const columns: ColumnDef<Task>[] = [
             });
 
             return (
-                <Checkbox
-                    checked={row.original.completed_at_utc != null}
-                    onCheckedChange={() => {
-                        markCompleteMutation.mutateAsync()
-                    }}
-                />
+                <div className="flex items-center justify-center px-2">
+                    <Checkbox
+                        checked={row.original.completed_at_utc != null}
+                        onCheckedChange={() => {
+                            markCompleteMutation.mutateAsync()
+                        }}
+                    />
+                </div>
             )
         }
     },
@@ -62,9 +64,9 @@ const columns: ColumnDef<Task>[] = [
         id: "title",
         accessorKey: "title",
         header: "Task",
-        size: 300,
+        size: 400,
         cell: ({ row }) => {
-            return <div className='flex-col'>
+            return <div className='flex-col pl-2'>
                 {row.original.parent_task_id && <ParentTaskLabel parentTaskId={row.original.parent_task_id} />}
                 <Link
                     to="/tasks/$taskId" params={{ taskId: row.original.id }}
@@ -102,6 +104,7 @@ const columns: ColumnDef<Task>[] = [
         id: "project",
         accessorKey: "project",
         header: "Project",
+        size: 120,
         cell: ({ row }) => {
             return row.original.project ? <ProjectTag projectId={row.original.project.id} asLink /> : "-"
         }
@@ -110,20 +113,14 @@ const columns: ColumnDef<Task>[] = [
         id: "due_at_utc",
         accessorKey: "due_at_utc",
         header: "Due Date",
+        size: 100,
         cell: ({ row }) => {
             return <DueDateColumn dateString={row.original.due_at_utc} taskId={row.original.id} task={row.original} />
         }
     },
     {
-        id: "deadline_at_utc",
-        accessorKey: "deadline_at_utc",
-        header: "Deadline",
-        cell: ({ row }) => {
-            return <DueDateColumn dateString={row.original.deadline_at_utc} taskId={row.original.id} task={row.original} />
-        }
-    },
-    {
         id: "actions",
+        size: 50,
         cell: ({ row }) => {
             const task = row.original
             return (
@@ -200,7 +197,6 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
                 title: task.title,
                 description: task.description || '',
                 dueDate: newDate?.toISOString(),
-                deadline: task.deadline_at_utc,
                 projectId: task.project?.id
             });
             return res
