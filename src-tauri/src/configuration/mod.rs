@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-pub mod commands;
 pub mod manager;
+pub mod tauri;
 mod test;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
