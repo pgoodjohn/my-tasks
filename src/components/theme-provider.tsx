@@ -32,7 +32,6 @@ export function ThemeProvider({
 
     useEffect(() => {
         const root = window.document.documentElement
-
         root.classList.remove("light", "dark")
 
         if (theme === "system") {
@@ -40,12 +39,25 @@ export function ThemeProvider({
                 .matches
                 ? "dark"
                 : "light"
-
             root.classList.add(systemTheme)
-            return
+        } else {
+            root.classList.add(theme)
+        }
+    }, [theme])
+
+    // Add media query listener for system theme changes
+    useEffect(() => {
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+        const handleChange = () => {
+            if (theme === "system") {
+                const root = window.document.documentElement
+                root.classList.remove("light", "dark")
+                root.classList.add(mediaQuery.matches ? "dark" : "light")
+            }
         }
 
-        root.classList.add(theme)
+        mediaQuery.addEventListener("change", handleChange)
+        return () => mediaQuery.removeEventListener("change", handleChange)
     }, [theme])
 
     const value = {
