@@ -34,12 +34,24 @@ export function RollingWeekGraphs() {
         to: new Date(),
     });
 
-    const setDateRangeForPeriod = (period: 'last-7-days' | 'this-week' | 'last-week' | 'this-month' | 'last-month') => {
+    const setDateRangeForPeriod = (period: 'last-7-days' | 'last-14-days' | 'last-30-days' | 'this-week' | 'last-week' | 'this-month' | 'last-month') => {
         const now = new Date();
         switch (period) {
             case 'last-7-days':
                 setDateRange({
                     from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                    to: now,
+                });
+                break;
+            case 'last-14-days':
+                setDateRange({
+                    from: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+                    to: now,
+                });
+                break;
+            case 'last-30-days':
+                setDateRange({
+                    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
                     to: now,
                 });
                 break;
@@ -72,7 +84,7 @@ export function RollingWeekGraphs() {
         }
     };
 
-    const isActivePeriod = (period: 'last-7-days' | 'this-week' | 'last-week' | 'this-month' | 'last-month') => {
+    const isActivePeriod = (period: 'last-7-days' | 'last-14-days' | 'last-30-days' | 'this-week' | 'last-week' | 'this-month' | 'last-month') => {
         if (!dateRange?.from || !dateRange?.to) return false;
 
         const now = new Date();
@@ -80,6 +92,14 @@ export function RollingWeekGraphs() {
             case 'last-7-days':
                 const last7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                 return dateRange.from.getTime() === last7Days.getTime() &&
+                    dateRange.to.getTime() === now.getTime();
+            case 'last-14-days':
+                const last14Days = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+                return dateRange.from.getTime() === last14Days.getTime() &&
+                    dateRange.to.getTime() === now.getTime();
+            case 'last-30-days':
+                const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                return dateRange.from.getTime() === last30Days.getTime() &&
                     dateRange.to.getTime() === now.getTime();
             case 'this-week':
                 return dateRange.from.getTime() === startOfWeek(now).getTime() &&
@@ -108,6 +128,20 @@ export function RollingWeekGraphs() {
                         onClick={() => setDateRangeForPeriod('last-7-days')}
                     >
                         Last 7 Days
+                    </Button>
+                    <Button
+                        variant={isActivePeriod('last-14-days') ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDateRangeForPeriod('last-14-days')}
+                    >
+                        Last 14 Days
+                    </Button>
+                    <Button
+                        variant={isActivePeriod('last-30-days') ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setDateRangeForPeriod('last-30-days')}
+                    >
+                        Last 30 Days
                     </Button>
                     <Button
                         variant={isActivePeriod('this-week') ? "default" : "outline"}
