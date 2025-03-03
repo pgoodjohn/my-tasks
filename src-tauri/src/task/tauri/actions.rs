@@ -5,6 +5,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
 use crate::errors::handle_error;
+use crate::project::manager::ProjectsManager;
 use crate::task::{manager::TaskManager, CreateTaskData, UpdatedTaskData};
 
 #[tauri::command]
@@ -166,4 +167,52 @@ pub async fn create_subtask_for_task_command(
         .map_err(|e| handle_error(&*e))?;
 
     Ok(serde_json::to_string(&subtask).unwrap())
+}
+
+#[tauri::command]
+pub async fn promote_task_to_project_command(
+    task_id: String,
+    db: State<'_, SqlitePool>,
+) -> Result<String, String> {
+    log::debug!(
+        "Running promote task to project command for task ID: {}",
+        task_id
+    );
+
+    let task_id_uuid = Uuid::parse_str(&task_id).map_err(|e| handle_error(&e))?;
+    let task_manager = TaskManager::new(&db);
+    let projects_manager = ProjectsManager::new(&db);
+
+    // Load the task
+    let task = task_manager
+        .load_by_id(task_id_uuid)
+        .await
+        .map_err(|e| handle_error(&*e))?
+        .ok_or_else(|| "Task not found".to_string())?;
+
+    // Create new project with same title
+    let project = projects_manager
+        .create_project(task.title.clone(), None, None, task.description.clone())
+        .await
+        .map_err(|e| handle_error(&*e))?;
+
+    // Move all subtasks to the new project
+    let mut connection = db.acquire().await.map_err(|e| handle_error(&e))?;
+    sqlx::query(
+        "UPDATE tasks SET project_id = ?1, parent_task_id = NULL WHERE parent_task_id = ?2",
+    )
+    .bind(project.id.to_string())
+    .bind(task.id.to_string())
+    .execute(&mut *connection)
+    .await
+    .map_err(|e| handle_error(&e))?;
+
+    // Archive the original task
+    let mut task = task;
+    task.completed_at_utc = Some(Utc::now());
+    task.update_record(&mut connection)
+        .await
+        .map_err(|e| handle_error(&e))?;
+
+    Ok(serde_json::to_string(&project).unwrap())
 }
