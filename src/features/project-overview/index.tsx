@@ -4,6 +4,7 @@ import { invoke_tauri_command } from '@/lib/utils'
 import TasksTable from '@/components/tasks-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import EditProjectDialog from '@/features/projects/edit-project-dialog'
+import { FavoriteProjectButton } from '@/components/favorite-project-button'
 
 interface IndexProps {
     projectID: string
@@ -37,7 +38,10 @@ function Index({ projectID }: IndexProps) {
             <div className='container flex items-center'>
                 <p className='text-xl'>{projectDetailQuery.data.project.emoji} {projectDetailQuery.data.project.title}</p>
                 <div className='flex-grow' />
-                <EditProjectDialog project={projectDetailQuery.data.project} />
+                <div className='flex items-center gap-2'>
+                    <FavoriteProjectButton project={projectDetailQuery.data.project} />
+                    <EditProjectDialog project={projectDetailQuery.data.project} />
+                </div>
             </div>
             <div className='pt-2'>
                 <div className="flex space-x-2 pb-4">
