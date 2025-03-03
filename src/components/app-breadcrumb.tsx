@@ -9,6 +9,8 @@ import {
 import { useProjects } from "@/hooks/use-projects";
 import { Link } from '@tanstack/react-router'
 import { useRouterState } from "@tanstack/react-router"
+import { useTasks } from "@/hooks/use-tasks";
+import React from "react";
 
 export default function AppBreadcrumb() {
 
@@ -58,6 +60,13 @@ function BreadcrumbItemFromRouterMatch({ match }: any) {
                     Tasks
                 </BreadcrumbPage>
             </BreadcrumbItem>
+        )
+    }
+
+    if (match.routeId.startsWith("/tasks/")) {
+        const taskId = match.id.match(/^\/tasks\/([^/]+)/)?.[1];
+        return (
+            <TaskBreadcrumb taskId={taskId} />
         )
     }
 
@@ -123,6 +132,81 @@ function ProjectBreadcrumb({ projectId }: { projectId: string | undefined }) {
                     {project?.title}
                 </BreadcrumbPage>
             </BreadcrumbItem >
+        </>
+    )
+}
+
+function TaskBreadcrumb({ taskId }: { taskId: string | undefined }) {
+    const { data: tasks } = useTasks(true);
+
+    if (!taskId) {
+        return (
+            <BreadcrumbItem>
+                <BreadcrumbPage>
+                    Tasks
+                </BreadcrumbPage>
+            </BreadcrumbItem>
+        )
+    }
+
+    const task = tasks?.find(t => t.id === taskId);
+    if (!task) {
+        return (
+            <BreadcrumbItem>
+                <BreadcrumbPage>
+                    Loading...
+                </BreadcrumbPage>
+            </BreadcrumbItem>
+        );
+    }
+
+    console.log('Current task:', task);
+    console.log('Parent task ID:', task.parent_task_id);
+    console.log('All tasks:', tasks);
+
+    // Build the task hierarchy chain
+    const taskChain: typeof task[] = [];
+    let currentTask = task;
+    taskChain.push(currentTask);
+
+    while (currentTask.parent_task_id) {
+        const parentTask = tasks?.find(t => t.id === currentTask.parent_task_id);
+        console.log('Looking for parent:', currentTask.parent_task_id, 'Found:', parentTask);
+        if (!parentTask) break;
+        taskChain.push(parentTask);
+        currentTask = parentTask;
+    }
+
+    console.log('Task chain:', taskChain);
+
+    // Reverse the chain so it goes from root to leaf
+    taskChain.reverse();
+
+    return (
+        <>
+            <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                    <Link to="/tasks">Tasks</Link>
+                </BreadcrumbLink>
+            </BreadcrumbItem>
+            {taskChain.map((t, index) => (
+                <React.Fragment key={t.id}>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        {index === taskChain.length - 1 ? (
+                            <BreadcrumbPage>
+                                {t.title}
+                            </BreadcrumbPage>
+                        ) : (
+                            <BreadcrumbLink asChild>
+                                <Link to="/tasks/$taskId" params={{ taskId: t.id }}>
+                                    {t.title}
+                                </Link>
+                            </BreadcrumbLink>
+                        )}
+                    </BreadcrumbItem>
+                </React.Fragment>
+            ))}
         </>
     )
 }
