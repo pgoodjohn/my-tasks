@@ -219,6 +219,14 @@ impl<'a> TaskManager<'a> {
         Ok(tasks)
     }
 
+    pub async fn load_completed_tasks(&self) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut connection = self.db_pool.acquire().await?;
+
+        let tasks = Task::load_completed_tasks(&mut connection).await?;
+
+        Ok(tasks)
+    }
+
     pub async fn load_statistics(&self) -> Result<Vec<PeriodTaskStatistic>, Box<dyn Error>> {
         let mut connection = self.db_pool.acquire().await?;
 

@@ -63,6 +63,24 @@ function BreadcrumbItemFromRouterMatch({ match }: any) {
         )
     }
 
+    if (match.routeId == "/tasks/completed") {
+        return (
+            <>
+                <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                        <Link to="/tasks">Tasks</Link>
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                    <BreadcrumbPage>
+                        Completed Tasks
+                    </BreadcrumbPage>
+                </BreadcrumbItem>
+            </>
+        )
+    }
+
     if (match.routeId.startsWith("/tasks/")) {
         const taskId = match.id.match(/^\/tasks\/([^/]+)/)?.[1];
         return (

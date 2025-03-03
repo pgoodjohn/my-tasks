@@ -113,3 +113,17 @@ pub async fn load_task_by_id_command(
 
     Ok(serde_json::to_string(&task).unwrap())
 }
+
+#[tauri::command]
+pub async fn load_completed_tasks_command(db: State<'_, SqlitePool>) -> Result<String, String> {
+    log::debug!("Running load completed tasks command");
+
+    let manager = TaskManager::new(&db);
+
+    let tasks = manager
+        .load_completed_tasks()
+        .await
+        .map_err(|e| handle_error(&*e))?;
+
+    Ok(serde_json::to_string(&tasks).unwrap())
+}

@@ -49,7 +49,7 @@ export function AppSidebar() {
                                     Home
                                     {
                                         tasksDueToday && tasksDueToday.data && tasksDueToday.data.length > 0 && (
-                                            <Badge variant="small-red">{tasksDueToday.data.length}</Badge>
+                                            <Badge variant="small-orange">{tasksDueToday.data.length}</Badge>
                                         )
                                     }
                                 </Link>
@@ -84,6 +84,9 @@ export function AppSidebar() {
                                     <ContributionsCalendar variant="monthly" />
                                 </SidebarMenuButton>
                             </SidebarMenuItem> */}
+                            <SidebarMenuButton asChild isActive={currentRoute === "/tasks/completed"}>
+                                <Link to='/tasks/completed'>Completed Tasks</Link>
+                            </SidebarMenuButton>
                             <SidebarMenuButton asChild isActive={currentRoute === "/statistics"}>
                                 <Link to='/statistics'>Statistics</Link>
                             </SidebarMenuButton>

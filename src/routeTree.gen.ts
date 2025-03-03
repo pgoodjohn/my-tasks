@@ -16,6 +16,7 @@ import { Route as SettingsRouteImport } from './routes/settings.route'
 import { Route as IndexRouteImport } from './routes/index.route'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index.route'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index.route'
+import { Route as TasksCompletedRouteImport } from './routes/tasks/completed.route'
 import { Route as TasksTaskIdRouteImport } from './routes/tasks/$taskId.route'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId.route'
 
@@ -48,6 +49,12 @@ const TasksIndexRouteRoute = TasksIndexRouteImport.update({
 const ProjectsIndexRouteRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const TasksCompletedRouteRoute = TasksCompletedRouteImport.update({
+  id: '/tasks/completed',
+  path: '/tasks/completed',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -102,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TasksTaskIdRouteImport
       parentRoute: typeof rootRoute
     }
+    '/tasks/completed': {
+      id: '/tasks/completed'
+      path: '/tasks/completed'
+      fullPath: '/tasks/completed'
+      preLoaderRoute: typeof TasksCompletedRouteImport
+      parentRoute: typeof rootRoute
+    }
     '/projects/': {
       id: '/projects/'
       path: '/projects'
@@ -127,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof StatisticsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
   '/tasks/$taskId': typeof TasksTaskIdRouteRoute
+  '/tasks/completed': typeof TasksCompletedRouteRoute
   '/projects': typeof ProjectsIndexRouteRoute
   '/tasks': typeof TasksIndexRouteRoute
 }
@@ -137,6 +152,7 @@ export interface FileRoutesByTo {
   '/statistics': typeof StatisticsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
   '/tasks/$taskId': typeof TasksTaskIdRouteRoute
+  '/tasks/completed': typeof TasksCompletedRouteRoute
   '/projects': typeof ProjectsIndexRouteRoute
   '/tasks': typeof TasksIndexRouteRoute
 }
@@ -148,6 +164,7 @@ export interface FileRoutesById {
   '/statistics': typeof StatisticsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
   '/tasks/$taskId': typeof TasksTaskIdRouteRoute
+  '/tasks/completed': typeof TasksCompletedRouteRoute
   '/projects/': typeof ProjectsIndexRouteRoute
   '/tasks/': typeof TasksIndexRouteRoute
 }
@@ -160,6 +177,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/projects/$projectId'
     | '/tasks/$taskId'
+    | '/tasks/completed'
     | '/projects'
     | '/tasks'
   fileRoutesByTo: FileRoutesByTo
@@ -169,6 +187,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/projects/$projectId'
     | '/tasks/$taskId'
+    | '/tasks/completed'
     | '/projects'
     | '/tasks'
   id:
@@ -178,6 +197,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/projects/$projectId'
     | '/tasks/$taskId'
+    | '/tasks/completed'
     | '/projects/'
     | '/tasks/'
   fileRoutesById: FileRoutesById
@@ -189,6 +209,7 @@ export interface RootRouteChildren {
   StatisticsRouteRoute: typeof StatisticsRouteRoute
   ProjectsProjectIdRouteRoute: typeof ProjectsProjectIdRouteRoute
   TasksTaskIdRouteRoute: typeof TasksTaskIdRouteRoute
+  TasksCompletedRouteRoute: typeof TasksCompletedRouteRoute
   ProjectsIndexRouteRoute: typeof ProjectsIndexRouteRoute
   TasksIndexRouteRoute: typeof TasksIndexRouteRoute
 }
@@ -199,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatisticsRouteRoute: StatisticsRouteRoute,
   ProjectsProjectIdRouteRoute: ProjectsProjectIdRouteRoute,
   TasksTaskIdRouteRoute: TasksTaskIdRouteRoute,
+  TasksCompletedRouteRoute: TasksCompletedRouteRoute,
   ProjectsIndexRouteRoute: ProjectsIndexRouteRoute,
   TasksIndexRouteRoute: TasksIndexRouteRoute,
 }
@@ -218,6 +240,7 @@ export const routeTree = rootRoute
         "/statistics",
         "/projects/$projectId",
         "/tasks/$taskId",
+        "/tasks/completed",
         "/projects/",
         "/tasks/"
       ]
@@ -236,6 +259,9 @@ export const routeTree = rootRoute
     },
     "/tasks/$taskId": {
       "filePath": "tasks/$taskId.route.tsx"
+    },
+    "/tasks/completed": {
+      "filePath": "tasks/completed.route.tsx"
     },
     "/projects/": {
       "filePath": "projects/index.route.tsx"

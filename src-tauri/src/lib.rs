@@ -96,6 +96,7 @@ pub fn run() {
             task::tauri::queries::load_tasks_with_deadline_command,
             task::tauri::queries::load_tasks_inbox_command,
             task::tauri::queries::load_tasks_command,
+            task::tauri::queries::load_completed_tasks_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

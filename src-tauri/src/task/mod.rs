@@ -248,6 +248,24 @@ impl Task {
         Ok(tasks)
     }
 
+    pub async fn load_completed_tasks(
+        connection: &mut PoolConnection<Sqlite>,
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
+        let rows = sqlx::query(
+            "SELECT * FROM tasks WHERE completed_at_utc IS NOT NULL ORDER BY completed_at_utc DESC",
+        )
+        .fetch_all(&mut **connection)
+        .await?;
+
+        let mut tasks = Vec::new();
+        for row in rows {
+            let task = Task::from_sqlx_row(row, connection).await?;
+            tasks.push(task);
+        }
+
+        Ok(tasks)
+    }
+
     pub async fn load_for_project(
         project_id: Uuid,
         connection: &mut PoolConnection<Sqlite>,

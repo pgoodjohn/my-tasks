@@ -176,6 +176,23 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
     const [date, setDate] = React.useState<Date | undefined>(dateString ? new Date(dateString) : undefined)
     const [open, setOpen] = React.useState(false)
 
+    const getDueDateStyle = () => {
+        if (!date) return {};
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const taskDate = new Date(date);
+        taskDate.setHours(0, 0, 0, 0);
+
+        if (taskDate < today) {
+            return { borderColor: 'rgb(239 68 68)', borderWidth: '1px', borderStyle: 'solid' };
+        }
+        if (taskDate.getTime() === today.getTime()) {
+            return { borderColor: 'rgb(249 115 22)', borderWidth: '1px', borderStyle: 'solid' };
+        }
+        return {};
+    }
+
     const updateDueDateMutation = useMutation({
         mutationFn: async function (newDate: Date | undefined) {
             let res = await invoke_tauri_command('update_task_command', {
@@ -216,7 +233,11 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button
+                    variant="ghost"
+                    size="xs"
+                    style={getDueDateStyle()}
+                >
                     {date ? format(date, "MMM d") : "-"}
                 </Button>
             </PopoverTrigger>
