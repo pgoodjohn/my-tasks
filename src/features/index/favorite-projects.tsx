@@ -34,7 +34,7 @@ function FavoriteProjects() {
                     {projects.map((project: Project) => {
                         const projectTasks = getProjectTasks(project.id)
                         return (
-                            <div key={project.id} className="rounded-lg border p-4">
+                            <div key={project.id}>
                                 <div className="flex items-center justify-between">
                                     <Link
                                         to="/projects/$projectId"
