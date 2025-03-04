@@ -1,6 +1,6 @@
-import { invoke_tauri_command } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { ContributionCalendar } from 'react-contribution-calendar'
+import { invoke_tauri_command } from '@/lib/utils';
 
 interface ContributionCalendarProps {
     variant?: string

@@ -9,10 +9,12 @@ mod chart;
 mod configuration;
 mod errors;
 mod project;
+mod repository;
 mod storage;
 mod task;
 
 use configuration::manager::{ConfigurationManager, ConfigurationMode};
+use repository::RepositoryProvider;
 
 fn detect_mode() -> ConfigurationMode {
     if cfg!(debug_assertions) {
@@ -63,7 +65,11 @@ pub fn run() {
 
                 db_pool
             });
-            app.manage(db_pool.clone());
+
+            // Create and manage the repository provider
+            let repository_provider = RepositoryProvider::new(db_pool.clone());
+            app.manage(repository_provider);
+            app.manage(db_pool);
 
             app.manage(Mutex::new(configuration_manager.configuration));
 
@@ -79,11 +85,11 @@ pub fn run() {
             project::tauri::actions::create_project_command,
             project::tauri::actions::update_project_command,
             project::tauri::queries::load_projects_command,
-            project::tauri::queries::count_open_tasks_for_project_command,
+            project::tauri::queries::load_favorite_projects_command,
             project::tauri::queries::load_project_details_command,
+            project::tauri::queries::count_open_tasks_for_project_command,
             project::tauri::queries::add_favorite_project_command,
             project::tauri::queries::remove_favorite_project_command,
-            project::tauri::queries::load_favorite_projects_command,
             task::tauri::actions::create_task_command,
             task::tauri::actions::update_task_command,
             task::tauri::actions::delete_task_command,

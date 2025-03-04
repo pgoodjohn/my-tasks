@@ -1,5 +1,5 @@
-import { Separator } from '@/components/ui/separator';
 import { RollingWeekGraphs } from './rolling-week-graphs';
+import { Separator } from '@/components/ui/separator';
 import ContributionsCalendar from '@/components/contributions-calendar';
 
 export function RouteComponent() {

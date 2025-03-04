@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Checkbox } from '../../components/ui/checkbox';
+import { ProjectExclusionSheet } from './ProjectExclusionSheet';
 import TasksTable from '@/components/tasks-table';
 import { useTasks } from '@/hooks/use-tasks';
-import { ProjectExclusionSheet } from './ProjectExclusionSheet';
 import { useExcludedProjects } from '@/hooks/use-excluded-projects';
 
 const Tasks: React.FC = () => {
@@ -51,7 +51,7 @@ const TasksList: React.FC = () => {
             </div>
             {tasks.data ? (
                 <TasksTable
-                    tasks={tasks.data.filter(task => task.project && !excludedProjects.includes(task.project.id))}
+                    tasks={tasks.data.filter(task => task.project_id && !excludedProjects.includes(task.project_id))}
                     hiddenColumns={[]}
                 />
             ) : (

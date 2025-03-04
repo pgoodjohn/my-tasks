@@ -1,3 +1,5 @@
+import { Link, useRouterState  } from '@tanstack/react-router'
+import React from "react";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -7,10 +9,7 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { useProjects } from "@/hooks/use-projects";
-import { Link } from '@tanstack/react-router'
-import { useRouterState } from "@tanstack/react-router"
 import { useTaskTree } from "@/hooks/use-task-tree";
-import React from "react";
 
 export default function AppBreadcrumb() {
     return (
@@ -179,7 +178,7 @@ function TaskBreadcrumb({ taskId }: { taskId: string | undefined }) {
     }
 
     // Build the task hierarchy chain
-    const taskChain: typeof task[] = [];
+    const taskChain: Array<typeof task> = [];
     let currentTask = task;
     taskChain.push(currentTask);
 

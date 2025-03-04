@@ -1,12 +1,11 @@
-use sqlx::SqlitePool;
 use tauri::State;
 use uuid::Uuid;
 
-use chrono::{DateTime, Utc};
-
 use crate::errors::handle_error;
 use crate::project::manager::ProjectsManager;
-use crate::task::{manager::TaskManager, CreateTaskData, UpdatedTaskData};
+use crate::task::manager::TaskManager;
+use crate::task::{CreateTaskData, UpdatedTaskData};
+use crate::RepositoryProvider;
 
 #[tauri::command]
 pub async fn create_task_command(
@@ -14,30 +13,18 @@ pub async fn create_task_command(
     description: Option<String>,
     due_date: Option<String>,
     project_id: Option<String>,
-    db: State<'_, SqlitePool>,
+    repository_provider: State<'_, RepositoryProvider>,
 ) -> Result<String, String> {
-    let due_at_utc = match due_date {
-        Some(date) => Some(DateTime::<Utc>::from(
-            DateTime::parse_from_rfc3339(&date).map_err(|e| handle_error(&e))?,
-        )),
-        None => None,
-    };
-
-    let project_id_uuid = match project_id {
-        Some(id) => Some(Uuid::parse_str(&id).map_err(|e| handle_error(&e))?),
-        None => None,
-    };
-
     let create_task_data = CreateTaskData {
         title,
         description,
-        due_at_utc,
-        project_id: project_id_uuid,
+        due_at_utc: due_date,
+        project_id,
     };
 
     log::debug!("Running update task command for: | {:?}", create_task_data);
 
-    let task_manager = TaskManager::new(&db);
+    let task_manager = TaskManager::new(&repository_provider);
 
     let task = task_manager
         .create_task(create_task_data)
@@ -54,7 +41,7 @@ pub async fn update_task_command(
     description: Option<String>,
     due_date: Option<String>,
     project_id: Option<String>,
-    db: State<'_, SqlitePool>,
+    repository_provider: State<'_, RepositoryProvider>,
 ) -> Result<String, String> {
     let updated_task_data = UpdatedTaskData {
         title,
@@ -69,7 +56,7 @@ pub async fn update_task_command(
         updated_task_data,
     );
 
-    let task_manager = TaskManager::new(&db);
+    let task_manager = TaskManager::new(&repository_provider);
 
     let uuid: Uuid = Uuid::parse_str(&task_id).map_err(|e| handle_error(&e))?;
 
@@ -84,11 +71,11 @@ pub async fn update_task_command(
 #[tauri::command]
 pub async fn delete_task_command(
     task_id: String,
-    db: State<'_, SqlitePool>,
+    repository_provider: State<'_, RepositoryProvider>,
 ) -> Result<String, String> {
     log::debug!("Running delete task command for card ID: {}", task_id);
 
-    let task_manager = TaskManager::new(&db);
+    let task_manager = TaskManager::new(&repository_provider);
     let task_uuid = Uuid::parse_str(&task_id).map_err(|e| handle_error(&e))?;
 
     task_manager
@@ -102,12 +89,12 @@ pub async fn delete_task_command(
 #[tauri::command]
 pub async fn complete_task_command(
     task_id: String,
-    db: State<'_, SqlitePool>,
+    repository_provider: State<'_, RepositoryProvider>,
 ) -> Result<String, String> {
     log::debug!("Running complete task command for card ID: {}", task_id);
     let uuid = Uuid::parse_str(&task_id).map_err(|e| handle_error(&e))?;
 
-    let manager = TaskManager::new(&db);
+    let manager = TaskManager::new(&repository_provider);
 
     manager
         .complete_task(uuid)
@@ -123,30 +110,23 @@ pub async fn create_subtask_for_task_command(
     title: String,
     description: Option<String>,
     due_date: Option<String>,
-    db: State<'_, SqlitePool>,
+    repository_provider: State<'_, RepositoryProvider>,
 ) -> Result<String, String> {
-    let due_at_utc = match due_date {
-        Some(date) => Some(DateTime::<Utc>::from(
-            DateTime::parse_from_rfc3339(&date).map_err(|e| handle_error(&e))?,
-        )),
-        None => None,
-    };
-
     let parent_task_id_uuid = Uuid::parse_str(&parent_task_id).map_err(|e| handle_error(&e))?;
 
-    let task_manager = TaskManager::new(&db);
+    let task_manager = TaskManager::new(&repository_provider);
 
     let parent_task = task_manager
         .load_by_id(parent_task_id_uuid)
         .await
         .map_err(|e| handle_error(&*e))?
-        .unwrap(); // TODO: Remove this unwrap is parent task cant be found anymore (shouldnt happen really)
+        .ok_or_else(|| "Parent task not found".to_string())?;
 
     let create_task_data = CreateTaskData {
         title,
-        project_id: parent_task.project.as_ref().map(|p| p.id),
         description,
-        due_at_utc,
+        due_at_utc: due_date,
+        project_id: parent_task.project_id.map(|id| id.to_string()),
     };
 
     let subtask = task_manager
@@ -160,47 +140,41 @@ pub async fn create_subtask_for_task_command(
 #[tauri::command]
 pub async fn promote_task_to_project_command(
     task_id: String,
-    db: State<'_, SqlitePool>,
+    repository_provider: State<'_, RepositoryProvider>,
 ) -> Result<String, String> {
-    log::debug!(
-        "Running promote task to project command for task ID: {}",
-        task_id
-    );
-
-    let task_id_uuid = Uuid::parse_str(&task_id).map_err(|e| handle_error(&e))?;
-    let task_manager = TaskManager::new(&db);
-    let projects_manager = ProjectsManager::new(&db);
-
-    // Load the task
+    let task_id = Uuid::parse_str(&task_id).map_err(|e| handle_error(&e))?;
+    let task_manager = TaskManager::new(&repository_provider);
     let task = task_manager
-        .load_by_id(task_id_uuid)
-        .await
-        .map_err(|e| handle_error(&*e))?
-        .ok_or_else(|| "Task not found".to_string())?;
-
-    // Create new project with same title
-    let project = projects_manager
-        .create_project(task.title.clone(), None, None, task.description.clone())
+        .load_task(task_id)
         .await
         .map_err(|e| handle_error(&*e))?;
 
-    // Move all subtasks to the new project
-    let mut connection = db.acquire().await.map_err(|e| handle_error(&e))?;
-    sqlx::query(
-        "UPDATE tasks SET project_id = ?1, parent_task_id = NULL WHERE parent_task_id = ?2",
-    )
-    .bind(project.id.to_string())
-    .bind(task.id.to_string())
-    .execute(&mut *connection)
-    .await
-    .map_err(|e| handle_error(&e))?;
-
-    // Archive the original task
-    let mut task = task;
-    task.completed_at_utc = Some(Utc::now());
-    task.update_record(&mut connection)
+    let mut project_repository = repository_provider
+        .inner()
+        .project_repository()
         .await
         .map_err(|e| handle_error(&e))?;
+    let mut task_repository = repository_provider
+        .inner()
+        .task_repository()
+        .await
+        .map_err(|e| handle_error(&e))?;
+    let mut projects_manager = ProjectsManager::new(&mut project_repository, &mut task_repository);
+
+    let project = projects_manager
+        .create_project(task.title.clone(), task.description.clone())
+        .await
+        .map_err(|e| handle_error(&*e))?;
+
+    task_manager
+        .move_subtasks_to_project(task_id, project.id)
+        .await
+        .map_err(|e| handle_error(&e))?;
+
+    task_manager
+        .archive_task(task_id)
+        .await
+        .map_err(|e| handle_error(&*e))?;
 
     Ok(serde_json::to_string(&project).unwrap())
 }

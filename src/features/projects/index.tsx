@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { MoreHorizontal } from "lucide-react"
+import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
 import { invoke_tauri_command } from '@/lib/utils'
-import { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/data-table'
 import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,8 +14,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal } from "lucide-react"
-import { Project } from '@/types'
+import type { Project } from '@/types'
+
+import ProjectTag from '@/components/project-tag'
+
+import { Checkbox } from '@/components/ui/checkbox'
+import CreateProjectDialog from '@/features/projects/create-project-dialog'
 
 
 const Index: React.FC = () => {
@@ -33,9 +39,10 @@ const Index: React.FC = () => {
 
 export default Index
 
-const projectOverviewColumns: ColumnDef<Project>[] = [
+const projectOverviewColumns: Array<ColumnDef<Project>> = [
     {
         id: "actions",
+        size: 10,
         cell: ({ row }) => {
             const project = row.original
             return (
@@ -97,9 +104,6 @@ const projectOverviewColumns: ColumnDef<Project>[] = [
     },
 ]
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import ProjectTag from '@/components/project-tag'
-
 const FavoriteProjectButton: React.FC<{ project: Project }> = ({ project }) => {
 
     const queryClient = useQueryClient()
@@ -146,10 +150,6 @@ const ArchiveProjectButton: React.FC<{ project: Project }> = ({ project }) => {
     )
 }
 
-import { useState } from 'react'
-import { Checkbox } from '@/components/ui/checkbox'
-import CreateProjectDialog from '@/features/projects/create-project-dialog'
-
 const ProjectsDetailedList: React.FC = () => {
 
     const [showArchived, setShowArchived] = useState(false)
@@ -157,7 +157,7 @@ const ProjectsDetailedList: React.FC = () => {
     const projectsListQuery = useQuery({
         queryKey: ['projects', showArchived],
         queryFn: async () => {
-            let data = await invoke_tauri_command('load_projects_command', { showArchivedProjects: showArchived })
+            const data = await invoke_tauri_command('load_projects_command', { showArchivedProjects: showArchived })
             return data
         }
     })
@@ -187,7 +187,7 @@ const ProjectsDetailedList: React.FC = () => {
 }
 
 interface ProjectDetailsTableProps {
-    projects: Project[]
+    projects: Array<Project>
 }
 
 const ProjectDetailsTable: React.FC<ProjectDetailsTableProps> = ({ projects }) => {

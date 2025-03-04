@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'excluded_projects';
 
 export const useExcludedProjects = () => {
-    const [excludedProjects, setExcludedProjects] = useState<string[]>(() => {
+    const [excludedProjects, setExcludedProjects] = useState<Array<string>>(() => {
         // Initialize from localStorage if available, otherwise empty array
         if (typeof window !== 'undefined') {
             const stored = localStorage.getItem(STORAGE_KEY);

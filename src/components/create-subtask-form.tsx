@@ -1,13 +1,13 @@
-import { Task } from "@/types";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useForm } from '@tanstack/react-form'
 import {
     useMutation,
     useQueryClient,
 } from '@tanstack/react-query'
-import { DatePicker } from '@/components/datepicker';
 import { toast } from "sonner";
+import type { Task } from "@/types";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/datepicker';
 import { invoke_tauri_command } from '@/lib/utils';
 
 interface CreateSubtaskFormProps {
@@ -20,7 +20,7 @@ export function CreateSubtaskForm({ parentTask }: CreateSubtaskFormProps) {
 
     const newSubtaskMutation = useMutation({
         mutationFn: async ({ value }: { value: { parentTaskId: string, title: string, description: string, dueDate: Date | null } }) => {
-            let res = await invoke_tauri_command('create_subtask_for_task_command', { parentTaskId: value.parentTaskId, title: value.title, description: value.description, due_date: value.dueDate })
+            const res = await invoke_tauri_command('create_subtask_for_task_command', { parentTaskId: value.parentTaskId, title: value.title, description: value.description, due_date: value.dueDate })
 
             return res
         },

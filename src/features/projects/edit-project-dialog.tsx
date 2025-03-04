@@ -1,3 +1,14 @@
+import { DialogClose } from "@radix-ui/react-dialog"
+import { useForm } from "@tanstack/react-form"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
+import { toast } from "sonner"
+import { Input } from "../../components/ui/input"
+import { Separator } from "../../components/ui/separator"
+import { Textarea } from "../../components/ui/textarea"
+import { Button } from "../../components/ui/button"
+import ProjectColorCombobox from "./project-color-combobox"
+import type { Project } from "@/types"
 import {
     Dialog,
     DialogContent,
@@ -7,20 +18,10 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { Button } from "../../components/ui/button"
-import { DialogClose } from "@radix-ui/react-dialog"
-import { useForm } from "@tanstack/react-form"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { invoke_tauri_command } from "@/lib/utils"
-import { Input } from "../../components/ui/input"
-import { useState } from "react"
-import { Separator } from "../../components/ui/separator"
-import { Textarea } from "../../components/ui/textarea"
-import ProjectColorCombobox from "./project-color-combobox"
-import { toast } from "sonner"
 
 interface EditProjectDialogProps {
-    project: any,
+    project: Project,
 }
 
 const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
@@ -39,7 +40,12 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
             description: project.description
         },
         onSubmit: async ({ value }) => {
-            await editProjectMutation.mutateAsync(value)
+            await editProjectMutation.mutateAsync({
+                ...value,
+                emoji: value.emoji || '',
+                color: value.color || '',
+                description: value.description || ''
+            })
             queryClient.invalidateQueries({ queryKey: ['projects'] })
         }
     })
@@ -92,7 +98,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                                     return (
                                         <Input
                                             name={field.name}
-                                            value={field.state.value}
+                                            value={field.state.value || ''}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => field.setValue(e.target.value)}
                                         />
@@ -102,7 +108,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                             <editProjectForm.Field
                                 name="color"
                                 children={(field) => {
-                                    return <ProjectColorCombobox selectedValue={field.state.value} onChange={field.handleChange} />
+                                    return <ProjectColorCombobox selectedValue={field.state.value || ''} onChange={field.handleChange} />
                                 }} />
                         </div>
                         <editProjectForm.Field
@@ -111,7 +117,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                                 <div className="p-2">
                                     <Input
                                         name={field.name}
-                                        value={field.state.value}
+                                        value={field.state.value || ''}
                                         onBlur={field.handleBlur}
                                         onChange={(e) => field.setValue(e.target.value)}
                                     />
@@ -124,7 +130,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                                 <div className="p-2">
                                     <Textarea
                                         name={field.name}
-                                        value={field.state.value}
+                                        value={field.state.value || ''}
                                         placeholder="Description"
                                         onBlur={field.handleBlur}
                                         onChange={(e) => field.setValue(e.target.value)}

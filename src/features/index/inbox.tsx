@@ -19,7 +19,7 @@ const InboxTaskList: React.FC = () => {
     const taskListQuery = useQuery({
         queryKey: ['tasks', 'inbox'],
         queryFn: async () => {
-            let data = await invoke_tauri_command('load_tasks_inbox_command', {})
+            const data = await invoke_tauri_command('load_tasks_inbox_command', {})
             return data
         }
     })

@@ -1,9 +1,9 @@
-import { useFavoriteProjects } from "@/hooks/use-favorite-projects"
-import { useTasks } from "@/hooks/use-tasks"
-import { Project } from "@/types"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
+import type { Project } from "@/types"
+import { useFavoriteProjects } from "@/hooks/use-favorite-projects"
+import { useTasks } from "@/hooks/use-tasks"
 import TasksTable from "@/components/tasks-table"
 
 function FavoriteProjects() {
@@ -16,7 +16,7 @@ function FavoriteProjects() {
     }
 
     const getProjectTasks = (projectId: string) => {
-        return tasks?.filter(task => task.project?.id === projectId).slice(0, 5) || []
+        return tasks?.filter(task => task.project_id === projectId).slice(0, 5) || []
     }
 
     return (
@@ -34,7 +34,7 @@ function FavoriteProjects() {
                     {projects.map((project: Project) => {
                         const projectTasks = getProjectTasks(project.id)
                         return (
-                            <div key={project.id} className="rounded-lg border p-4">
+                            <div key={project.id}>
                                 <div className="flex items-center justify-between">
                                     <Link
                                         to="/projects/$projectId"

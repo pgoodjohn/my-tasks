@@ -4,10 +4,15 @@ import {
     useQuery,
     useQueryClient,
 } from '@tanstack/react-query'
-import { ColumnDef } from "@tanstack/react-table"
+import { Ellipsis, Pencil, Trash2 } from 'lucide-react';
+import { Link } from '@tanstack/react-router'
+import { addWeeks, format, startOfWeek } from "date-fns"
+import { toast } from "sonner"
+import { Button } from '../ui/button';
+import type { ColumnDef } from "@tanstack/react-table"
+import type { Task } from '@/types';
 import { DataTable } from '@/components/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Task } from '@/types';
 import EditTaskDialog from '@/components/tasks-table/EditTaskDialog';
 import ProjectTag from '@/components/project-tag';
 import { invoke_tauri_command } from '@/lib/utils';
@@ -16,17 +21,12 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { Button } from '../ui/button';
 import {
     Command,
     CommandGroup,
     CommandItem,
 } from "@/components/ui/command"
-import { Ellipsis, Trash2, Pencil } from 'lucide-react';
-import { Link } from '@tanstack/react-router'
-import { format, startOfWeek, addWeeks } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
-import { toast } from "sonner"
 import {
     Dialog,
     DialogContent,
@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dialog"
 
 
-const columns: ColumnDef<Task>[] = [
+const columns: Array<ColumnDef<Task>> = [
     {
         id: "complete",
         size: 10,
@@ -47,7 +47,7 @@ const columns: ColumnDef<Task>[] = [
 
             const markCompleteMutation = useMutation({
                 mutationFn: async function () {
-                    let res = await invoke_tauri_command('complete_task_command', { taskId: row.original.id });
+                    const res = await invoke_tauri_command('complete_task_command', { taskId: row.original.id });
                     return res
                 },
                 onSuccess: () => {
@@ -111,11 +111,11 @@ const columns: ColumnDef<Task>[] = [
     },
     {
         id: "project",
-        accessorKey: "project",
+        accessorKey: "project_id",
         header: "Project",
         size: 120,
         cell: ({ row }) => {
-            return row.original.project ? <ProjectTag projectId={row.original.project.id} asLink /> : "-"
+            return row.original.project_id ? <ProjectTag projectId={row.original.project_id} asLink /> : "-"
         }
     },
     {
@@ -139,7 +139,7 @@ const columns: ColumnDef<Task>[] = [
             const deleteTaskMutation = useMutation({
                 mutationFn: async function () {
                     console.log('Deleting task:', task.id);
-                    let res = await invoke_tauri_command('delete_task_command', { taskId: task.id });
+                    const res = await invoke_tauri_command('delete_task_command', { taskId: task.id });
                     console.log('Delete response:', res);
                     return res;
                 },
@@ -216,8 +216,8 @@ const columns: ColumnDef<Task>[] = [
 ]
 
 interface TasksTableProps {
-    tasks: Task[]
-    hiddenColumns: string[]
+    tasks: Array<Task>
+    hiddenColumns: Array<string>
     showHeaders?: boolean
 }
 
@@ -264,12 +264,12 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
 
     const updateDueDateMutation = useMutation({
         mutationFn: async function (newDate: Date | undefined) {
-            let res = await invoke_tauri_command('update_task_command', {
+            const res = await invoke_tauri_command('update_task_command', {
                 taskId: taskId,
                 title: task.title,
                 description: task.description || '',
                 dueDate: newDate?.toISOString(),
-                projectId: task.project?.id
+                projectId: task.project_id
             });
             return res
         },

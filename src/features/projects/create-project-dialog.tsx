@@ -1,3 +1,14 @@
+import { DialogClose } from "@radix-ui/react-dialog"
+import { useForm } from "@tanstack/react-form"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
+import { toast } from "sonner"
+import { Input } from "../../components/ui/input"
+import { Separator } from "../../components/ui/separator"
+import { Textarea } from "../../components/ui/textarea"
+import { Button } from "../../components/ui/button"
+import ProjectColorCombobox from "./project-color-combobox"
+import { invoke_tauri_command } from "@/lib/utils"
 import {
     Dialog,
     DialogContent,
@@ -6,17 +17,6 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { Button } from "../../components/ui/button"
-import { DialogClose } from "@radix-ui/react-dialog"
-import { useForm } from "@tanstack/react-form"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { invoke_tauri_command } from "@/lib/utils"
-import { Input } from "../../components/ui/input"
-import { useState } from "react"
-import { Separator } from "../../components/ui/separator"
-import { Textarea } from "../../components/ui/textarea"
-import ProjectColorCombobox from "./project-color-combobox"
-import { toast } from "sonner"
 import { EmojiPickerFormItem } from "@/components/emoji-picker-form-item"
 
 

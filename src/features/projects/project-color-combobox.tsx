@@ -35,8 +35,8 @@ const colors = [
 ]
 
 interface ProjectColorCombooxProps {
-    selectedValue: any;
-    onChange: any;
+    selectedValue: string;
+    onChange: (value: string) => void;
 }
 const ProjectColorCombobox: React.FC<ProjectColorCombooxProps> = ({ selectedValue, onChange }) => {
     const [open, setOpen] = React.useState(false)

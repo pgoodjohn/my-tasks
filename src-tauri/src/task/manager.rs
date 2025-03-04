@@ -1,59 +1,53 @@
-use sqlx::SqlitePool;
+use super::repository::TaskRepository;
+use super::{CreateTaskData, PeriodTaskStatistic, Task, UpdatedTaskData};
+use crate::repository::RepositoryProvider;
+use chrono::{DateTime, Utc};
+use std::error::Error;
 use thiserror::Error;
 use uuid::Uuid;
 
-use super::{CreateTaskData, UpdatedTaskData};
-use crate::project::Project;
-use crate::task::Task;
-use chrono::{DateTime, Utc};
-use std::error::Error;
-
-use crate::task::PeriodTaskStatistic;
-
 #[derive(Error, Debug)]
 pub enum TaskError {
-    #[error("Invalid UUID: {0}")]
-    InvalidUUID(#[from] uuid::Error),
-
-    #[error("SQLx error: {0}")]
-    SQLxError(#[from] sqlx::Error),
-
-    #[error("Project not found")]
-    ProjectNotFound,
-
     #[error("Task not found")]
     TaskNotFound,
+    #[error("Database error: {0}")]
+    DatabaseError(#[from] sqlx::Error),
 }
 
 pub struct TaskManager<'a> {
-    db_pool: &'a SqlitePool,
+    repository_provider: &'a RepositoryProvider,
 }
 
 impl<'a> TaskManager<'a> {
-    pub fn new(db_pool: &'a SqlitePool) -> Self {
-        TaskManager { db_pool }
+    pub fn new(repository_provider: &'a RepositoryProvider) -> Self {
+        Self {
+            repository_provider,
+        }
     }
 
     pub async fn create_task(
         &self,
         create_task_data: CreateTaskData,
     ) -> Result<Task, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
-
-        let project = match create_task_data.project_id {
-            Some(id) => self.load_project_by_uuid(&mut connection, id).await?,
-            None => None,
-        };
-
+        let mut repository = self.repository_provider.task_repository().await?;
         let mut task = Task::new(
             create_task_data.title,
             create_task_data.description,
-            project,
-            create_task_data.due_at_utc,
+            create_task_data
+                .project_id
+                .as_ref()
+                .map(|id| Uuid::parse_str(id))
+                .transpose()?,
+            None, // parent_task_id
+            create_task_data
+                .due_at_utc
+                .as_ref()
+                .map(|date| DateTime::parse_from_rfc3339(date))
+                .transpose()?
+                .map(DateTime::<Utc>::from),
         );
-        task.create_record(&mut connection).await?;
 
+        repository.save(&mut task).await?;
         Ok(task)
     }
 
@@ -62,38 +56,28 @@ impl<'a> TaskManager<'a> {
         parent_task: Task,
         create_task_data: CreateTaskData,
     ) -> Result<Task, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
-
-        let project = parent_task.project;
+        let mut repository = self.repository_provider.task_repository().await?;
 
         let mut task = Task::new(
             create_task_data.title,
             create_task_data.description,
-            project,
-            None,
+            parent_task.project_id,
+            Some(parent_task.id),
+            create_task_data
+                .due_at_utc
+                .as_ref()
+                .map(|date| DateTime::parse_from_rfc3339(date))
+                .transpose()?
+                .map(DateTime::<Utc>::from),
         );
-        task.parent_task_id = Some(parent_task.id);
-        task.create_record(&mut connection).await?;
 
+        repository.save(&mut task).await?;
         Ok(task)
     }
 
-    async fn load_project_by_uuid(
-        &self,
-        connection: &mut sqlx::pool::PoolConnection<sqlx::Sqlite>,
-        id: Uuid,
-    ) -> Result<Option<Project>, TaskError> {
-        let project = Project::load_by_id(id, connection)
-            .await
-            .map_err(|_| TaskError::ProjectNotFound)?;
-        Ok(project)
-    }
-
     pub async fn load_by_id(&self, task_id: Uuid) -> Result<Option<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        Task::load_by_id(task_id, &mut connection).await
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository.find_by_id(task_id).await.map_err(Into::into)
     }
 
     pub async fn update_task(
@@ -101,157 +85,149 @@ impl<'a> TaskManager<'a> {
         task_id: Uuid,
         update_data: UpdatedTaskData,
     ) -> Result<Option<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
+        let mut repository = self.repository_provider.task_repository().await?;
 
-        let task = Task::load_by_id(task_id, &mut connection).await?;
+        let mut task = match repository.find_by_id(task_id).await? {
+            None => return Ok(None),
+            Some(task) => task,
+        };
 
-        match task {
-            None => Ok(None),
-            Some(mut task) => {
-                task.update(update_data, &mut connection).await?;
-                task.update_record(&mut connection).await?;
-
-                Ok(Some(task))
-            }
-        }
+        repository.update_task(&mut task, update_data).await?;
+        Ok(Some(task))
     }
 
     pub async fn delete_task(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
+        let mut repository = self.repository_provider.task_repository().await?;
 
-        let task = Task::load_by_id(task_id, &mut connection).await?;
+        let task = match repository.find_by_id(task_id).await? {
+            Some(task) => task,
+            None => return Ok(()),
+        };
 
-        match task {
-            Some(t) => {
-                t.delete_record(&mut connection).await?;
-                Ok(())
-            }
-            None => Ok(()),
-        }
+        repository.delete(&task).await?;
+        Ok(())
     }
 
     pub async fn load_tasks(&self, include_completed: bool) -> Result<Vec<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        let tasks = Task::load_filtered_by_completed(include_completed, &mut connection).await?;
-
-        Ok(tasks)
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository
+            .find_all_filtered_by_completed(include_completed)
+            .await
+            .map_err(Into::into)
     }
 
     pub async fn complete_task(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
+        let mut repository = self.repository_provider.task_repository().await?;
 
-        let task = Task::load_by_id(task_id, &mut connection).await?;
+        let mut task = match repository.find_by_id(task_id).await? {
+            None => return Ok(()),
+            Some(task) => task,
+        };
 
-        match task {
-            None => Ok(()),
-            Some(t) => {
-                if t.completed_at_utc.is_some() {
-                    log::info!("Task was already completed, marking it incomplete");
-                    self.unmark_task_completed(t.id).await?;
-                    return Ok(());
-                }
-
-                let task_subtasks = Task::load_for_parent(t.id, &mut connection).await?;
-
-                for subtask in task_subtasks {
-                    self.mark_task_completed(subtask.id).await?;
-                }
-
-                self.mark_task_completed(task_id).await
-            }
+        if task.completed_at_utc.is_some() {
+            log::info!("Task was already completed, marking it incomplete");
+            self.unmark_task_completed(task.id).await?;
+            return Ok(());
         }
-    }
 
-    async fn mark_task_completed(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
-        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
+        let task_subtasks = repository.find_by_parent(task.id).await?;
 
-        match task {
-            None => Err(Box::new(TaskError::TaskNotFound)),
-            Some(mut t) => {
-                t.completed_at_utc = Some(Utc::now());
-                t.update_record(&mut connection).await?;
-
-                Ok(())
-            }
+        for mut subtask in task_subtasks {
+            subtask.completed_at_utc = Some(Utc::now());
+            repository.save(&mut subtask).await?;
         }
+
+        task.completed_at_utc = Some(Utc::now());
+        repository.save(&mut task).await?;
+
+        Ok(())
     }
 
     async fn unmark_task_completed(&self, task_id: Uuid) -> Result<(), TaskError> {
-        let mut connection = self.db_pool.acquire().await.unwrap();
-        let task = Task::load_by_id(task_id, &mut connection).await.unwrap();
+        let mut repository = self.repository_provider.task_repository().await?;
 
-        match task {
-            None => Err(TaskError::TaskNotFound),
-            Some(mut t) => {
-                t.completed_at_utc = None;
-                t.update_record(&mut connection).await.unwrap();
+        let mut task = match repository.find_by_id(task_id).await? {
+            None => return Err(TaskError::TaskNotFound),
+            Some(task) => task,
+        };
 
-                Ok(())
-            }
-        }
+        task.completed_at_utc = None;
+        repository.save(&mut task).await?;
+
+        Ok(())
     }
 
     pub async fn load_inbox(&self) -> Result<Vec<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        let tasks = Task::load_inbox(&mut connection).await?;
-
-        Ok(tasks)
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository.find_inbox().await.map_err(Into::into)
     }
 
     pub async fn load_due_before(&self, date: DateTime<Utc>) -> Result<Vec<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        let tasks = Task::load_due_before(date, &mut connection).await?;
-
-        Ok(tasks)
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository.find_due_before(date).await.map_err(Into::into)
     }
 
     pub async fn load_completed_tasks(&self) -> Result<Vec<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        let tasks = Task::load_completed_tasks(&mut connection).await?;
-
-        Ok(tasks)
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository.find_completed().await.map_err(Into::into)
     }
 
     pub async fn load_statistics(&self) -> Result<Vec<PeriodTaskStatistic>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        let statistics = PeriodTaskStatistic::load(&mut connection).await?;
-
-        Ok(statistics)
+        let db_pool = &self.repository_provider.pool;
+        PeriodTaskStatistic::load(db_pool).await
     }
 
     pub async fn load_subtasks_for_task(
         &self,
         parent_task_id: Uuid,
     ) -> Result<Vec<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
-
-        let parent_task = Task::load_by_id(parent_task_id, &mut connection)
-            .await?
-            .unwrap(); // remove this unwrap if parent task doesnt exist anymore (shouldnt happen)
-
-        let subtasks = Task::load_for_parent(parent_task.id, &mut connection).await?;
-
-        Ok(subtasks)
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository
+            .find_by_parent(parent_task_id)
+            .await
+            .map_err(Into::into)
     }
 
     pub async fn load_completed_subtasks_for_task(
         &self,
         parent_task_id: Uuid,
     ) -> Result<Vec<Task>, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository
+            .find_completed_by_parent(parent_task_id)
+            .await
+            .map_err(Into::into)
+    }
 
-        let parent_task = Task::load_by_id(parent_task_id, &mut connection)
+    pub async fn move_subtasks_to_project(
+        &self,
+        parent_task_id: Uuid,
+        project_id: Uuid,
+    ) -> Result<(), sqlx::Error> {
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository
+            .move_subtasks_to_project(parent_task_id, project_id)
+            .await
+    }
+
+    pub async fn load_task(&self, task_id: Uuid) -> Result<Task, Box<dyn Error>> {
+        let mut repository = self.repository_provider.task_repository().await?;
+        Ok(repository
+            .find_by_id(task_id)
             .await?
-            .unwrap();
+            .ok_or_else(|| Box::new(TaskError::TaskNotFound))?)
+    }
 
-        let subtasks = Task::load_completed_for_parent(parent_task.id, &mut connection).await?;
+    pub async fn archive_task(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
+        let mut repository = self.repository_provider.task_repository().await?;
+        let mut task = repository
+            .find_by_id(task_id)
+            .await?
+            .ok_or_else(|| Box::new(TaskError::TaskNotFound))?;
 
-        Ok(subtasks)
+        task.completed_at_utc = Some(Utc::now());
+        task.updated_at_utc = Utc::now();
+        repository.save(&mut task).await?;
+        Ok(())
     }
 }

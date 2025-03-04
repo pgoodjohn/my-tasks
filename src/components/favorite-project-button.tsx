@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { invoke_tauri_command } from '@/lib/utils'
-import { Project } from '@/types'
 import { Star } from 'lucide-react'
 import { Button } from './ui/button'
+import type { Project } from '@/types'
+import { invoke_tauri_command } from '@/lib/utils'
 
 interface FavoriteProjectButtonProps {
     project: Project

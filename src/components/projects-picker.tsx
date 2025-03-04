@@ -1,4 +1,7 @@
 import { useState } from "react"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { Button } from "./ui/button"
+import ProjectTag from "./project-tag"
 import {
     Popover,
     PopoverContent,
@@ -12,10 +15,7 @@ import {
     CommandItem,
     CommandList,
 } from "@/components/ui/command"
-import { Button } from "./ui/button"
 import { useProjects } from "@/hooks/use-projects"
-import { Check, ChevronsUpDown } from "lucide-react"
-import ProjectTag from "./project-tag"
 
 import { cn } from "@/lib/utils"
 
@@ -70,7 +70,7 @@ function ProjectsPickerCommand({ setOpen, onChange, selectedValue }: ProjectsPic
                             value={item.title} // Change this to item.id instead of item.title
                             onSelect={(currentValue) => {
 
-                                let selectedValueId = projects.data?.find((item) => item.title === currentValue)?.id;
+                                const selectedValueId = projects.data?.find((item) => item.title === currentValue)?.id;
 
                                 onChange(selectedValueId === selectedValue ? "" : selectedValueId) // Change this to selectedValueId instead of currentValue
                                 setSelectedTitle(item.title); // Update selectedTitle with item.title

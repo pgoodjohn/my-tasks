@@ -1,5 +1,10 @@
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Check } from "lucide-react"
+import { toast } from "sonner"
+import ProjectTag from "./project-tag"
+import type { Project, Task } from "@/types"
 import {
     CommandDialog,
     CommandEmpty,
@@ -9,12 +14,7 @@ import {
     CommandList,
     CommandSeparator,
 } from "@/components/ui/command"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { invoke_tauri_command } from "@/lib/utils"
-import ProjectTag from "./project-tag"
-import { Task, Project } from "@/types"
-import { Check } from "lucide-react"
-import { toast } from "sonner"
 
 export function CommandBar() {
     const [open, setOpen] = useState(false)
@@ -55,8 +55,8 @@ export function CommandBar() {
         const searchLower = search.toLowerCase()
         return (
             task.title.toLowerCase().includes(searchLower) ||
-            (task.description && task.description.toLowerCase().includes(searchLower)) ||
-            (task.project && task.project.title.toLowerCase().includes(searchLower))
+            (task.description?.toLowerCase().includes(searchLower)) ||
+            (task.project_id && projectsQuery.data?.find((p: Project) => p.id === task.project_id)?.title.toLowerCase().includes(searchLower))
         )
     })
 
@@ -122,10 +122,10 @@ export function CommandBar() {
                                                     <Check className="h-4 w-4" />
                                                 </button>
                                             </div>
-                                            {task.project && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {task.project.title}
-                                                </span>
+                                            {task.project_id && (
+                                                <div className="text-sm text-muted-foreground">
+                                                    {projectsQuery.data?.find((p: Project) => p.id === task.project_id)?.title}
+                                                </div>
                                             )}
                                         </div>
                                     </CommandItem>

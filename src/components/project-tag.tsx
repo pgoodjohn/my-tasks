@@ -16,7 +16,7 @@ const ProjectTag: React.FC<ProjecTagProps> = ({ projectId, asLink = false }) => 
         return <></>;
     }
 
-    let project: any = projects.data?.find((p) => p.id === projectId);
+    const project: any = projects.data?.find((p) => p.id === projectId);
 
     if (!project) {
         return <></>;

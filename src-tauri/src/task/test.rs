@@ -1,65 +1,33 @@
 #[cfg(test)]
 mod task_tests {
     use super::super::manager::TaskManager;
-    use super::super::Task;
-    use crate::task::CreateTaskData;
-    use crate::task::UpdatedTaskData;
+    use crate::repository::RepositoryProvider;
+    use crate::task::repository::TaskRepository;
+    use crate::task::{CreateTaskData, UpdatedTaskData};
 
+    use sqlx::migrate::MigrateDatabase;
     use sqlx::sqlite::SqlitePool;
-    use sqlx::Error;
+    use sqlx::Sqlite;
 
-    async fn create_in_memory_pool() -> Result<SqlitePool, Error> {
-        let pool = SqlitePool::connect(":memory:").await?;
-        Ok(pool)
-    }
+    async fn setup_test_db() -> Result<RepositoryProvider, sqlx::Error> {
+        let url = format!("sqlite://{}", ":memory:");
 
-    async fn apply_migrations(pool: &SqlitePool) -> Result<(), Error> {
-        let mut connection = pool.acquire().await.unwrap();
+        if !Sqlite::database_exists(&url).await.unwrap_or(false) {
+            Sqlite::create_database(&url).await?;
+        }
 
-        sqlx::query(
-            r#"
-    CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT,
-        project_id TEXT,
-        parent_task_id TEXT,
-        due_at_utc DATETIME,
-        created_at_utc DATETIME NOT NULL,
-        completed_at_utc DATETIME,
-        updated_at_utc DATETIME NOT NULL
-    )
-        "#,
-        )
-        .execute(&mut *connection)
-        .await?;
+        let pool = SqlitePool::connect(&url).await?;
 
-        sqlx::query(
-            r#"
-    CREATE TABLE IF NOT EXISTS projects (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        emoji TEXT,
-        color TEXT,
-        description TEXT,
-        created_at_utc DATETIME NOT NULL,
-        updated_at_utc DATETIME NOT NULL,
-        archived_at_utc DATETIME
-    )
-        "#,
-        )
-        .execute(&mut *connection)
-        .await?;
+        // Run migrations
+        sqlx::migrate!("./migrations").run(&pool).await?;
 
-        Ok(())
+        Ok(RepositoryProvider::new(pool))
     }
 
     #[tokio::test]
     async fn test_task_save_and_load() {
-        let db_pool = create_in_memory_pool().await.unwrap();
-        apply_migrations(&db_pool).await.unwrap();
-
-        let manager = TaskManager::new(&db_pool);
+        let provider = setup_test_db().await.unwrap();
+        let manager = TaskManager::new(&provider);
 
         let new_task = manager
             .create_task(CreateTaskData {
@@ -73,22 +41,17 @@ mod task_tests {
 
         assert_eq!("New Task".to_string(), new_task.title);
 
-        let mut test_connection = db_pool.acquire().await.unwrap();
-
-        let loaded_task = Task::load_by_id(new_task.id, &mut test_connection)
-            .await
-            .unwrap();
+        let mut repository = provider.task_repository().await.unwrap();
+        let loaded_task = repository.find_by_id(new_task.id).await.unwrap();
 
         assert!(loaded_task.is_some());
-        assert_eq!(new_task.title, loaded_task.unwrap().title)
+        assert_eq!(new_task.title, loaded_task.unwrap().title);
     }
 
     #[tokio::test]
     async fn it_updates_a_task() {
-        let db_pool = create_in_memory_pool().await.unwrap();
-        apply_migrations(&db_pool).await.unwrap();
-
-        let manager = TaskManager::new(&db_pool);
+        let provider = setup_test_db().await.unwrap();
+        let manager = TaskManager::new(&provider);
 
         let new_task = manager
             .create_task(CreateTaskData {
@@ -118,10 +81,8 @@ mod task_tests {
 
     #[tokio::test]
     async fn it_creates_a_task_and_a_subtask_for_it() {
-        let db_pool = create_in_memory_pool().await.unwrap();
-        apply_migrations(&db_pool).await.unwrap();
-
-        let manager = TaskManager::new(&db_pool);
+        let provider = setup_test_db().await.unwrap();
+        let manager = TaskManager::new(&provider);
 
         let new_task = manager
             .create_task(CreateTaskData {
@@ -157,10 +118,9 @@ mod task_tests {
 
     #[tokio::test]
     async fn it_completes_a_task() {
-        let db_pool = create_in_memory_pool().await.unwrap();
-        apply_migrations(&db_pool).await.unwrap();
+        let provider = setup_test_db().await.unwrap();
+        let manager = TaskManager::new(&provider);
 
-        let manager = TaskManager::new(&db_pool);
         let new_task = manager
             .create_task(CreateTaskData {
                 title: "New Task".to_string(),
@@ -179,10 +139,9 @@ mod task_tests {
 
     #[tokio::test]
     async fn completing_a_task_also_completes_all_its_subtasks() {
-        let db_pool = create_in_memory_pool().await.unwrap();
-        apply_migrations(&db_pool).await.unwrap();
+        let provider = setup_test_db().await.unwrap();
+        let manager = TaskManager::new(&provider);
 
-        let manager = TaskManager::new(&db_pool);
         let new_task = manager
             .create_task(CreateTaskData {
                 title: "New Task".to_string(),

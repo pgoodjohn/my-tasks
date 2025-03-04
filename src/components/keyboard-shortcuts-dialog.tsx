@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import {
     Dialog,
     DialogContent,
@@ -5,7 +6,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { useState, useEffect } from "react"
 
 export function KeyboardShortcutsDialog() {
     const [open, setOpen] = useState(false)

@@ -2397,6 +2397,7 @@ dependencies = [
 name = "my-tasks"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "dirs",
  "dotenvy_macro",

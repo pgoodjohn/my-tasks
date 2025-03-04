@@ -1,3 +1,17 @@
+import React, { useEffect } from 'react';
+import { useForm } from '@tanstack/react-form'
+import {
+    useMutation,
+    useQueryClient,
+} from '@tanstack/react-query'
+import { useParams } from "@tanstack/react-router";
+import { toast } from 'sonner';
+import { DatePicker } from '../../components/datepicker';
+import { ProjectsPicker } from '../projects-picker';
+import { invoke_tauri_command } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
 const GlobalTaskForm: React.FC = () => {
     return (
         <NewTaskForm />
@@ -5,20 +19,6 @@ const GlobalTaskForm: React.FC = () => {
 }
 
 export default GlobalTaskForm;
-
-import React, { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useForm } from '@tanstack/react-form'
-import {
-    useMutation,
-    useQueryClient,
-} from '@tanstack/react-query'
-import { DatePicker } from '../../components/datepicker';
-import { invoke_tauri_command } from '@/lib/utils';
-import { useParams } from "@tanstack/react-router";
-import { toast } from 'sonner';
-import { ProjectsPicker } from '../projects-picker';
 
 
 const NewTaskForm: React.FC = () => {
@@ -28,7 +28,7 @@ const NewTaskForm: React.FC = () => {
 
     const mutation = useMutation({
         mutationFn: async function (value: { title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
-            let res = await invoke_tauri_command('create_task_command', { title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
+            const res = await invoke_tauri_command('create_task_command', { title: value.title, description: value.description, dueDate: value.dueDate, projectId: value.projectId });
             return res
         },
         onSuccess: () => {
