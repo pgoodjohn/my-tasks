@@ -1,5 +1,5 @@
+use crate::repository::RepositoryProvider;
 use crate::task::manager::TaskManager;
-use crate::task::repository::RepositoryProvider;
 use tauri::State;
 use uuid::Uuid;
 
@@ -52,10 +52,10 @@ pub async fn load_tasks_due_today_command(
     Ok(serde_json::to_string(&tasks).unwrap())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "camelCase")]
 pub async fn load_tasks_command(
-    include_completed: bool,
     repository_provider: State<'_, RepositoryProvider>,
+    include_completed: bool,
 ) -> Result<String, String> {
     log::debug!(
         "Running load tasks command - include_completed: {:?}",

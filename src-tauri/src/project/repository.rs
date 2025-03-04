@@ -1,23 +1,8 @@
 use async_trait::async_trait;
-use sqlx::{pool::PoolConnection, Pool, Row, Sqlite};
+use sqlx::{pool::PoolConnection, Row, Sqlite};
 use uuid::Uuid;
 
 use super::Project;
-
-pub struct RepositoryProvider {
-    pub pool: Pool<Sqlite>,
-}
-
-impl RepositoryProvider {
-    pub fn new(pool: Pool<Sqlite>) -> Self {
-        Self { pool }
-    }
-
-    pub async fn project_repository(&self) -> Result<SqliteProjectRepository, sqlx::Error> {
-        let connection = self.pool.acquire().await?;
-        Ok(SqliteProjectRepository { connection })
-    }
-}
 
 #[async_trait]
 pub trait ProjectRepository {
@@ -34,6 +19,10 @@ pub struct SqliteProjectRepository {
 }
 
 impl SqliteProjectRepository {
+    pub fn new(connection: PoolConnection<Sqlite>) -> Self {
+        Self { connection }
+    }
+
     fn connection(&mut self) -> &mut PoolConnection<Sqlite> {
         &mut self.connection
     }

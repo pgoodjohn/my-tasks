@@ -1,17 +1,20 @@
-use crate::project::manager::ProjectsManager;
-use crate::project::repository::RepositoryProvider;
-use crate::project::Project;
 use tauri::State;
 use uuid::Uuid;
+
+use crate::errors::handle_error;
+use crate::project::manager::ProjectsManager;
+use crate::project::Project;
+use crate::repository::RepositoryProvider;
 
 #[tauri::command]
 pub async fn create_project_command(
     repository_provider: State<'_, RepositoryProvider>,
     title: String,
+    description: Option<String>,
 ) -> Result<Project, String> {
     let projects_manager = ProjectsManager::new(&repository_provider);
     projects_manager
-        .create_project(title)
+        .create_project(title, description)
         .await
         .map_err(|e| e.to_string())
 }

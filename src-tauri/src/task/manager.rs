@@ -1,25 +1,17 @@
+use super::repository::TaskRepository;
+use super::{CreateTaskData, PeriodTaskStatistic, Task, UpdatedTaskData};
+use crate::repository::RepositoryProvider;
 use chrono::{DateTime, Utc};
 use std::error::Error;
 use thiserror::Error;
 use uuid::Uuid;
 
-use super::repository::{RepositoryProvider, TaskRepository};
-use super::{CreateTaskData, Task, UpdatedTaskData};
-use crate::task::PeriodTaskStatistic;
-
 #[derive(Error, Debug)]
 pub enum TaskError {
-    #[error("Invalid UUID: {0}")]
-    InvalidUUID(#[from] uuid::Error),
-
-    #[error("SQLx error: {0}")]
-    SQLxError(#[from] sqlx::Error),
-
-    #[error("Project not found")]
-    ProjectNotFound,
-
     #[error("Task not found")]
     TaskNotFound,
+    #[error("Database error: {0}")]
+    DatabaseError(#[from] sqlx::Error),
 }
 
 pub struct TaskManager<'a> {
@@ -230,5 +222,26 @@ impl<'a> TaskManager<'a> {
         repository
             .move_subtasks_to_project(parent_task_id, project_id)
             .await
+    }
+
+    pub async fn load_task(&self, task_id: Uuid) -> Result<Task, Box<dyn Error>> {
+        let mut repository = self.repository_provider.task_repository().await?;
+        Ok(repository
+            .find_by_id(task_id)
+            .await?
+            .ok_or_else(|| Box::new(TaskError::TaskNotFound))?)
+    }
+
+    pub async fn archive_task(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
+        let mut repository = self.repository_provider.task_repository().await?;
+        let mut task = repository
+            .find_by_id(task_id)
+            .await?
+            .ok_or_else(|| Box::new(TaskError::TaskNotFound))?;
+
+        task.completed_at_utc = Some(Utc::now());
+        task.updated_at_utc = Utc::now();
+        repository.save(&mut task).await?;
+        Ok(())
     }
 }

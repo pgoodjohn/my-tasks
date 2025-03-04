@@ -1,27 +1,12 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{pool::PoolConnection, Pool, Row, Sqlite};
+use sqlx::{pool::PoolConnection, Row, Sqlite};
 use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::Task;
 use super::UpdatedTaskData;
 use crate::project::Project;
-
-pub struct RepositoryProvider {
-    pub pool: Pool<Sqlite>,
-}
-
-impl RepositoryProvider {
-    pub fn new(pool: Pool<Sqlite>) -> Self {
-        Self { pool }
-    }
-
-    pub async fn task_repository(&self) -> Result<SqliteTaskRepository, sqlx::Error> {
-        let connection = self.pool.acquire().await?;
-        Ok(SqliteTaskRepository { connection })
-    }
-}
 
 #[async_trait]
 pub trait TaskRepository {
@@ -58,48 +43,58 @@ pub struct SqliteTaskRepository {
 }
 
 impl SqliteTaskRepository {
+    pub fn new(connection: PoolConnection<Sqlite>) -> Self {
+        Self { connection }
+    }
+
     pub fn connection(&mut self) -> &mut PoolConnection<Sqlite> {
         &mut self.connection
     }
 
-    async fn from_row(row: sqlx::sqlite::SqliteRow) -> Result<Task, sqlx::Error> {
-        let uuid_string: String = row.get("id");
-        let project_uuid_string: Option<String> = row.get("project_id");
-        let parent_task_uuid_string: Option<String> = row.get("parent_task_id");
-        let due_at_utc_string: Option<String> = row.get("due_at_utc");
-        let created_at_string: String = row.get("created_at_utc");
-        let updated_at_string: String = row.get("updated_at_utc");
-        let completed_at_string: Option<String> = row.get("completed_at_utc");
+    async fn row_to_task(&mut self, row: sqlx::sqlite::SqliteRow) -> Result<Task, sqlx::Error> {
+        let id = Uuid::parse_str(row.get("id")).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        let project_id = match row.get::<Option<String>, _>("project_id") {
+            Some(id) => Some(Uuid::parse_str(&id).map_err(|e| sqlx::Error::Decode(Box::new(e)))?),
+            None => None,
+        };
+        let parent_task_id = match row.get::<Option<String>, _>("parent_task_id") {
+            Some(id) => Some(Uuid::parse_str(&id).map_err(|e| sqlx::Error::Decode(Box::new(e)))?),
+            None => None,
+        };
+        let due_at_utc = match row.get::<Option<String>, _>("due_at_utc") {
+            Some(date) => Some(
+                DateTime::parse_from_rfc3339(&date)
+                    .map_err(|e| sqlx::Error::Decode(Box::new(e)))?
+                    .with_timezone(&Utc),
+            ),
+            None => None,
+        };
+        let created_at_utc = DateTime::parse_from_rfc3339(row.get("created_at_utc"))
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?
+            .with_timezone(&Utc);
+        let completed_at_utc = match row.get::<Option<String>, _>("completed_at_utc") {
+            Some(date) => Some(
+                DateTime::parse_from_rfc3339(&date)
+                    .map_err(|e| sqlx::Error::Decode(Box::new(e)))?
+                    .with_timezone(&Utc),
+            ),
+            None => None,
+        };
+        let updated_at_utc = DateTime::parse_from_rfc3339(row.get("updated_at_utc"))
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?
+            .with_timezone(&Utc);
 
         Ok(Task {
-            id: Uuid::parse_str(&uuid_string).map_err(|e| sqlx::Error::Protocol(e.to_string()))?,
+            id,
             title: row.get("title"),
             description: row.get("description"),
-            project_id: project_uuid_string
-                .map(|s| Uuid::parse_str(&s))
-                .transpose()
-                .map_err(|e| sqlx::Error::Protocol(e.to_string()))?,
+            project_id,
             project: None,
-            parent_task_id: parent_task_uuid_string
-                .map(|s| Uuid::parse_str(&s))
-                .transpose()
-                .map_err(|e| sqlx::Error::Protocol(e.to_string()))?,
-            due_at_utc: due_at_utc_string
-                .map(|s| DateTime::parse_from_rfc3339(&s))
-                .transpose()
-                .map_err(|e| sqlx::Error::Protocol(e.to_string()))?
-                .map(DateTime::<Utc>::from),
-            created_at_utc: DateTime::parse_from_rfc3339(&created_at_string)
-                .map_err(|e| sqlx::Error::Protocol(e.to_string()))?
-                .into(),
-            completed_at_utc: completed_at_string
-                .map(|s| DateTime::parse_from_rfc3339(&s))
-                .transpose()
-                .map_err(|e| sqlx::Error::Protocol(e.to_string()))?
-                .map(DateTime::<Utc>::from),
-            updated_at_utc: DateTime::parse_from_rfc3339(&updated_at_string)
-                .map_err(|e| sqlx::Error::Protocol(e.to_string()))?
-                .into(),
+            parent_task_id,
+            due_at_utc,
+            created_at_utc,
+            completed_at_utc,
+            updated_at_utc,
         })
     }
 
@@ -228,7 +223,7 @@ impl TaskRepository for SqliteTaskRepository {
             .await?;
 
         match row {
-            Some(row) => Ok(Some(SqliteTaskRepository::from_row(row).await?)),
+            Some(row) => Ok(Some(self.row_to_task(row).await?)),
             None => Ok(None),
         }
     }
@@ -248,7 +243,7 @@ impl TaskRepository for SqliteTaskRepository {
 
         let mut tasks = Vec::new();
         for row in rows {
-            tasks.push(SqliteTaskRepository::from_row(row).await?);
+            tasks.push(self.row_to_task(row).await?);
         }
 
         self.load_projects_for_tasks(&mut tasks).await?;
@@ -265,7 +260,7 @@ impl TaskRepository for SqliteTaskRepository {
 
         let mut tasks = Vec::new();
         for row in rows {
-            tasks.push(SqliteTaskRepository::from_row(row).await?);
+            tasks.push(self.row_to_task(row).await?);
         }
 
         self.load_projects_for_tasks(&mut tasks).await?;
@@ -282,7 +277,7 @@ impl TaskRepository for SqliteTaskRepository {
 
         let mut tasks = Vec::new();
         for row in rows {
-            tasks.push(SqliteTaskRepository::from_row(row).await?);
+            tasks.push(self.row_to_task(row).await?);
         }
 
         self.load_projects_for_tasks(&mut tasks).await?;
@@ -300,7 +295,7 @@ impl TaskRepository for SqliteTaskRepository {
 
         let mut tasks = Vec::new();
         for row in rows {
-            tasks.push(SqliteTaskRepository::from_row(row).await?);
+            tasks.push(self.row_to_task(row).await?);
         }
 
         self.load_projects_for_tasks(&mut tasks).await?;
@@ -321,7 +316,7 @@ impl TaskRepository for SqliteTaskRepository {
 
         let mut tasks = Vec::new();
         for row in rows {
-            tasks.push(SqliteTaskRepository::from_row(row).await?);
+            tasks.push(self.row_to_task(row).await?);
         }
 
         self.load_projects_for_tasks(&mut tasks).await?;
@@ -339,7 +334,7 @@ impl TaskRepository for SqliteTaskRepository {
 
         let mut tasks = Vec::new();
         for row in rows {
-            tasks.push(SqliteTaskRepository::from_row(row).await?);
+            tasks.push(self.row_to_task(row).await?);
         }
 
         self.load_projects_for_tasks(&mut tasks).await?;
@@ -356,7 +351,7 @@ impl TaskRepository for SqliteTaskRepository {
 
         let mut tasks = Vec::new();
         for row in rows {
-            tasks.push(SqliteTaskRepository::from_row(row).await?);
+            tasks.push(self.row_to_task(row).await?);
         }
 
         self.load_projects_for_tasks(&mut tasks).await?;

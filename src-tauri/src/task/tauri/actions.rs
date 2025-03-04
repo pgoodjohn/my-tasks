@@ -1,13 +1,11 @@
-use crate::task::manager::TaskManager;
-use crate::task::{CreateTaskData, UpdatedTaskData};
 use tauri::State;
 use uuid::Uuid;
 
 use crate::errors::handle_error;
 use crate::project::manager::ProjectsManager;
-use crate::task::repository::RepositoryProvider;
-
-use chrono::Utc;
+use crate::task::manager::TaskManager;
+use crate::task::{CreateTaskData, UpdatedTaskData};
+use crate::RepositoryProvider;
 
 #[tauri::command]
 pub async fn create_task_command(
@@ -141,34 +139,31 @@ pub async fn create_subtask_for_task_command(
 
 #[tauri::command]
 pub async fn promote_task_to_project_command(
-    repository_provider: State<'_, RepositoryProvider>,
     task_id: String,
-) -> Result<String, String> {
-    let task_manager = TaskManager::new(&*repository_provider);
-    let project_repository_provider =
-        crate::project::repository::RepositoryProvider::new(repository_provider.pool.clone());
-    let projects_manager = ProjectsManager::new(&project_repository_provider);
-
+    repository_provider: State<'_, RepositoryProvider>,
+) -> Result<(), String> {
+    let task_id = Uuid::parse_str(&task_id).map_err(|e| e.to_string())?;
+    let task_manager = TaskManager::new(&repository_provider);
     let task = task_manager
-        .load_by_id(Uuid::parse_str(&task_id).map_err(|e| e.to_string())?)
+        .load_task(task_id)
         .await
-        .map_err(|e| e.to_string())?
-        .ok_or("Task not found")?;
+        .map_err(|e| e.to_string())?;
 
+    let projects_manager = ProjectsManager::new(&repository_provider);
     let project = projects_manager
-        .create_project(task.title.clone())
+        .create_project(task.title.clone(), task.description.clone())
         .await
         .map_err(|e| e.to_string())?;
 
     task_manager
-        .move_subtasks_to_project(task.id, project.id)
+        .move_subtasks_to_project(task_id, project.id)
         .await
         .map_err(|e| e.to_string())?;
 
     task_manager
-        .complete_task(task.id)
+        .archive_task(task_id)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(serde_json::to_string(&project).unwrap())
+    Ok(())
 }

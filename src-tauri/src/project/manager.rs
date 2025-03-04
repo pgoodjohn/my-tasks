@@ -1,6 +1,7 @@
-use super::repository::{ProjectRepository, RepositoryProvider};
+use super::repository::ProjectRepository;
 use super::Project;
 use super::ProjectDetail;
+use crate::repository::RepositoryProvider;
 use crate::task::Task;
 use chrono::Utc;
 use std::error::Error;
@@ -48,7 +49,11 @@ impl<'a> ProjectsManager<'a> {
         Ok(project_detail)
     }
 
-    pub async fn create_project(&self, title: String) -> Result<Project, sqlx::Error> {
+    pub async fn create_project(
+        &self,
+        title: String,
+        description: Option<String>,
+    ) -> Result<Project, sqlx::Error> {
         let mut repository = self.repository_provider.project_repository().await?;
 
         let mut project = Project {
@@ -56,7 +61,7 @@ impl<'a> ProjectsManager<'a> {
             title,
             emoji: None,
             color: None,
-            description: None,
+            description,
             created_at_utc: Utc::now(),
             updated_at_utc: Utc::now(),
             archived_at_utc: None,
@@ -134,7 +139,7 @@ impl<'a> ProjectsManager<'a> {
         Ok(project)
     }
 
-    pub async fn remove_favorite(&self, project_id: Uuid) -> Result<Project, String> {
+    pub async fn remove_favorite(&self, project_id: Uuid) -> Result<Project, Box<dyn Error>> {
         let mut repository = self
             .repository_provider
             .project_repository()

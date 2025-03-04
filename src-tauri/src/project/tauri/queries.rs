@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::errors::handle_error;
 use crate::project::manager::ProjectsManager;
-use crate::project::repository::RepositoryProvider;
+use crate::repository::RepositoryProvider;
 
 #[tauri::command]
 pub async fn load_favorite_projects_command(
@@ -62,10 +62,12 @@ pub async fn count_open_tasks_command(
 
     let project_uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
 
-    projects_manager
+    let count = projects_manager
         .count_open_tasks(project_uuid)
         .await
-        .map_err(|e| handle_error(&*e))
+        .map_err(|e| handle_error(&*e))?;
+
+    Ok(count)
 }
 
 #[tauri::command]
@@ -97,21 +99,7 @@ pub async fn remove_favorite_command(
     let project = projects_manager
         .remove_favorite(project_uuid)
         .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(serde_json::to_string(&project).unwrap())
-}
-
-#[tauri::command]
-pub async fn load_favorites_command(
-    repository_provider: State<'_, RepositoryProvider>,
-) -> Result<String, String> {
-    let projects_manager = ProjectsManager::new(&*repository_provider);
-
-    let projects = projects_manager
-        .load_favorites()
-        .await
         .map_err(|e| handle_error(&*e))?;
 
-    Ok(serde_json::to_string(&projects).unwrap())
+    Ok(serde_json::to_string(&project).unwrap())
 }
