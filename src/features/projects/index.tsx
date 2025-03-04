@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient  } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { MoreHorizontal } from "lucide-react"
 import { useState } from 'react'
@@ -42,6 +42,7 @@ export default Index
 const projectOverviewColumns: Array<ColumnDef<Project>> = [
     {
         id: "actions",
+        size: 10,
         cell: ({ row }) => {
             const project = row.original
             return (

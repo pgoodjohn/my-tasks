@@ -25,27 +25,6 @@ pub struct Project {
     pub is_favorite: bool,
 }
 
-impl Project {
-    pub fn new(
-        title: String,
-        emoji: Option<String>,
-        color: Option<String>,
-        description: Option<String>,
-    ) -> Self {
-        Project {
-            id: Uuid::now_v7(),
-            title,
-            emoji,
-            color,
-            description,
-            created_at_utc: Utc::now(),
-            updated_at_utc: Utc::now(),
-            archived_at_utc: None,
-            is_favorite: false,
-        }
-    }
-}
-
 #[derive(Debug, Serialize)]
 pub struct ProjectDetail {
     pub project: Project,

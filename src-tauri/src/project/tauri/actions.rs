@@ -16,7 +16,7 @@ pub async fn create_project_command(
     projects_manager
         .create_project(title, description)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| handle_error(&*e))
 }
 
 #[tauri::command]
@@ -34,7 +34,7 @@ pub async fn update_project_command(
     projects_manager
         .update_project(project_uuid, title, emoji, color, description)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| handle_error(&*e))
 }
 
 #[tauri::command]
@@ -48,5 +48,5 @@ pub async fn archive_project_command(
     projects_manager
         .archive_project(project_uuid)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| handle_error(&*e))
 }

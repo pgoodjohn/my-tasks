@@ -143,20 +143,6 @@ impl<'a> TaskManager<'a> {
         Ok(())
     }
 
-    async fn mark_task_completed(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
-        let mut repository = self.repository_provider.task_repository().await?;
-
-        let mut task = match repository.find_by_id(task_id).await? {
-            None => return Err(Box::new(TaskError::TaskNotFound)),
-            Some(task) => task,
-        };
-
-        task.completed_at_utc = Some(Utc::now());
-        repository.save(&mut task).await?;
-
-        Ok(())
-    }
-
     async fn unmark_task_completed(&self, task_id: Uuid) -> Result<(), TaskError> {
         let mut repository = self.repository_provider.task_repository().await?;
 

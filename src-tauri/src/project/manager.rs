@@ -2,7 +2,7 @@ use super::repository::ProjectRepository;
 use super::Project;
 use super::ProjectDetail;
 use crate::repository::RepositoryProvider;
-use crate::task::Task;
+use crate::task::repository::TaskRepository;
 use chrono::Utc;
 use std::error::Error;
 use uuid::Uuid;
@@ -34,16 +34,19 @@ impl<'a> ProjectsManager<'a> {
     pub async fn load_project_detail(
         &self,
         project_id: Uuid,
-        _include_completed_tasks: bool,
+        include_completed_tasks: bool,
     ) -> Result<ProjectDetail, Box<dyn Error>> {
-        let mut repository = self.repository_provider.project_repository().await?;
+        let mut project_repository = self.repository_provider.project_repository().await?;
+        let mut task_repository = self.repository_provider.task_repository().await?;
 
-        let project = repository
+        let project = project_repository
             .find_by_id(project_id)
             .await?
             .ok_or("Project not found")?;
 
-        let tasks = Task::load_for_project(project.id, &self.repository_provider.pool).await?;
+        let tasks = task_repository
+            .find_by_project(project_id, include_completed_tasks)
+            .await?;
 
         let project_detail = ProjectDetail { project, tasks };
         Ok(project_detail)
@@ -53,7 +56,7 @@ impl<'a> ProjectsManager<'a> {
         &self,
         title: String,
         description: Option<String>,
-    ) -> Result<Project, sqlx::Error> {
+    ) -> Result<Project, Box<dyn Error>> {
         let mut repository = self.repository_provider.project_repository().await?;
 
         let mut project = Project {

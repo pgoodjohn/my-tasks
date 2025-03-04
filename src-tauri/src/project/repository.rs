@@ -22,10 +22,6 @@ impl SqliteProjectRepository {
     pub fn new(connection: PoolConnection<Sqlite>) -> Self {
         Self { connection }
     }
-
-    fn connection(&mut self) -> &mut PoolConnection<Sqlite> {
-        &mut self.connection
-    }
 }
 
 #[async_trait]

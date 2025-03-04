@@ -23,7 +23,11 @@ pub trait TaskRepository {
         include_completed: bool,
     ) -> Result<Vec<Task>, sqlx::Error>;
     async fn find_completed(&mut self) -> Result<Vec<Task>, sqlx::Error>;
-    async fn find_by_project(&mut self, project_id: Uuid) -> Result<Vec<Task>, sqlx::Error>;
+    async fn find_by_project(
+        &mut self,
+        project_id: Uuid,
+        include_completed_tasks: bool,
+    ) -> Result<Vec<Task>, sqlx::Error>;
     async fn find_by_parent(&mut self, parent_task_id: Uuid) -> Result<Vec<Task>, sqlx::Error>;
     async fn find_completed_by_parent(
         &mut self,
@@ -45,10 +49,6 @@ pub struct SqliteTaskRepository {
 impl SqliteTaskRepository {
     pub fn new(connection: PoolConnection<Sqlite>) -> Self {
         Self { connection }
-    }
-
-    pub fn connection(&mut self) -> &mut PoolConnection<Sqlite> {
-        &mut self.connection
     }
 
     async fn row_to_task(&mut self, row: sqlx::sqlite::SqliteRow) -> Result<Task, sqlx::Error> {
@@ -268,12 +268,21 @@ impl TaskRepository for SqliteTaskRepository {
         Ok(tasks)
     }
 
-    async fn find_by_project(&mut self, project_id: Uuid) -> Result<Vec<Task>, sqlx::Error> {
-        let rows =
-            sqlx::query("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY updated_at_utc DESC")
-                .bind(project_id.to_string())
-                .fetch_all(&mut *self.connection)
-                .await?;
+    async fn find_by_project(
+        &mut self,
+        project_id: Uuid,
+        include_completed_tasks: bool,
+    ) -> Result<Vec<Task>, sqlx::Error> {
+        let mut query = "SELECT * FROM tasks WHERE project_id = ?1".to_string();
+        if !include_completed_tasks {
+            query += " AND completed_at_utc IS NULL";
+        }
+        query += " ORDER BY updated_at_utc DESC";
+
+        let rows = sqlx::query(&query)
+            .bind(project_id.to_string())
+            .fetch_all(&mut *self.connection)
+            .await?;
 
         let mut tasks = Vec::new();
         for row in rows {
