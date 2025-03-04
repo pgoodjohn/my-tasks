@@ -1,15 +1,17 @@
-use sqlx::SqlitePool;
 use tauri::State;
 use uuid::Uuid;
 
 use crate::errors::handle_error;
 use crate::project::manager::ProjectsManager;
+use crate::project::repository::RepositoryProvider;
 
 #[tauri::command]
-pub async fn load_favorite_projects_command(db: State<'_, SqlitePool>) -> Result<String, String> {
+pub async fn load_favorite_projects_command(
+    repository_provider: State<'_, RepositoryProvider>,
+) -> Result<String, String> {
     log::debug!("Running load favorite projects command");
 
-    let projects_manager = ProjectsManager::new(&db);
+    let projects_manager = ProjectsManager::new(&*repository_provider);
 
     let projects = projects_manager
         .load_favorites()
@@ -21,105 +23,95 @@ pub async fn load_favorite_projects_command(db: State<'_, SqlitePool>) -> Result
 
 #[tauri::command]
 pub async fn load_projects_command(
+    repository_provider: State<'_, RepositoryProvider>,
     show_archived_projects: bool,
-    db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
-    log::debug!("Running list projects command");
-    let projects_manager = ProjectsManager::new(&db);
-
+    let projects_manager = ProjectsManager::new(&*repository_provider);
     let projects = projects_manager
-        .load_projects(show_archived_projects)
+        .load_all(show_archived_projects)
         .await
-        .map_err(|e| handle_error(&*e))?;
+        .map_err(|e| e.to_string())?;
 
     Ok(serde_json::to_string(&projects).unwrap())
 }
 
 #[tauri::command]
 pub async fn load_project_details_command(
+    repository_provider: State<'_, RepositoryProvider>,
     project_id: String,
     include_completed_tasks: bool,
-    db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
-    log::debug!(
-        "Running load project details command for project ID: {}, include_completed_tasks: {:?}",
-        project_id,
-        include_completed_tasks
-    );
-
-    let projects_manager = ProjectsManager::new(&db);
+    let projects_manager = ProjectsManager::new(&*repository_provider);
 
     let project_uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
 
-    let project_details = projects_manager
-        .load_project_details(project_uuid, include_completed_tasks)
+    let project_detail = projects_manager
+        .load_project_detail(project_uuid, include_completed_tasks)
         .await
         .map_err(|e| handle_error(&*e))?;
 
-    Ok(serde_json::to_string(&project_details).unwrap())
+    Ok(serde_json::to_string(&project_detail).unwrap())
 }
 
 #[tauri::command]
-pub async fn count_open_tasks_for_project_command(
+pub async fn count_open_tasks_command(
+    repository_provider: State<'_, RepositoryProvider>,
     project_id: String,
-    db: State<'_, SqlitePool>,
+) -> Result<i64, String> {
+    let projects_manager = ProjectsManager::new(&*repository_provider);
+
+    let project_uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
+
+    projects_manager
+        .count_open_tasks(project_uuid)
+        .await
+        .map_err(|e| handle_error(&*e))
+}
+
+#[tauri::command]
+pub async fn add_favorite_command(
+    repository_provider: State<'_, RepositoryProvider>,
+    project_id: String,
 ) -> Result<String, String> {
-    log::debug!(
-        "Running count open tasks for project command for project ID: {}",
-        project_id
-    );
+    let projects_manager = ProjectsManager::new(&*repository_provider);
 
-    let manager = ProjectsManager::new(&db);
+    let project_uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
 
-    let uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
-
-    let open_tasks_count = manager
-        .count_open_tasks(uuid)
+    let project = projects_manager
+        .add_favorite(project_uuid)
         .await
         .map_err(|e| handle_error(&*e))?;
 
-    Ok(open_tasks_count.to_string())
+    Ok(serde_json::to_string(&project).unwrap())
 }
 
 #[tauri::command]
-pub async fn add_favorite_project_command(
+pub async fn remove_favorite_command(
+    repository_provider: State<'_, RepositoryProvider>,
     project_id: String,
-    db: State<'_, SqlitePool>,
 ) -> Result<String, String> {
-    log::debug!(
-        "Running favorite project command for project ID: {}",
-        project_id
-    );
+    let projects_manager = ProjectsManager::new(&*repository_provider);
 
-    let manager = ProjectsManager::new(&db);
+    let project_uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string())?;
 
-    let uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
+    let project = projects_manager
+        .remove_favorite(project_uuid)
+        .await
+        .map_err(|e| e.to_string())?;
 
-    let favorite_project = manager
-        .add_favorite(uuid)
+    Ok(serde_json::to_string(&project).unwrap())
+}
+
+#[tauri::command]
+pub async fn load_favorites_command(
+    repository_provider: State<'_, RepositoryProvider>,
+) -> Result<String, String> {
+    let projects_manager = ProjectsManager::new(&*repository_provider);
+
+    let projects = projects_manager
+        .load_favorites()
         .await
         .map_err(|e| handle_error(&*e))?;
 
-    Ok(serde_json::to_string(&favorite_project).unwrap())
-}
-
-#[tauri::command]
-pub async fn remove_favorite_project_command(
-    project_id: String,
-    db: State<'_, SqlitePool>,
-) -> Result<String, String> {
-    log::debug!(
-        "Running favorite project command for project ID: {}",
-        project_id
-    );
-
-    let manager = ProjectsManager::new(&db);
-
-    let uuid = Uuid::parse_str(&project_id)
-        .map_err(|e| e.to_string())
-        .unwrap();
-
-    let favorite_project = manager.remove_favorite(uuid).await.unwrap();
-
-    Ok(serde_json::to_string(&favorite_project).unwrap())
+    Ok(serde_json::to_string(&projects).unwrap())
 }

@@ -1,31 +1,33 @@
-use std::collections::HashMap;
-use std::error::Error;
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{pool::PoolConnection, Row as SqlxRow, Sqlite};
+use sqlx::{Row, SqlitePool};
+use std::collections::HashMap;
+use std::error::Error;
 use uuid::Uuid;
 
 use crate::project::Project;
 
 pub mod manager;
+pub mod repository;
 pub mod tauri;
 mod test;
 
+use repository::{RepositoryProvider, TaskRepository};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdatedTaskData {
-    title: String,
-    description: Option<String>,
-    due_date: Option<String>,
-    project_id: Option<String>,
+    pub title: String,
+    pub description: Option<String>,
+    pub project_id: Option<String>,
+    pub due_date: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTaskData {
-    project_id: Option<Uuid>,
-    title: String,
-    description: Option<String>,
-    due_at_utc: Option<DateTime<Utc>>,
+    pub title: String,
+    pub description: Option<String>,
+    pub project_id: Option<String>,
+    pub due_at_utc: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,6 +35,7 @@ pub struct Task {
     pub id: Uuid,
     pub title: String,
     pub description: Option<String>,
+    pub project_id: Option<Uuid>,
     pub project: Option<Project>,
     pub parent_task_id: Option<Uuid>,
     pub due_at_utc: Option<DateTime<Utc>>,
@@ -45,27 +48,54 @@ impl Task {
     pub fn new(
         title: String,
         description: Option<String>,
-        project: Option<Project>,
+        project_id: Option<Uuid>,
+        parent_task_id: Option<Uuid>,
         due_at_utc: Option<DateTime<Utc>>,
     ) -> Self {
         Task {
             id: Uuid::now_v7(),
             title,
             description,
-            project,
-            parent_task_id: None,
+            project_id,
+            project: None,
+            parent_task_id,
             due_at_utc,
             created_at_utc: Utc::now(),
-            completed_at_utc: None,
             updated_at_utc: Utc::now(),
+            completed_at_utc: None,
         }
+    }
+
+    pub fn from_create_data(data: CreateTaskData) -> Result<Self, Box<dyn Error>> {
+        Ok(Task {
+            id: Uuid::now_v7(),
+            title: data.title,
+            description: data.description,
+            project_id: match data.project_id {
+                Some(id) => Some(Uuid::parse_str(&id)?),
+                None => None,
+            },
+            project: None,
+            parent_task_id: None,
+            due_at_utc: data
+                .due_at_utc
+                .map(|date| DateTime::parse_from_rfc3339(&date))
+                .transpose()?
+                .map(DateTime::<Utc>::from),
+            created_at_utc: Utc::now(),
+            updated_at_utc: Utc::now(),
+            completed_at_utc: None,
+        })
     }
 
     pub async fn update(
         &mut self,
         data: UpdatedTaskData,
-        connection: &mut PoolConnection<Sqlite>,
+        db_pool: &SqlitePool,
     ) -> Result<(), Box<dyn Error>> {
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+
         self.title = data.title;
         self.description = data.description;
         self.due_at_utc = data
@@ -76,330 +106,147 @@ impl Task {
         match data.project_id {
             Some(project_id) => {
                 let project_uuid = Uuid::parse_str(&project_id)?;
-                self.project = Project::load_by_id(project_uuid, connection).await.unwrap();
+                self.project_id = Some(project_uuid);
+                self.project = None; // Will be loaded by repository when needed
             }
             None => {
+                self.project_id = None;
                 self.project = None;
             }
         }
+
+        repository.save(self).await?;
         Ok(())
     }
 
-    async fn is_stored(
-        &self,
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<bool, sqlx::Error> {
-        let stored_task = Task::load_by_id(self.id, connection).await.unwrap();
-
-        match stored_task {
-            Some(_) => Ok(true),
-            None => Ok(false),
-        }
-    }
-
-    async fn update_record(
-        &mut self,
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<&Self, sqlx::Error> {
-        self.updated_at_utc = Utc::now();
-
-        let _sql_result = sqlx::query(
-            "UPDATE tasks SET title = ?1, description = ?2, due_at_utc = ?3, parent_task_id = ?4, updated_at_utc = ?5, project_id = ?6, completed_at_utc = ?7, updated_at_utc = ?8 WHERE id = ?9"
-        )
-        .bind(&self.title)
-        .bind(&self.description)
-        .bind(self.due_at_utc.map(|date| date.to_rfc3339()))
-        .bind(self.parent_task_id.map(|task_uuid| task_uuid.to_string()))
-        .bind(self.updated_at_utc.to_rfc3339())
-        .bind(self.project.as_ref().map(|project| project.id.to_string()))
-        .bind(self.completed_at_utc.map(|date| date.to_rfc3339()))
-        .bind(self.updated_at_utc.to_rfc3339())
-        .bind(self.id.to_string())
-        .execute(&mut **connection).await?;
-
+    pub async fn create_record(&mut self, db_pool: &SqlitePool) -> Result<&Self, sqlx::Error> {
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        repository.save(self).await?;
         Ok(self)
     }
 
-    pub async fn create_record(
-        &mut self,
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<&Self, sqlx::Error> {
-        if self.is_stored(connection).await? {
-            self.update_record(connection).await?;
-            return Ok(self);
-        }
-
-        let _sql_result = sqlx::query(
-            "INSERT INTO tasks (id, title, description, project_id, parent_task_id, due_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"
-        )
-        .bind(self.id.to_string())
-        .bind(&self.title)
-        .bind(&self.description)
-        .bind(self.project.as_ref().map(|project| project.id.to_string()))
-        .bind(self.parent_task_id.map(|id| id.to_string()))
-        .bind(self.due_at_utc.map(|date| date.to_rfc3339()))
-        .bind(self.created_at_utc.to_rfc3339())
-        .bind(self.updated_at_utc.to_rfc3339())
-        .execute(&mut **connection).await?;
-
-        Ok(self)
-    }
-
-    pub async fn delete_record(
-        &self,
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<(), sqlx::Error> {
-        let _sql_result = sqlx::query("DELETE FROM tasks WHERE id = ?1")
-            .bind(self.id.to_string())
-            .execute(&mut **connection)
-            .await?;
-
-        Ok(())
-    }
-
-    async fn from_sqlx_row(
-        row: sqlx::sqlite::SqliteRow,
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Self, Box<dyn Error>> {
-        let uuid_string: String = row.get("id");
-        let project_uuid_string: Option<String> = row.get("project_id");
-        let parent_task_uuid_string: Option<String> = row.get("parent_task_id");
-        let due_at_utc_string: Option<String> = row.get("due_at_utc");
-        let created_at_string: String = row.get("created_at_utc");
-        let updated_at_string: String = row.get("updated_at_utc");
-        let completed_at_string: Option<String> = row.get("completed_at_utc");
-
-        Ok(Task {
-            id: Uuid::parse_str(&uuid_string)?,
-            title: row.get("title"),
-            description: row.get("description"),
-            project: match project_uuid_string {
-                Some(uuid) => {
-                    Project::load_by_id(Uuid::parse_str(&uuid).unwrap(), &mut *connection)
-                        .await
-                        .unwrap()
-                }
-                None => None,
-            },
-            parent_task_id: parent_task_uuid_string.map(|s| Uuid::parse_str(&s).unwrap()),
-            due_at_utc: due_at_utc_string
-                .map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
-            created_at_utc: DateTime::<Utc>::from(
-                DateTime::parse_from_rfc3339(&created_at_string).unwrap(),
-            ),
-            completed_at_utc: completed_at_string
-                .map(|s| DateTime::<Utc>::from(DateTime::parse_from_rfc3339(&s).unwrap())),
-            updated_at_utc: DateTime::<Utc>::from(
-                DateTime::parse_from_rfc3339(&updated_at_string).unwrap(),
-            ),
-        })
+    pub async fn delete_record(&self, db_pool: &SqlitePool) -> Result<(), sqlx::Error> {
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        repository.delete(self).await
     }
 
     pub async fn load_by_id(
         id: Uuid,
-        connection: &mut PoolConnection<Sqlite>,
+        db_pool: &SqlitePool,
     ) -> Result<Option<Self>, Box<dyn Error>> {
-        let rows = sqlx::query("SELECT * FROM tasks WHERE id = ?1 LIMIT 1")
-            .bind(id.to_string())
-            .fetch_all(&mut **connection)
-            .await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks.pop())
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        Ok(repository.find_by_id(id).await?)
     }
 
     pub async fn load_filtered_by_completed(
         include_completed: bool,
-        connection: &mut PoolConnection<Sqlite>,
+        db_pool: &SqlitePool,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let query = match include_completed {
-            true => "SELECT * FROM tasks ORDER BY updated_at_utc DESC",
-            false => {
-                "SELECT * FROM tasks WHERE completed_at_utc IS NULL ORDER BY updated_at_utc DESC"
-            }
-        };
-
-        let rows = sqlx::query(query).fetch_all(&mut **connection).await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        Ok(repository
+            .find_all_filtered_by_completed(include_completed)
+            .await?)
     }
 
-    pub async fn load_completed_tasks(
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE completed_at_utc IS NOT NULL ORDER BY completed_at_utc DESC",
-        )
-        .fetch_all(&mut **connection)
-        .await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
+    pub async fn load_completed_tasks(db_pool: &SqlitePool) -> Result<Vec<Self>, Box<dyn Error>> {
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        Ok(repository.find_completed().await?)
     }
 
     pub async fn load_for_project(
         project_id: Uuid,
-        connection: &mut PoolConnection<Sqlite>,
+        db_pool: &SqlitePool,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let rows =
-            sqlx::query("SELECT * FROM tasks WHERE project_id = ?1 ORDER BY updated_at_utc DESC")
-                .bind(project_id.to_string())
-                .fetch_all(&mut **connection)
-                .await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        Ok(repository.find_by_project(project_id).await?)
     }
 
     pub async fn load_for_parent(
         parent_task_id: Uuid,
-        connection: &mut PoolConnection<Sqlite>,
+        db_pool: &SqlitePool,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE parent_task_id = ?1 AND completed_at_utc IS NULL ORDER BY updated_at_utc DESC",
-        )
-        .bind(parent_task_id.to_string())
-        .fetch_all(&mut **connection)
-        .await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        Ok(repository.find_by_parent(parent_task_id).await?)
     }
 
     pub async fn load_completed_for_parent(
         parent_task_id: Uuid,
-        connection: &mut PoolConnection<Sqlite>,
+        db_pool: &SqlitePool,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE parent_task_id = ?1 AND completed_at_utc IS NOT NULL ORDER BY completed_at_utc DESC",
-        )
-        .bind(parent_task_id.to_string())
-        .fetch_all(&mut **connection)
-        .await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        Ok(repository.find_completed_by_parent(parent_task_id).await?)
     }
 
     pub async fn load_due_before(
         date: DateTime<Utc>,
-        connection: &mut PoolConnection<Sqlite>,
+        db_pool: &SqlitePool,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE due_at_utc < ?1 AND completed_at_utc IS NULL ORDER BY due_at_utc ASC"
-        )
-        .bind(date.to_rfc3339())
-        .fetch_all(&mut **connection)
-        .await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        Ok(repository.find_due_before(date).await?)
     }
 
-    pub async fn load_inbox(
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let rows = sqlx::query(
-            "SELECT * FROM tasks WHERE project_id IS NULL AND completed_at_utc IS NULL ORDER BY created_at_utc DESC"
-        )
-        .fetch_all(&mut **connection)
-        .await?;
-
-        let mut tasks = Vec::new();
-        for row in rows {
-            let task = Task::from_sqlx_row(row, connection).await?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
+    pub async fn load_inbox(db_pool: &SqlitePool) -> Result<Vec<Self>, Box<dyn Error>> {
+        let repository_provider = RepositoryProvider::new(db_pool.clone());
+        let mut repository = repository_provider.task_repository().await?;
+        Ok(repository.find_inbox().await?)
     }
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DateTaskStatistic {
+    pub date: String,
+    pub completed_tasks: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PeriodTaskStatistic(HashMap<String, DateTaskStatistic>);
 
 impl PeriodTaskStatistic {
-    pub async fn load(
-        connection: &mut PoolConnection<Sqlite>,
-    ) -> Result<Vec<Self>, Box<dyn Error>> {
-        let mut statistics = vec![];
-
-        let sqlx_result = sqlx::query(
-           "SELECT COUNT(*) as count, strftime('%Y-%m-%d', completed_at_utc) as date FROM tasks WHERE completed_at_utc IS NOT NULL GROUP BY date ORDER BY date DESC",
+    pub async fn load(db_pool: &SqlitePool) -> Result<Vec<Self>, Box<dyn Error>> {
+        let rows = sqlx::query(
+            r#"
+            SELECT
+                strftime('%Y-%m-%d', completed_at_utc) as date,
+                COUNT(*) as count
+            FROM tasks
+            WHERE completed_at_utc IS NOT NULL
+            GROUP BY strftime('%Y-%m-%d', completed_at_utc)
+            ORDER BY date DESC
+            "#,
         )
-        .fetch_all(&mut **connection)
+        .fetch_all(db_pool)
         .await?;
 
-        for row in sqlx_result {
-            let date = row.get("date");
-            let level = match row.get("count") {
-                0 => 0,
-                1..=3 => 1,
-                4..=6 => 2,
-                7..=9 => 3,
-                _ => 4,
+        let mut period_statistics = Vec::new();
+
+        for row in rows {
+            let date: String = row.get("date");
+            let count: i64 = row.get("count");
+            let level = match count {
+                0..=4 => 1,
+                5..=9 => 2,
+                _ => 3,
             };
             let date_statistic = DateTaskStatistic {
-                level,
-                data: DateTaskStatisticData {
-                    completed_tasks: row.get("count"),
-                },
+                date: date.clone(),
+                completed_tasks: level as i32,
             };
 
-            let mut period_statistic =
-                PeriodTaskStatistic(HashMap::<String, DateTaskStatistic>::new());
+            let mut period_statistic = PeriodTaskStatistic(HashMap::new());
             period_statistic.0.insert(date, date_statistic);
 
-            statistics.push(period_statistic)
+            period_statistics.push(period_statistic);
         }
 
-        Ok(statistics)
+        Ok(period_statistics)
     }
-}
-
-#[derive(Serialize)]
-pub struct DateTaskStatistic {
-    level: i64,
-    data: DateTaskStatisticData,
-}
-
-#[derive(Serialize)]
-pub struct DateTaskStatisticData {
-    completed_tasks: i64,
 }

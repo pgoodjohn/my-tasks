@@ -1,88 +1,69 @@
-use std::error::Error;
-
-use chrono::Utc;
-use sqlx::SqlitePool;
-use uuid::Uuid;
-
+use super::repository::{ProjectRepository, RepositoryProvider};
 use super::Project;
 use super::ProjectDetail;
 use crate::task::Task;
+use chrono::Utc;
+use std::error::Error;
+use uuid::Uuid;
 
 pub struct ProjectsManager<'a> {
-    db_pool: &'a SqlitePool,
+    repository_provider: &'a RepositoryProvider,
 }
 
 impl<'a> ProjectsManager<'a> {
-    pub fn new(db_pool: &'a SqlitePool) -> Self {
-        ProjectsManager { db_pool }
+    pub fn new(repository_provider: &'a RepositoryProvider) -> Self {
+        ProjectsManager {
+            repository_provider,
+        }
     }
 
-    pub async fn load_projects(
+    pub async fn load_all(
         &self,
         show_archived_projects: bool,
     ) -> Result<Vec<Project>, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
-
-        match show_archived_projects {
-            true => {
-                let projects = Project::list_all_projects(&mut connection).await?;
-                Ok(projects)
-            }
-            false => {
-                let projects = Project::list_not_archived_projects(&mut connection).await?;
-                Ok(projects)
-            }
-        }
+        let mut repository = self.repository_provider.project_repository().await?;
+        let projects = if show_archived_projects {
+            repository.find_all().await?
+        } else {
+            repository.find_not_archived().await?
+        };
+        Ok(projects)
     }
 
-    pub async fn load_project_details(
+    pub async fn load_project_detail(
         &self,
         project_id: Uuid,
-        include_completed_tasks: bool,
+        _include_completed_tasks: bool,
     ) -> Result<ProjectDetail, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
+        let mut repository = self.repository_provider.project_repository().await?;
 
-        let project = Project::load_by_id(project_id, &mut connection)
+        let project = repository
+            .find_by_id(project_id)
             .await?
-            .unwrap();
+            .ok_or("Project not found")?;
 
-        let tasks = Task::load_for_project(project.id, &mut connection).await?;
+        let tasks = Task::load_for_project(project.id, &self.repository_provider.pool).await?;
 
         let project_detail = ProjectDetail { project, tasks };
-
-        if include_completed_tasks {
-            return Ok(project_detail);
-        }
-
-        let open_tasks: Vec<Task> = project_detail
-            .tasks
-            .into_iter()
-            .filter(|task| task.completed_at_utc.is_none())
-            .collect();
-
-        let open_project_detail = ProjectDetail {
-            project: project_detail.project,
-            tasks: open_tasks,
-        };
-
-        Ok(open_project_detail)
+        Ok(project_detail)
     }
 
-    pub async fn create_project(
-        &self,
-        title: String,
-        emoji: Option<String>,
-        color: Option<String>,
-        description: Option<String>,
-    ) -> Result<Project, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
+    pub async fn create_project(&self, title: String) -> Result<Project, sqlx::Error> {
+        let mut repository = self.repository_provider.project_repository().await?;
 
-        let mut project = Project::new(title, emoji, color, description);
+        let mut project = Project {
+            id: Uuid::now_v7(),
+            title,
+            emoji: None,
+            color: None,
+            description: None,
+            created_at_utc: Utc::now(),
+            updated_at_utc: Utc::now(),
+            archived_at_utc: None,
+            is_favorite: false,
+        };
 
-        project.save(&mut connection).await?;
+        repository.save(&mut project).await?;
 
         Ok(project)
     }
@@ -90,104 +71,95 @@ impl<'a> ProjectsManager<'a> {
     pub async fn update_project(
         &self,
         project_id: Uuid,
-        new_title: Option<String>,
+        new_title: String,
         new_emoji: Option<String>,
         new_color: Option<String>,
         new_description: Option<String>,
     ) -> Result<Project, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
+        let mut repository = self.repository_provider.project_repository().await?;
 
-        let mut project = Project::load_by_id(project_id, &mut connection)
+        let mut project = repository
+            .find_by_id(project_id)
             .await?
-            .unwrap(); // TODO: remove unwrap for option
+            .ok_or("Project not found")?;
 
-        project.title = new_title.unwrap_or(project.title);
+        project.title = new_title;
         project.emoji = new_emoji;
-        project.description = new_description;
         project.color = new_color;
+        project.description = new_description;
         project.updated_at_utc = Utc::now();
 
-        project.save(&mut connection).await?;
+        repository.save(&mut project).await?;
 
         Ok(project)
     }
 
     pub async fn archive_project(&self, project_id: Uuid) -> Result<Project, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
+        let mut repository = self.repository_provider.project_repository().await?;
 
-        let project = Project::load_by_id(project_id, &mut connection).await?;
+        let mut project = repository
+            .find_by_id(project_id)
+            .await?
+            .ok_or("Project not found")?;
 
-        match project {
-            None => Err(Box::<dyn Error>::from("Project not found")),
-            Some(mut project) => {
-                project.archived_at_utc = Some(Utc::now());
-                project.save(&mut connection).await?;
+        project.archived_at_utc = Some(Utc::now());
+        project.updated_at_utc = Utc::now();
 
-                Ok(project)
-            }
-        }
+        repository.save(&mut project).await?;
+
+        Ok(project)
     }
 
     pub async fn count_open_tasks(&self, project_id: Uuid) -> Result<i64, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
-
-        let project = Project::load_by_id(project_id, &mut connection).await?;
-
-        match project {
-            Some(project) => {
-                let count = project
-                    .count_open_tasks_for_project(&mut connection)
-                    .await?;
-                Ok(count)
-            }
-            None => Err(Box::<dyn Error>::from("Could not find project")),
-        }
+        let mut repository = self.repository_provider.project_repository().await?;
+        repository
+            .count_open_tasks(project_id)
+            .await
+            .map_err(|e| e.into())
     }
 
     pub async fn add_favorite(&self, project_id: Uuid) -> Result<Project, Box<dyn Error>> {
-        let mut connection = self.db_pool.acquire().await?;
+        let mut repository = self.repository_provider.project_repository().await?;
 
-        let project = Project::load_by_id(project_id, &mut connection).await?;
+        let mut project = repository
+            .find_by_id(project_id)
+            .await?
+            .ok_or("Project not found")?;
 
-        match project {
-            Some(mut project) => {
-                project.is_favorite = true;
-                project.update_record(&mut connection).await?;
+        project.is_favorite = true;
+        project.updated_at_utc = Utc::now();
 
-                Ok(project)
-            }
-            None => Err(Box::<dyn Error>::from("Could not find project")),
-        }
+        repository.save(&mut project).await?;
+
+        Ok(project)
     }
 
     pub async fn remove_favorite(&self, project_id: Uuid) -> Result<Project, String> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await.unwrap();
-
-        let project = Project::load_by_id(project_id, &mut connection)
+        let mut repository = self
+            .repository_provider
+            .project_repository()
             .await
-            .unwrap();
+            .map_err(|e| e.to_string())?;
 
-        match project {
-            None => Err("Project not found".to_string()),
-            Some(mut project) => {
-                project.is_favorite = false;
-                project.update_record(&mut connection).await.unwrap();
+        let mut project = repository
+            .find_by_id(project_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or("Project not found")?;
 
-                Ok(project)
-            }
-        }
+        project.is_favorite = false;
+        project.updated_at_utc = Utc::now();
+
+        repository
+            .save(&mut project)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(project)
     }
 
     pub async fn load_favorites(&self) -> Result<Vec<Project>, Box<dyn Error>> {
-        let mut connection: sqlx::pool::PoolConnection<sqlx::Sqlite> =
-            self.db_pool.acquire().await?;
-
-        let projects = Project::list_favorite_projects(&mut connection).await?;
-
-        Ok(projects)
+        let mut repository = self.repository_provider.project_repository().await?;
+        repository.find_favorites().await.map_err(|e| e.into())
     }
 }

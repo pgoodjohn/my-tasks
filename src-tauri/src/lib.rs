@@ -63,7 +63,11 @@ pub fn run() {
 
                 db_pool
             });
-            app.manage(db_pool.clone());
+
+            // Create and manage the repository provider
+            let repository_provider = task::repository::RepositoryProvider::new(db_pool.clone());
+            app.manage(repository_provider);
+            app.manage(db_pool);
 
             app.manage(Mutex::new(configuration_manager.configuration));
 
@@ -79,11 +83,11 @@ pub fn run() {
             project::tauri::actions::create_project_command,
             project::tauri::actions::update_project_command,
             project::tauri::queries::load_projects_command,
-            project::tauri::queries::count_open_tasks_for_project_command,
             project::tauri::queries::load_project_details_command,
-            project::tauri::queries::add_favorite_project_command,
-            project::tauri::queries::remove_favorite_project_command,
-            project::tauri::queries::load_favorite_projects_command,
+            project::tauri::queries::count_open_tasks_command,
+            project::tauri::queries::add_favorite_command,
+            project::tauri::queries::remove_favorite_command,
+            project::tauri::queries::load_favorites_command,
             task::tauri::actions::create_task_command,
             task::tauri::actions::update_task_command,
             task::tauri::actions::delete_task_command,

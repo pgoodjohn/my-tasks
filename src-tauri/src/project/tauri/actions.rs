@@ -1,84 +1,49 @@
-use sqlx::SqlitePool;
+use crate::project::manager::ProjectsManager;
+use crate::project::repository::RepositoryProvider;
+use crate::project::Project;
 use tauri::State;
 use uuid::Uuid;
 
-use crate::errors::handle_error;
-use crate::project::manager::ProjectsManager;
-
 #[tauri::command]
 pub async fn create_project_command(
+    repository_provider: State<'_, RepositoryProvider>,
     title: String,
-    emoji: Option<String>,
-    color: Option<String>,
-    description: Option<String>,
-    db: State<'_, SqlitePool>,
-) -> Result<String, String> {
-    log::debug!(
-        "Running create project command for: {:?} | {:?}",
-        title,
-        description
-    );
-
-    let projects_manager = ProjectsManager::new(&db);
-    let project = projects_manager
-        .create_project(title, emoji, color, description)
+) -> Result<Project, String> {
+    let projects_manager = ProjectsManager::new(&repository_provider);
+    projects_manager
+        .create_project(title)
         .await
-        .map_err(|e| handle_error(&*e))?;
-
-    Ok(serde_json::to_string(&project).unwrap())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn update_project_command(
+    repository_provider: State<'_, RepositoryProvider>,
     project_id: String,
-    new_title: Option<String>,
-    new_emoji: Option<String>,
-    new_color: Option<String>,
-    new_description: Option<String>,
-    db: State<'_, SqlitePool>,
-) -> Result<String, String> {
-    log::debug!(
-        "Running update project command for: {:?} | {:?}",
-        new_title,
-        new_description
-    );
+    title: String,
+    emoji: Option<String>,
+    color: Option<String>,
+    description: Option<String>,
+) -> Result<Project, String> {
+    let project_uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string())?;
+    let projects_manager = ProjectsManager::new(&repository_provider);
 
-    let projects_manager = ProjectsManager::new(&db);
-
-    let project_uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
-
-    let project = projects_manager
-        .update_project(
-            project_uuid,
-            new_title,
-            new_emoji,
-            new_color,
-            new_description,
-        )
+    projects_manager
+        .update_project(project_uuid, title, emoji, color, description)
         .await
-        .map_err(|e| handle_error(&*e))?;
-
-    Ok(serde_json::to_string(&project).unwrap())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn archive_project_command(
+    repository_provider: State<'_, RepositoryProvider>,
     project_id: String,
-    db: State<'_, SqlitePool>,
-) -> Result<String, String> {
-    log::debug!(
-        "Running archive project command for project ID: {}",
-        project_id
-    );
+) -> Result<Project, String> {
+    let project_uuid = Uuid::parse_str(&project_id).map_err(|e| e.to_string())?;
+    let projects_manager = ProjectsManager::new(&repository_provider);
 
-    let projects_manager = ProjectsManager::new(&db);
-
-    let project_uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
-
-    let project = projects_manager
+    projects_manager
         .archive_project(project_uuid)
         .await
-        .map_err(|e| handle_error(&*e))?;
-
-    Ok(serde_json::to_string(&project).unwrap())
+        .map_err(|e| e.to_string())
 }
