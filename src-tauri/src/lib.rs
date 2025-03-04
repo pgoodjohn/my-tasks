@@ -72,6 +72,7 @@ pub fn run() {
             app.manage(repository_provider);
             app.manage(db_pool);
 
+            app.manage(configuration_manager.clone());
             app.manage(Mutex::new(configuration_manager.configuration));
 
             Ok(())

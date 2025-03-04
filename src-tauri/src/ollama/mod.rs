@@ -4,7 +4,20 @@ use serde::{Deserialize, Serialize};
 
 pub mod tauri;
 
-const OLLAMA_BASE_URL: &str = "http://localhost:11434";
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct OllamaConfig {
+    pub base_url: String,
+    pub model: String,
+}
+
+impl Default for OllamaConfig {
+    fn default() -> Self {
+        Self {
+            base_url: "http://localhost:11434".to_string(),
+            model: "deepseek-r1".to_string(),
+        }
+    }
+}
 
 #[derive(Debug, Serialize)]
 struct OllamaRequest {
@@ -22,6 +35,7 @@ pub struct OllamaResponse {
 
 pub async fn get_task_prioritization(
     tasks_text: String,
+    config: &OllamaConfig,
 ) -> Result<OllamaResponse, Box<dyn std::error::Error>> {
     let client = Client::new();
 
@@ -31,7 +45,7 @@ pub async fn get_task_prioritization(
     );
 
     let request = OllamaRequest {
-        model: "deepseek-r1".to_string(),
+        model: config.model.clone(),
         prompt,
     };
 
@@ -39,7 +53,7 @@ pub async fn get_task_prioritization(
 
     // Get the response text
     let response_text = client
-        .post(format!("{}/api/generate", OLLAMA_BASE_URL))
+        .post(format!("{}/api/generate", config.base_url))
         .json(&request)
         .send()
         .await?

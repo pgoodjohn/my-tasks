@@ -1,3 +1,4 @@
+use crate::configuration::manager::ConfigurationManager;
 use crate::errors::handle_error;
 use crate::repository::RepositoryProvider;
 use crate::task::repository::TaskRepository;
@@ -6,6 +7,7 @@ use crate::task::Task;
 #[tauri::command]
 pub async fn get_tasks_prioritization(
     repository_provider: tauri::State<'_, RepositoryProvider>,
+    configuration_manager: tauri::State<'_, ConfigurationManager>,
 ) -> Result<String, String> {
     let mut task_repository = repository_provider
         .task_repository()
@@ -19,7 +21,9 @@ pub async fn get_tasks_prioritization(
 
     let tasks_text = format_tasks_for_ollama(&tasks);
 
-    let analysis = super::get_task_prioritization(tasks_text)
+    let config = &configuration_manager.inner().configuration;
+
+    let analysis = super::get_task_prioritization(tasks_text, &config.ollama)
         .await
         .map_err(|e| handle_error(&*e))?;
 

@@ -1,4 +1,5 @@
 use crate::configuration::Configuration;
+use crate::ollama::OllamaConfig;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 
@@ -50,6 +51,7 @@ impl ConfigurationManager {
                     development_mode: cfg!(debug_assertions),
                     config_path: storage_manager.configuration_path.clone(),
                     db_path: storage_manager.db_path.clone(),
+                    ollama: OllamaConfig::default(),
                 };
 
                 let _ = storage_manager.write_to_file(
