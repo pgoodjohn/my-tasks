@@ -3,9 +3,9 @@ use uuid::Uuid;
 
 use crate::errors::handle_error;
 use crate::project::manager::ProjectsManager;
+use crate::repository::RepositoryProvider;
 use crate::task::manager::TaskManager;
 use crate::task::{CreateTaskData, UpdatedTaskData};
-use crate::RepositoryProvider;
 
 #[tauri::command]
 pub async fn create_task_command(
