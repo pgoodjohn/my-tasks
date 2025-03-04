@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { invoke_tauri_command } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
 import {
     Accordion,
     AccordionContent,

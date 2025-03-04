@@ -20,7 +20,7 @@
     "@radix-ui/react-separator": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.6",
-    "@tanstack/react-form": "^1.0.0",
+    "@tanstack/react-form": "^0.24.3",
     "@tanstack/react-query": "^5.64.1",
     "@tanstack/react-table": "^8.20.6",
     "@tanstack/zod-form-adapter": "^0.42.1",
