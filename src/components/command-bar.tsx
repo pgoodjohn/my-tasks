@@ -55,8 +55,8 @@ export function CommandBar() {
         const searchLower = search.toLowerCase()
         return (
             task.title.toLowerCase().includes(searchLower) ||
-            (task.description && task.description.toLowerCase().includes(searchLower)) ||
-            (task.project && task.project.title.toLowerCase().includes(searchLower))
+            (task.description?.toLowerCase().includes(searchLower)) ||
+            (task.project_id && projectsQuery.data?.find((p: Project) => p.id === task.project_id)?.title.toLowerCase().includes(searchLower))
         )
     })
 
@@ -122,10 +122,10 @@ export function CommandBar() {
                                                     <Check className="h-4 w-4" />
                                                 </button>
                                             </div>
-                                            {task.project && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {task.project.title}
-                                                </span>
+                                            {task.project_id && (
+                                                <div className="text-sm text-muted-foreground">
+                                                    {projectsQuery.data?.find((p: Project) => p.id === task.project_id)?.title}
+                                                </div>
                                             )}
                                         </div>
                                     </CommandItem>

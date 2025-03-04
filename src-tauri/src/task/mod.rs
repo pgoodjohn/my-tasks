@@ -5,8 +5,6 @@ use std::collections::HashMap;
 use std::error::Error;
 use uuid::Uuid;
 
-use crate::project::Project;
-
 pub mod manager;
 pub mod repository;
 pub mod tauri;
@@ -50,7 +48,6 @@ impl TryFrom<TaskRow> for Task {
             title: row.title,
             description: row.description,
             project_id: row.project_id.map(|id| Uuid::parse_str(&id)).transpose()?,
-            project: None,
             parent_task_id: row
                 .parent_task_id
                 .map(|id| Uuid::parse_str(&id))
@@ -77,7 +74,6 @@ pub struct Task {
     pub title: String,
     pub description: Option<String>,
     pub project_id: Option<Uuid>,
-    pub project: Option<Project>,
     pub parent_task_id: Option<Uuid>,
     pub due_at_utc: Option<DateTime<Utc>>,
     pub created_at_utc: DateTime<Utc>,
@@ -98,7 +94,6 @@ impl Task {
             title,
             description,
             project_id,
-            project: None,
             parent_task_id,
             due_at_utc,
             created_at_utc: Utc::now(),

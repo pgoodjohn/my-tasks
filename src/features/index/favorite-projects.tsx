@@ -16,7 +16,7 @@ function FavoriteProjects() {
     }
 
     const getProjectTasks = (projectId: string) => {
-        return tasks?.filter(task => task.project?.id === projectId).slice(0, 5) || []
+        return tasks?.filter(task => task.project_id === projectId).slice(0, 5) || []
     }
 
     return (

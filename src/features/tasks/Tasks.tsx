@@ -51,7 +51,7 @@ const TasksList: React.FC = () => {
             </div>
             {tasks.data ? (
                 <TasksTable
-                    tasks={tasks.data.filter(task => task.project && !excludedProjects.includes(task.project.id))}
+                    tasks={tasks.data.filter(task => task.project_id && !excludedProjects.includes(task.project_id))}
                     hiddenColumns={[]}
                 />
             ) : (

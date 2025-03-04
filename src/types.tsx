@@ -2,7 +2,7 @@ type Task = {
     id: string
     title: string
     description: string | null
-    project: Project | null
+    project_id: string | null
     parent_task_id: string | null
     due_at_utc: string | null
     created_at_utc: string

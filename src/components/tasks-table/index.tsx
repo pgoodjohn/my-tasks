@@ -111,11 +111,11 @@ const columns: Array<ColumnDef<Task>> = [
     },
     {
         id: "project",
-        accessorKey: "project",
+        accessorKey: "project_id",
         header: "Project",
         size: 120,
         cell: ({ row }) => {
-            return row.original.project ? <ProjectTag projectId={row.original.project.id} asLink /> : "-"
+            return row.original.project_id ? <ProjectTag projectId={row.original.project_id} asLink /> : "-"
         }
     },
     {

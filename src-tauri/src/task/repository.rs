@@ -1,12 +1,10 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{pool::PoolConnection, Row, Sqlite};
-use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::Task;
 use super::UpdatedTaskData;
-use crate::project::Project;
 
 #[async_trait]
 pub trait TaskRepository {
@@ -89,77 +87,12 @@ impl SqliteTaskRepository {
             title: row.get("title"),
             description: row.get("description"),
             project_id,
-            project: None,
             parent_task_id,
             due_at_utc,
             created_at_utc,
             completed_at_utc,
             updated_at_utc,
         })
-    }
-
-    async fn load_projects_for_tasks(&mut self, tasks: &mut Vec<Task>) -> Result<(), sqlx::Error> {
-        let project_ids: Vec<String> = tasks
-            .iter()
-            .filter_map(|t| t.project_id)
-            .map(|id| id.to_string())
-            .collect();
-
-        if project_ids.is_empty() {
-            return Ok(());
-        }
-
-        let placeholders = (0..project_ids.len())
-            .map(|i| format!("?{}", i + 1))
-            .collect::<Vec<_>>()
-            .join(",");
-
-        let query = format!("SELECT * FROM projects WHERE id IN ({})", placeholders);
-        let mut query_builder = sqlx::query(&query);
-
-        for id in &project_ids {
-            query_builder = query_builder.bind(id);
-        }
-
-        let rows = query_builder.fetch_all(&mut *self.connection).await?;
-
-        let mut projects = HashMap::new();
-        for row in rows {
-            let id: String = row.get("id");
-            let project = Project {
-                id: Uuid::parse_str(&id).map_err(|e| sqlx::Error::Protocol(e.to_string()))?,
-                title: row.get("title"),
-                emoji: row.get("emoji"),
-                color: row.get("color"),
-                description: row.get("description"),
-                created_at_utc: DateTime::parse_from_rfc3339(
-                    &row.get::<String, _>("created_at_utc"),
-                )
-                .map_err(|e| sqlx::Error::Protocol(e.to_string()))?
-                .into(),
-                updated_at_utc: DateTime::parse_from_rfc3339(
-                    &row.get::<String, _>("updated_at_utc"),
-                )
-                .map_err(|e| sqlx::Error::Protocol(e.to_string()))?
-                .into(),
-                archived_at_utc: row
-                    .get::<Option<String>, _>("archived_at_utc")
-                    .map(|s| DateTime::parse_from_rfc3339(&s))
-                    .transpose()
-                    .map_err(|e| sqlx::Error::Protocol(e.to_string()))?
-                    .map(DateTime::<Utc>::from),
-                is_favorite: row.get("is_favorite"),
-            };
-            projects.insert(project.id, project);
-        }
-
-        for task in tasks {
-            if let Some(project_id) = task.project_id {
-                task.project = projects.get(&project_id).cloned();
-            }
-        }
-
-        Ok(())
     }
 }
 
@@ -246,8 +179,6 @@ impl TaskRepository for SqliteTaskRepository {
             tasks.push(self.row_to_task(row).await?);
         }
 
-        self.load_projects_for_tasks(&mut tasks).await?;
-
         Ok(tasks)
     }
 
@@ -262,8 +193,6 @@ impl TaskRepository for SqliteTaskRepository {
         for row in rows {
             tasks.push(self.row_to_task(row).await?);
         }
-
-        self.load_projects_for_tasks(&mut tasks).await?;
 
         Ok(tasks)
     }
@@ -289,8 +218,6 @@ impl TaskRepository for SqliteTaskRepository {
             tasks.push(self.row_to_task(row).await?);
         }
 
-        self.load_projects_for_tasks(&mut tasks).await?;
-
         Ok(tasks)
     }
 
@@ -306,8 +233,6 @@ impl TaskRepository for SqliteTaskRepository {
         for row in rows {
             tasks.push(self.row_to_task(row).await?);
         }
-
-        self.load_projects_for_tasks(&mut tasks).await?;
 
         Ok(tasks)
     }
@@ -328,8 +253,6 @@ impl TaskRepository for SqliteTaskRepository {
             tasks.push(self.row_to_task(row).await?);
         }
 
-        self.load_projects_for_tasks(&mut tasks).await?;
-
         Ok(tasks)
     }
 
@@ -346,8 +269,6 @@ impl TaskRepository for SqliteTaskRepository {
             tasks.push(self.row_to_task(row).await?);
         }
 
-        self.load_projects_for_tasks(&mut tasks).await?;
-
         Ok(tasks)
     }
 
@@ -362,8 +283,6 @@ impl TaskRepository for SqliteTaskRepository {
         for row in rows {
             tasks.push(self.row_to_task(row).await?);
         }
-
-        self.load_projects_for_tasks(&mut tasks).await?;
 
         Ok(tasks)
     }
