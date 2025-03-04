@@ -1,4 +1,4 @@
-import { Link, useRouterState  } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { Badge } from "./ui/badge"
 import type { Project } from "@/types"
 import {
@@ -88,6 +88,9 @@ export function AppSidebar() {
                             </SidebarMenuButton>
                             <SidebarMenuButton asChild isActive={currentRoute === "/statistics"}>
                                 <Link to='/statistics'>Statistics</Link>
+                            </SidebarMenuButton>
+                            <SidebarMenuButton asChild isActive={currentRoute === "/ollama"}>
+                                <Link to='/ollama'>AI Assistant</Link>
                             </SidebarMenuButton>
                             <SidebarMenuButton asChild isActive={currentRoute === "/settings"}>
                                 <Link to='/settings'>Settings</Link>

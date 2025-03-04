@@ -8,6 +8,7 @@ use tauri::Manager;
 mod chart;
 mod configuration;
 mod errors;
+mod ollama;
 mod project;
 mod repository;
 mod storage;
@@ -104,6 +105,7 @@ pub fn run() {
             task::tauri::queries::load_tasks_inbox_command,
             task::tauri::queries::load_tasks_command,
             task::tauri::queries::load_completed_tasks_command,
+            ollama::tauri::get_tasks_prioritization,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

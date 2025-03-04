@@ -1,3 +1,19 @@
+import type { FileRoutesByPath } from "@tanstack/react-router";
+
+declare module "@tanstack/react-router" {
+    interface FileRoutesByPath {
+        "/": {
+            parentRoute: typeof import("./routes/__root").Route;
+        };
+        "/ollama": {
+            parentRoute: typeof import("./routes/__root").Route;
+        };
+        "/settings": {
+            parentRoute: typeof import("./routes/__root").Route;
+        };
+    }
+}
+
 type Task = {
     id: string
     title: string
