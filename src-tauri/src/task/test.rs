@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod task_tests {
     use super::super::manager::TaskManager;
-    use crate::task::repository::{RepositoryProvider, TaskRepository};
+    use crate::repository::RepositoryProvider;
+    use crate::task::repository::TaskRepository;
     use crate::task::{CreateTaskData, UpdatedTaskData};
 
     use sqlx::migrate::MigrateDatabase;

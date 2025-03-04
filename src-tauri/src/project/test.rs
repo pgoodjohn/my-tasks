@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod manager_test {
     use crate::project::manager::ProjectsManager;
-    use crate::project::repository::RepositoryProvider;
+    use crate::repository::RepositoryProvider;
 
     use chrono::Utc;
     use sqlx::migrate::MigrateDatabase;
@@ -30,7 +30,7 @@ mod manager_test {
         let provider = setup_test_db().await.unwrap();
         let project_manager = ProjectsManager::new(&provider);
 
-        let project = project_manager.create_project(title).await.unwrap();
+        let project = project_manager.create_project(title, None).await.unwrap();
 
         assert_eq!(project.title, "Test Project");
         assert!(project.description.is_none());
@@ -46,7 +46,7 @@ mod manager_test {
         let project_manager = ProjectsManager::new(&provider);
 
         let project = project_manager
-            .create_project("Test Project".to_string())
+            .create_project("Test Project".to_string(), None)
             .await
             .unwrap();
 
@@ -79,7 +79,7 @@ mod manager_test {
         let project_manager = ProjectsManager::new(&provider);
 
         let project = project_manager
-            .create_project("Test Project".to_string())
+            .create_project("Test Project".to_string(), None)
             .await
             .unwrap();
 
@@ -94,7 +94,7 @@ mod manager_test {
         let project_manager = ProjectsManager::new(&provider);
 
         let project = project_manager
-            .create_project("Test Project".to_string())
+            .create_project("Test Project".to_string(), None)
             .await
             .unwrap();
 
