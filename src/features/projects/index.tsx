@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { MoreHorizontal } from "lucide-react"
 import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { Project } from '@/types'
 import { invoke_tauri_command } from '@/lib/utils'
 import { DataTable } from '@/components/data-table'
 import { Button } from '@/components/ui/button'
@@ -14,7 +15,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Project } from '@/types'
 
 import ProjectTag from '@/components/project-tag'
 

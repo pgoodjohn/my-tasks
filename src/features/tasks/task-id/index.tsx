@@ -16,8 +16,8 @@ export function RouteComponent() {
     const taskQuery = useQuery({
         queryKey: ["tasks", taskId],
         queryFn: async ({ queryKey }) => {
-            const taskId = queryKey[1];
-            return invoke_tauri_command("load_task_by_id_command", { taskId: taskId })
+            const task = queryKey[1];
+            return invoke_tauri_command("load_task_by_id_command", { taskId: task })
         }
     })
 

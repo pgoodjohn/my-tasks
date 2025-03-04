@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as StatisticsRouteImport } from './routes/statistics.route'
 import { Route as SettingsRouteImport } from './routes/settings.route'
+import { Route as OllamaRouteImport } from './routes/ollama.route'
 import { Route as IndexRouteImport } from './routes/index.route'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index.route'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index.route'
@@ -31,6 +32,12 @@ const StatisticsRouteRoute = StatisticsRouteImport.update({
 const SettingsRouteRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const OllamaRouteRoute = OllamaRouteImport.update({
+  id: '/ollama',
+  path: '/ollama',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -79,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRoute
+    }
+    '/ollama': {
+      id: '/ollama'
+      path: '/ollama'
+      fullPath: '/ollama'
+      preLoaderRoute: typeof OllamaRouteImport
       parentRoute: typeof rootRoute
     }
     '/settings': {
@@ -137,6 +151,7 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRouteRoute
+  '/ollama': typeof OllamaRouteRoute
   '/settings': typeof SettingsRouteRoute
   '/statistics': typeof StatisticsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
@@ -148,6 +163,7 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRouteRoute
+  '/ollama': typeof OllamaRouteRoute
   '/settings': typeof SettingsRouteRoute
   '/statistics': typeof StatisticsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
@@ -160,6 +176,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRouteRoute
+  '/ollama': typeof OllamaRouteRoute
   '/settings': typeof SettingsRouteRoute
   '/statistics': typeof StatisticsRouteRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteRoute
@@ -173,6 +190,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ollama'
     | '/settings'
     | '/statistics'
     | '/projects/$projectId'
@@ -183,6 +201,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ollama'
     | '/settings'
     | '/statistics'
     | '/projects/$projectId'
@@ -193,6 +212,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/ollama'
     | '/settings'
     | '/statistics'
     | '/projects/$projectId'
@@ -205,6 +225,7 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRouteRoute: typeof IndexRouteRoute
+  OllamaRouteRoute: typeof OllamaRouteRoute
   SettingsRouteRoute: typeof SettingsRouteRoute
   StatisticsRouteRoute: typeof StatisticsRouteRoute
   ProjectsProjectIdRouteRoute: typeof ProjectsProjectIdRouteRoute
@@ -216,6 +237,7 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRouteRoute: IndexRouteRoute,
+  OllamaRouteRoute: OllamaRouteRoute,
   SettingsRouteRoute: SettingsRouteRoute,
   StatisticsRouteRoute: StatisticsRouteRoute,
   ProjectsProjectIdRouteRoute: ProjectsProjectIdRouteRoute,
@@ -236,6 +258,7 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/ollama",
         "/settings",
         "/statistics",
         "/projects/$projectId",
@@ -247,6 +270,9 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.route.tsx"
+    },
+    "/ollama": {
+      "filePath": "ollama.route.tsx"
     },
     "/settings": {
       "filePath": "settings.route.tsx"
