@@ -40,7 +40,27 @@ pub async fn get_task_prioritization(
     let client = Client::new();
 
     let prompt = format!(
-        "As a task prioritization assistant, please analyze and prioritize the following tasks:\n\n{}\n\nProvide your analysis in this format:\n\n1. First, list all tasks in order of priority (highest to lowest), including:\n   - Exact task title\n   - Full task description\n   - Current status (if available)\n\n2. For each task, provide a detailed analysis:\n   - Why this priority level was chosen\n   - Urgency level (High/Medium/Low)\n   - Dependencies on other tasks\n   - Estimated impact\n   - Any risks or blockers\n\nIf you need to think through your reasoning, wrap it in <think></think> tags.\n\nFinally, provide a clear, actionable summary that includes:\n1. What should be tackled first and why\n2. Any critical dependencies or bottlenecks\n3. Suggested next steps with timeline recommendations",
+        r#"You are an expert task prioritizer. You will be given a list of tasks with the following details:
+
+Task descriptions
+Associated project (if any)
+Due dates
+Creation dates
+Last updated dates
+Progress information (not provided but assumed to be available in the task context)
+
+Your job is to analyze this list of tasks and provide a prioritized list based on the following criteria:
+
+Due Date: Tasks that are closer to their due date should be prioritized higher.
+Project Context: If the task is part of a larger project, prioritize those tasks to ensure progress on the overall project.
+Created Date: Tasks created more recently may need attention sooner, especially if there is no due date.
+Last Updated Date: If a task hasn't been updated recently, it may require more immediate attention.
+
+Additionally, you should take into account if any tasks have dependencies or subtasks, such as when one task is part of a larger project.
+
+Here is the list of tasks you'll need to prioritize:
+
+{}"#,
         tasks_text
     );
 
@@ -48,8 +68,6 @@ pub async fn get_task_prioritization(
         model: config.model.clone(),
         prompt,
     };
-
-    log::debug!("Ollama request: {:?}", request);
 
     // Get the response text
     let response_text = client
@@ -59,8 +77,6 @@ pub async fn get_task_prioritization(
         .await?
         .text()
         .await?;
-
-    log::debug!("Raw response text: {}", response_text);
 
     // The response is a series of JSON objects, one per line
     // We'll collect all responses and combine them
@@ -76,8 +92,6 @@ pub async fn get_task_prioritization(
         }
     }
 
-    log::debug!("Final response text: {}", full_response);
-
     // Extract thinking process and final response
     let (thinking, response) = if let Some(thinking_content) = extract_thinking(&full_response) {
         (
@@ -87,6 +101,10 @@ pub async fn get_task_prioritization(
     } else {
         (None, full_response)
     };
+
+    log::debug!("Ollama request: {:?}", request);
+    log::debug!("Thinking: {:?}", thinking);
+    log::debug!("Final response text: {}", response);
 
     Ok(OllamaResponse {
         model: model_name,
