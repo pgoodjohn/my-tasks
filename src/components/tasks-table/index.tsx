@@ -269,7 +269,7 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
                 title: task.title,
                 description: task.description || '',
                 dueDate: newDate?.toISOString(),
-                projectId: task.project?.id
+                projectId: task.project_id
             });
             return res
         },

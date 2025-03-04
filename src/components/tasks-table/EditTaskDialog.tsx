@@ -64,10 +64,10 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
             try {
                 await updateTaskMutation.mutateAsync({
                     id: task.id,
-                    title: values.title,
-                    description: values.description,
-                    dueDate: values.dueDate?.toISOString(),
-                    projectId: values.projectId,
+                    title: values.value.title,
+                    description: values.value.description,
+                    dueDate: values.value.dueDate?.toISOString(),
+                    projectId: values.value.projectId,
                 });
                 onSuccess(false);
             } catch (error) {
@@ -109,11 +109,6 @@ const EditTaskForm: React.FC<EditTaskFormProps> = ({ task, onSuccess }) => {
                     editTaskForm.handleSubmit();
                 }}
             >
-                <editTaskForm.Field
-                    name="id"
-                    children={(_field) => (
-                        <></>
-                    )} />
                 <editTaskForm.Field
                     name="title"
                     children={(field) => (

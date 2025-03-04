@@ -141,29 +141,29 @@ pub async fn create_subtask_for_task_command(
 pub async fn promote_task_to_project_command(
     task_id: String,
     repository_provider: State<'_, RepositoryProvider>,
-) -> Result<(), String> {
-    let task_id = Uuid::parse_str(&task_id).map_err(|e| e.to_string())?;
+) -> Result<String, String> {
+    let task_id = Uuid::parse_str(&task_id).map_err(|e| handle_error(&e))?;
     let task_manager = TaskManager::new(&repository_provider);
     let task = task_manager
         .load_task(task_id)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| handle_error(&*e))?;
 
     let projects_manager = ProjectsManager::new(&repository_provider);
     let project = projects_manager
         .create_project(task.title.clone(), task.description.clone())
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| handle_error(&*e))?;
 
     task_manager
         .move_subtasks_to_project(task_id, project.id)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| handle_error(&e))?;
 
     task_manager
         .archive_task(task_id)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| handle_error(&*e))?;
 
-    Ok(())
+    Ok(serde_json::to_string(&project).unwrap())
 }
