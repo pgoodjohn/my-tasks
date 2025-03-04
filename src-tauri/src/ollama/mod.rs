@@ -1,3 +1,4 @@
+use regex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +16,7 @@ struct OllamaRequest {
 pub struct OllamaResponse {
     pub model: String,
     pub response: String,
+    pub thinking: Option<String>,
     pub done: bool,
 }
 
@@ -62,9 +64,41 @@ pub async fn get_task_prioritization(
 
     log::debug!("Final response text: {}", full_response);
 
+    // Extract thinking process and final response
+    let (thinking, response) = if let Some(thinking_content) = extract_thinking(&full_response) {
+        (
+            Some(thinking_content.to_string()),
+            remove_thinking(&full_response),
+        )
+    } else {
+        (None, full_response)
+    };
+
     Ok(OllamaResponse {
         model: model_name,
-        response: full_response,
+        response: response.trim().to_string(),
+        thinking,
         done: true,
     })
+}
+
+fn extract_thinking(text: &str) -> Option<&str> {
+    let start_tag = "<think>";
+    let end_tag = "</think>";
+
+    if let (Some(start), Some(end)) = (text.find(start_tag), text.find(end_tag)) {
+        let content_start = start + start_tag.len();
+        if content_start < end {
+            Some(&text[content_start..end])
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+fn remove_thinking(text: &str) -> String {
+    let re = regex::Regex::new(r"(?s)<think>.*?</think>").unwrap();
+    re.replace_all(text, "").to_string()
 }

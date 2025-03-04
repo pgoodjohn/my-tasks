@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { invoke_tauri_command } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import ReactMarkdown from "react-markdown";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export const Route = createFileRoute('/ollama')({
     component: OllamaPage
@@ -46,7 +53,21 @@ function OllamaPage() {
                     <Card className="p-4">
                         <h2 className="text-xl font-semibold mb-2">Analysis Results</h2>
                         <p className="text-sm text-muted-foreground mb-4">Using model: {data.model}</p>
-                        <div className="whitespace-pre-wrap">{data.response}</div>
+                        {data.thinking && (
+                            <Accordion type="single" collapsible className="mb-4">
+                                <AccordionItem value="thinking">
+                                    <AccordionTrigger>View Thinking Process</AccordionTrigger>
+                                    <AccordionContent>
+                                        <div className="prose prose-sm dark:prose-invert text-muted-foreground max-w-none">
+                                            <ReactMarkdown>{data.thinking}</ReactMarkdown>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        )}
+                        <div className="prose dark:prose-invert max-w-none">
+                            <ReactMarkdown>{data.response}</ReactMarkdown>
+                        </div>
                     </Card>
                 )}
             </div>
