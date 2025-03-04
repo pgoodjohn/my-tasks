@@ -67,6 +67,65 @@ pub async fn get_tasks_prioritization(
     Ok(serde_json::to_string(&analysis).unwrap())
 }
 
+#[tauri::command]
+pub async fn get_quick_task(
+    repository_provider: tauri::State<'_, RepositoryProvider>,
+    configuration_manager: tauri::State<'_, ConfigurationManager>,
+) -> Result<String, String> {
+    let mut task_repository = repository_provider
+        .task_repository()
+        .await
+        .map_err(|e| handle_error(&e))?;
+
+    let tasks = task_repository
+        .find_all_filtered_by_completed(false)
+        .await
+        .map_err(|e| handle_error(&e))?;
+
+    // Fetch all projects
+    let mut project_repository = repository_provider
+        .project_repository()
+        .await
+        .map_err(|e| handle_error(&e))?;
+
+    let projects: Vec<Project> = project_repository
+        .find_all()
+        .await
+        .map_err(|e| handle_error(&e))?;
+
+    // Create a map of project IDs to project details
+    let project_details: HashMap<Uuid, &Project> = projects.iter().map(|p| (p.id, p)).collect();
+
+    // Create a map of parent task IDs to titles
+    let mut parent_task_titles = HashMap::new();
+    for task in &tasks {
+        if let Some(parent_id) = task.parent_task_id {
+            if !parent_task_titles.contains_key(&parent_id) {
+                if let Some(parent_task) = task_repository
+                    .find_by_id(parent_id)
+                    .await
+                    .map_err(|e| handle_error(&e))?
+                {
+                    parent_task_titles.insert(parent_id, parent_task.title);
+                }
+            }
+        }
+    }
+
+    let tasks_text = format_tasks_for_ollama(&tasks, &project_details, &parent_task_titles);
+
+    let config = &configuration_manager.inner().configuration;
+
+    let analysis = super::get_quick_task(tasks_text, &config.ollama)
+        .await
+        .map_err(|e| handle_error(&*e))?;
+
+    log::debug!("Quick task analysis: {:?}", analysis);
+
+    // Return JSON response
+    Ok(serde_json::to_string(&analysis).unwrap())
+}
+
 fn format_tasks_for_ollama(
     tasks: &[Task],
     project_details: &HashMap<Uuid, &Project>,

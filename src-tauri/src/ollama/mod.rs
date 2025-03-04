@@ -114,6 +114,77 @@ Here is the list of tasks you'll need to prioritize:
     })
 }
 
+pub async fn get_quick_task(
+    tasks_text: String,
+    config: &OllamaConfig,
+) -> Result<OllamaResponse, Box<dyn std::error::Error>> {
+    let client = Client::new();
+
+    let prompt = format!(
+        r#"You are an expert task analyzer. You will be given a list of tasks, and your job is to suggest ONE task that can be completed in the next 30 minutes.
+
+When analyzing the tasks, consider the following criteria:
+1. Task scope: The task should be small enough to be completed in 30 minutes
+2. Dependencies: Avoid tasks that have unmet dependencies
+3. Project context: Consider if the task is blocking other work
+4. Current progress: If a task is almost complete, it might be a good candidate
+
+Here is the list of tasks to analyze:
+
+{}"#,
+        tasks_text
+    );
+
+    let request = OllamaRequest {
+        model: config.model.clone(),
+        prompt,
+    };
+
+    // Get the response text
+    let response_text = client
+        .post(format!("{}/api/generate", config.base_url))
+        .json(&request)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    // The response is a series of JSON objects, one per line
+    // We'll collect all responses and combine them
+    let mut full_response = String::new();
+    let mut model_name = String::new();
+
+    for line in response_text.lines() {
+        if let Ok(resp) = serde_json::from_str::<OllamaResponse>(line) {
+            full_response.push_str(&resp.response);
+            if model_name.is_empty() {
+                model_name = resp.model;
+            }
+        }
+    }
+
+    // Extract thinking process and final response
+    let (thinking, response) = if let Some(thinking_content) = extract_thinking(&full_response) {
+        (
+            Some(thinking_content.to_string()),
+            remove_thinking(&full_response),
+        )
+    } else {
+        (None, full_response)
+    };
+
+    log::debug!("Ollama request: {:?}", request);
+    log::debug!("Thinking: {:?}", thinking);
+    log::debug!("Final response text: {}", response);
+
+    Ok(OllamaResponse {
+        model: model_name,
+        response: response.trim().to_string(),
+        thinking,
+        done: true,
+    })
+}
+
 fn extract_thinking(text: &str) -> Option<&str> {
     let start_tag = "<think>";
     let end_tag = "</think>";
