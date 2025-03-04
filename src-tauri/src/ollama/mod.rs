@@ -40,21 +40,23 @@ pub async fn get_task_prioritization(
     let client = Client::new();
 
     let prompt = format!(
-        r#"You are an expert task prioritizer. You will be given a list of tasks with the following details:
+        r#"REMEMBER: NO HALLUCINATING. STICK TO THE INFO YOU HAVE.
 
-Task descriptions
-Associated project (if any)
-Due dates
-Creation dates
-Last updated dates
-Progress information (not provided but assumed to be available in the task context)
+You are an expert task prioritizer. You will be given a list of tasks with the following details:
+
+    Task descriptions
+    Associated project (if any)
+    Due dates
+    Creation dates
+    Last updated dates
+    Progress information (not provided but assumed to be available in the task context)
 
 Your job is to analyze this list of tasks and provide a prioritized list based on the following criteria:
 
-Due Date: Tasks that are closer to their due date should be prioritized higher.
-Project Context: If the task is part of a larger project, prioritize those tasks to ensure progress on the overall project.
-Created Date: Tasks created more recently may need attention sooner, especially if there is no due date.
-Last Updated Date: If a task hasn't been updated recently, it may require more immediate attention.
+    Due Date: Tasks that are closer to their due date should be prioritized higher.
+    Project Context: If the task is part of a larger project, prioritize those tasks to ensure progress on the overall project.
+    Created Date: Tasks created more recently may need attention sooner, especially if there is no due date.
+    Last Updated Date: If a task hasn't been updated recently, it may require more immediate attention.
 
 Additionally, you should take into account if any tasks have dependencies or subtasks, such as when one task is part of a larger project.
 
@@ -121,17 +123,32 @@ pub async fn get_quick_task(
     let client = Client::new();
 
     let prompt = format!(
-        r#"You are an expert task analyzer. You will be given a list of tasks, and your job is to suggest ONE task that can be completed in the next 30 minutes.
+        r#"REMEMBER: NO HALLUCINATING. STICK TO THE INFO YOU HAVE.
 
-When analyzing the tasks, consider the following criteria:
-1. Task scope: The task should be small enough to be completed in 30 minutes
-2. Dependencies: Avoid tasks that have unmet dependencies
-3. Project context: Consider if the task is blocking other work
-4. Current progress: If a task is almost complete, it might be a good candidate
+You are a task prioritizer focused on helping someone find a quick task to complete within the next 30 minutes. You will be given a list of tasks with details such as:
 
-Here is the list of tasks to analyze:
+    Task descriptions
+    Associated projects (if any)
+    Due dates
+    Creation dates
+    Last updated dates
+    Progress information (not provided but assumed to be available in the task context)
 
-{}"#,
+Your goal is to identify which task is the most feasible to complete in the next 30 minutes. Consider the following criteria:
+
+    Task Duration: Choose tasks that seem quick and achievable within a short time frame (30 minutes).
+    Due Date: Tasks that are approaching their due date should be prioritized, especially if they are simple and can be completed in a short time.
+    Current Progress: Tasks that are in-progress or almost finished should be prioritized if they can be completed quickly.
+    Task Simplicity: If the task description suggests it is simple and straightforward, prioritize it for completion within the next 30 minutes.
+
+Provide the task that seems easiest and quickest to accomplish based on the input below:
+
+Input:
+
+    {}
+
+Output:
+Identify and recommend the task that can realistically be completed in the next 30 minutes based on the provided details."#,
         tasks_text
     );
 
