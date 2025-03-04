@@ -5,7 +5,7 @@ use uuid::Uuid;
 use super::Project;
 
 #[async_trait]
-pub trait ProjectRepository {
+pub trait ProjectRepository: Send + Sync {
     async fn save(&mut self, project: &mut Project) -> Result<(), sqlx::Error>;
     async fn find_by_id(&mut self, id: Uuid) -> Result<Option<Project>, sqlx::Error>;
     async fn find_not_archived(&mut self) -> Result<Vec<Project>, sqlx::Error>;

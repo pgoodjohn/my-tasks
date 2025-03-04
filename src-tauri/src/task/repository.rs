@@ -7,7 +7,7 @@ use super::Task;
 use super::UpdatedTaskData;
 
 #[async_trait]
-pub trait TaskRepository {
+pub trait TaskRepository: Send + Sync {
     async fn save(&mut self, task: &mut Task) -> Result<(), sqlx::Error>;
     async fn delete(&mut self, task: &Task) -> Result<(), sqlx::Error>;
     async fn find_by_id(&mut self, id: Uuid) -> Result<Option<Task>, sqlx::Error>;

@@ -28,7 +28,10 @@ mod manager_test {
         let title = String::from("Test Project");
 
         let provider = setup_test_db().await.unwrap();
-        let project_manager = ProjectsManager::new(&provider);
+        let mut project_repository = provider.project_repository().await.unwrap();
+        let mut task_repository = provider.task_repository().await.unwrap();
+        let mut project_manager =
+            ProjectsManager::new(&mut project_repository, &mut task_repository);
 
         let project = project_manager.create_project(title, None).await.unwrap();
 
@@ -43,7 +46,10 @@ mod manager_test {
     #[tokio::test]
     async fn it_updates_a_project() {
         let provider = setup_test_db().await.unwrap();
-        let project_manager = ProjectsManager::new(&provider);
+        let mut project_repository = provider.project_repository().await.unwrap();
+        let mut task_repository = provider.task_repository().await.unwrap();
+        let mut project_manager =
+            ProjectsManager::new(&mut project_repository, &mut task_repository);
 
         let project = project_manager
             .create_project("Test Project".to_string(), None)
@@ -76,7 +82,10 @@ mod manager_test {
     #[tokio::test]
     async fn it_archives_a_project() {
         let provider = setup_test_db().await.unwrap();
-        let project_manager = ProjectsManager::new(&provider);
+        let mut project_repository = provider.project_repository().await.unwrap();
+        let mut task_repository = provider.task_repository().await.unwrap();
+        let mut project_manager =
+            ProjectsManager::new(&mut project_repository, &mut task_repository);
 
         let project = project_manager
             .create_project("Test Project".to_string(), None)
@@ -91,7 +100,10 @@ mod manager_test {
     #[tokio::test]
     async fn it_favorites_and_unfavorites_a_project() {
         let provider = setup_test_db().await.unwrap();
-        let project_manager = ProjectsManager::new(&provider);
+        let mut project_repository = provider.project_repository().await.unwrap();
+        let mut task_repository = provider.task_repository().await.unwrap();
+        let mut project_manager =
+            ProjectsManager::new(&mut project_repository, &mut task_repository);
 
         let project = project_manager
             .create_project("Test Project".to_string(), None)
