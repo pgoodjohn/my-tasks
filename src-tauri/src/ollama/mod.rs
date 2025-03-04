@@ -40,7 +40,7 @@ pub async fn get_task_prioritization(
     let client = Client::new();
 
     let prompt = format!(
-        "Here are my current tasks. Please help me prioritize them and suggest which ones I should focus on first. Consider urgency, importance, and dependencies:\n\n{}",
+        "As a task prioritization assistant, please analyze and prioritize the following tasks:\n\n{}\n\nProvide your analysis in this format:\n\n1. First, list all tasks in order of priority (highest to lowest), including:\n   - Exact task title\n   - Full task description\n   - Current status (if available)\n\n2. For each task, provide a detailed analysis:\n   - Why this priority level was chosen\n   - Urgency level (High/Medium/Low)\n   - Dependencies on other tasks\n   - Estimated impact\n   - Any risks or blockers\n\nIf you need to think through your reasoning, wrap it in <think></think> tags.\n\nFinally, provide a clear, actionable summary that includes:\n1. What should be tackled first and why\n2. Any critical dependencies or bottlenecks\n3. Suggested next steps with timeline recommendations",
         tasks_text
     );
 
