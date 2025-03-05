@@ -49,7 +49,6 @@ impl<'a> RecurringTaskManager<'a> {
         {
             // Calculate the next due date based on frequency and interval
             let next_due_date = self.calculate_next_due_date(&recurring_task)?;
-            recurring_task.next_due_at_utc = next_due_date;
 
             // Create a new task for the next occurrence
             let mut new_task = Task::new(
@@ -63,7 +62,9 @@ impl<'a> RecurringTaskManager<'a> {
             // Save the new task
             self.task_repository.save(&mut new_task).await?;
 
-            // Update the recurring task with the new next_due_date
+            // Update the recurring task with the new task_id and next_due_date
+            recurring_task.task_id = new_task.id;
+            recurring_task.next_due_at_utc = next_due_date;
             self.recurring_task_repository
                 .save(&mut recurring_task)
                 .await?;
