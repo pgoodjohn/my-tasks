@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
+use uuid::fmt::Hyphenated;
 use uuid::Uuid;
 
 pub mod manager;
@@ -42,7 +43,9 @@ impl TryFrom<String> for Frequency {
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct RecurringTask {
+    #[sqlx(try_from = "Hyphenated")]
     pub id: Uuid,
+    #[sqlx(try_from = "Hyphenated")]
     pub task_id: Uuid,
     pub frequency: String, // Will be converted to/from Frequency enum
     pub interval: i32,

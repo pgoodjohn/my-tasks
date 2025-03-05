@@ -9,6 +9,7 @@ use crate::recurring_task::Frequency;
 use crate::repository::RepositoryProvider;
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateRecurringTaskData {
     task_id: String,
     frequency: String,

@@ -37,7 +37,12 @@ function OllamaPage() {
             <div className="flex flex-col gap-4">
                 <h1 className="text-2xl font-bold">AI Task Assistant</h1>
                 <p className="text-muted-foreground">
-                    Use Ollama to help prioritize and organize your tasks. This feature requires an Ollama instance running locally with the Mistral model.
+                    Use Ollama to help prioritize and organize your tasks. <br />This feature requires an Ollama instance running locally with the model specified in your settings.
+                </p>
+                <p className="text-muted-foreground">
+                    <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer">
+                        Learn more about Ollama
+                    </a>
                 </p>
             </div>
 

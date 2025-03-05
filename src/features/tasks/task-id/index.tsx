@@ -1,13 +1,15 @@
 import { useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, RepeatIcon } from "lucide-react"
 import { CreateSubtaskForm } from "@/components/create-subtask-form";
 import { SubtasksTable } from "@/components/subtasks-table";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { invoke_tauri_command } from "@/lib/utils";
 import { Route } from "@/routes/tasks/$taskId.route"
+import { RecurringTaskDialog } from "@/components/recurring-task-dialog";
+import type { RecurringTask } from "@/types";
 
 export function RouteComponent() {
     const { taskId } = Route.useParams()
@@ -18,6 +20,13 @@ export function RouteComponent() {
         queryFn: async ({ queryKey }) => {
             const task = queryKey[1];
             return invoke_tauri_command("load_task_by_id_command", { taskId: task })
+        }
+    })
+
+    const recurringTaskQuery = useQuery<RecurringTask>({
+        queryKey: ["recurring-task", taskId],
+        queryFn: async () => {
+            return invoke_tauri_command("get_recurring_task_command", { taskId })
         }
     })
 
@@ -44,16 +53,27 @@ export function RouteComponent() {
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
                     <h1 className="text-xl font-semibold">{taskQuery.data.title}</h1>
-                    {taskQuery.data.due_at_utc && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <CalendarIcon className="h-4 w-4" />
-                            <span>Due {new Date(taskQuery.data.due_at_utc).toLocaleDateString()}</span>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-4">
+                        {taskQuery.data.due_at_utc && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <CalendarIcon className="h-4 w-4" />
+                                <span>Due {new Date(taskQuery.data.due_at_utc).toLocaleDateString()}</span>
+                            </div>
+                        )}
+                        {recurringTaskQuery.data && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <RepeatIcon className="h-4 w-4" />
+                                <span>Repeats {recurringTaskQuery.data.frequency.toLowerCase()} (every {recurringTaskQuery.data.interval})</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <Button variant="outline" onClick={handlePromoteToProject}>
-                    Promote to Project
-                </Button>
+                <div className="flex items-center gap-2">
+                    <RecurringTaskDialog task={taskQuery.data} />
+                    <Button variant="outline" onClick={handlePromoteToProject}>
+                        Promote to Project
+                    </Button>
+                </div>
             </div>
 
             {/* Description */}

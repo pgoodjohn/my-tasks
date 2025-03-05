@@ -36,3 +36,22 @@ type Project = {
 }
 
 export type { Project }
+
+export enum Frequency {
+    Daily = "daily",
+    Weekly = "weekly",
+    Monthly = "monthly",
+    Yearly = "yearly"
+}
+
+type RecurringTask = {
+    id: string
+    task_id: string
+    frequency: Frequency
+    interval: number
+    next_due_at_utc: string
+    created_at_utc: string
+    updated_at_utc: string
+}
+
+export type { RecurringTask }
