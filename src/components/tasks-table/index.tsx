@@ -36,6 +36,12 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 
 const columns: Array<ColumnDef<Task>> = [
@@ -77,7 +83,8 @@ const columns: Array<ColumnDef<Task>> = [
             return <div className='flex-col pl-2'>
                 {row.original.parent_task_id && <ParentTaskLabel parentTaskId={row.original.parent_task_id} />}
                 <Link
-                    to="/tasks/$taskId" params={{ taskId: row.original.id }}
+                    to="/tasks/$taskId"
+                    params={{ taskId: row.original.id } as any}
                 >
                     <p className='hover:underline'>
                         {row.original.title}
@@ -243,6 +250,14 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
     const [date, setDate] = React.useState<Date | undefined>(dateString ? new Date(dateString) : undefined)
     const [open, setOpen] = React.useState(false)
 
+    const { data: recurringTask } = useQuery({
+        queryKey: ["recurring-task", taskId],
+        queryFn: async () => {
+            const result = await invoke_tauri_command("get_recurring_task_command", { taskId })
+            return result
+        }
+    })
+
     React.useEffect(() => {
         setDate(dateString ? new Date(dateString) : undefined);
     }, [dateString]);
@@ -307,8 +322,26 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
                     variant="ghost"
                     size="xs"
                     style={getDueDateStyle()}
+                    className="flex items-center gap-1"
                 >
                     {date ? format(date, "MMM d") : "-"}
+                    {recurringTask && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                        <path d="M3 3v5h5" />
+                                    </svg>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Repeats {recurringTask.frequency.toLowerCase()}</p>
+                                    <p>Every {recurringTask.interval} {recurringTask.interval === 1 ? recurringTask.frequency.toLowerCase().slice(0, -2) : recurringTask.frequency.toLowerCase()}</p>
+                                    <p>Next due: {format(new Date(recurringTask.next_due_at_utc), "MMM d, yyyy")}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -343,7 +376,10 @@ function ParentTaskLabel({ parentTaskId }: { parentTaskId: string | null }) {
         if (query.data) {
             return (
                 <p className="text-gray-500 text-xs hover:underline">
-                    <Link to="/tasks/$taskId" params={{ taskId: query.data.id }}>
+                    <Link
+                        to="/tasks/$taskId"
+                        params={{ taskId: query.data.id } as any}
+                    >
                         {query.data.title}
                     </Link>
                 </p>
