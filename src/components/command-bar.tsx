@@ -34,14 +34,14 @@ export function CommandBar() {
     }, [])
 
     const projectsQuery = useQuery({
-        queryKey: ['projects'],
+        queryKey: ['projects', 'commandBar'],
         queryFn: async () => {
             return await invoke_tauri_command('load_projects_command', { showArchivedProjects: false })
         }
     })
 
     const tasksQuery = useQuery({
-        queryKey: ['tasks'],
+        queryKey: ['tasks', 'commandBar'],
         queryFn: async () => {
             return await invoke_tauri_command('load_tasks_command', { includeCompleted: false })
         }

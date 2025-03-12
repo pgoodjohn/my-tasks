@@ -47,8 +47,7 @@ const columns: Array<ColumnDef<Task>> = [
 
             const markCompleteMutation = useMutation({
                 mutationFn: async function () {
-                    const res = await invoke_tauri_command('complete_task_command', { taskId: row.original.id });
-                    return res
+                    await invoke_tauri_command('complete_task_command', { taskId: row.original.id });
                 },
                 onSuccess: () => {
                     // Invalidate and refetch
@@ -111,7 +110,6 @@ const columns: Array<ColumnDef<Task>> = [
     },
     {
         id: "project",
-        accessorKey: "project_id",
         header: "Project",
         size: 120,
         cell: ({ row }) => {
@@ -119,12 +117,12 @@ const columns: Array<ColumnDef<Task>> = [
         }
     },
     {
-        id: "due_at_utc",
-        accessorKey: "due_at_utc",
+        id: 'due_at_utc',
         header: "Due Date",
         size: 100,
         cell: ({ row }) => {
             return <DueDateColumn dateString={row.original.due_at_utc} taskId={row.original.id} task={row.original} />
+            // return <div>{row.original.due_at_utc}</div>
         }
     },
     {
@@ -244,6 +242,10 @@ interface DueDateColumnProps {
 const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task }) => {
     const [date, setDate] = React.useState<Date | undefined>(dateString ? new Date(dateString) : undefined)
     const [open, setOpen] = React.useState(false)
+
+    React.useEffect(() => {
+        setDate(dateString ? new Date(dateString) : undefined);
+    }, [dateString]);
 
     const getDueDateStyle = () => {
         if (!date) return {};
