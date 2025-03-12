@@ -1,8 +1,8 @@
-use chrono::{DateTime, Days, Months, Utc};
+use chrono::{DateTime, Datelike, Utc};
 use uuid::Uuid;
 
 use crate::task::repository::TaskRepository;
-use crate::task::{CreateTaskData, Task};
+use crate::task::Task;
 
 use super::repository::RecurringTaskRepository;
 use super::{Frequency, RecurringTask};
@@ -30,8 +30,13 @@ impl<'a> RecurringTaskManager<'a> {
         interval: i32,
     ) -> Result<RecurringTask, Box<dyn std::error::Error>> {
         let task = self.task_repository.find_by_id(task_id).await?;
-        let mut recurring_task =
-            RecurringTask::new(task_id, frequency, interval, task.unwrap().due_at_utc);
+        let task = task.ok_or("Task not found")?;
+
+        let base_date = task.due_at_utc.unwrap_or_else(Utc::now);
+        let next_due_at_utc =
+            self.calculate_due_date_for_base_date_and_frequency(base_date, &frequency, interval)?;
+
+        let mut recurring_task = RecurringTask::new(task_id, frequency, interval, next_due_at_utc);
         self.recurring_task_repository
             .save(&mut recurring_task)
             .await?;
@@ -58,7 +63,12 @@ impl<'a> RecurringTaskManager<'a> {
             );
 
             // Calculate the next due date based on frequency and interval
-            let next_due_date = self.calculate_next_due_date(&recurring_task)?;
+            let frequency = recurring_task.frequency()?;
+            let next_due_date = self.calculate_due_date_for_base_date_and_frequency(
+                recurring_task.next_due_at_utc,
+                &frequency,
+                recurring_task.interval,
+            )?;
 
             // Save the new task
             self.task_repository.save(&mut new_task).await?;
@@ -76,20 +86,33 @@ impl<'a> RecurringTaskManager<'a> {
         }
     }
 
-    fn calculate_next_due_date(
+    fn calculate_due_date_for_base_date_and_frequency(
         &self,
-        recurring_task: &RecurringTask,
+        base_date: DateTime<Utc>,
+        frequency: &Frequency,
+        interval: i32,
     ) -> Result<DateTime<Utc>, Box<dyn std::error::Error>> {
-        let frequency = recurring_task.frequency()?;
-        let interval = recurring_task.interval;
-
         let next_due = match frequency {
-            Frequency::Daily => recurring_task.next_due_at_utc + Days::new(interval as u64),
-            Frequency::Weekly => recurring_task.next_due_at_utc + Days::new((7 * interval) as u64),
-            Frequency::Monthly => recurring_task.next_due_at_utc + Months::new(interval as u32),
-            Frequency::Yearly => {
-                recurring_task.next_due_at_utc + Months::new((12 * interval) as u32)
+            Frequency::Daily => base_date + chrono::Duration::days(interval as i64),
+            Frequency::Weekly => base_date + chrono::Duration::weeks(interval as i64),
+            Frequency::Monthly => {
+                // Add months by adjusting the month number
+                let total_months = base_date.month0() as i32 + interval;
+                let years_to_add = total_months / 12;
+                let final_month = (total_months % 12) as u32;
+
+                base_date
+                    .date_naive()
+                    .with_month0(final_month)
+                    .and_then(|d| d.with_year(base_date.year() + years_to_add))
+                    .map(|d| DateTime::from_naive_utc_and_offset(d.and_time(base_date.time()), Utc))
+                    .unwrap_or(base_date)
             }
+            Frequency::Yearly => base_date
+                .date_naive()
+                .with_year(base_date.year() + interval)
+                .map(|d| DateTime::from_naive_utc_and_offset(d.and_time(base_date.time()), Utc))
+                .unwrap_or(base_date),
         };
 
         Ok(next_due)

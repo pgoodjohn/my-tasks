@@ -1,4 +1,3 @@
-use std::error::Error as StdError;
 use tauri::State;
 use uuid::Uuid;
 
@@ -15,13 +14,12 @@ pub async fn get_recurring_task_command(
     let mut recurring_task_repository = repository_provider
         .recurring_task_repository()
         .await
-        .map_err(|e| format!("Failed to get recurring task repository: {}", e))?;
+        .map_err(|e| handle_error(&e))?;
 
     let recurring_task = recurring_task_repository
         .find_by_task_id(task_id)
         .await
-        .map_err(|e| format!("Failed to find recurring task: {}", e))?;
+        .map_err(|e| handle_error(&e))?;
 
-    serde_json::to_string(&recurring_task)
-        .map_err(|e| format!("Failed to serialize recurring task: {}", e))
+    serde_json::to_string(&recurring_task).map_err(|e| handle_error(&e))
 }

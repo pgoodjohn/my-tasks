@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{pool::PoolConnection, Row, Sqlite};
+use sqlx::{pool::PoolConnection, Sqlite};
 use uuid::Uuid;
 
 use super::RecurringTask;
