@@ -249,9 +249,9 @@ interface DueDateColumnProps {
 const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task }) => {
     const [date, setDate] = React.useState<Date | undefined>(dateString ? new Date(dateString) : undefined)
     const [open, setOpen] = React.useState(false)
-
+    const queryClient = useQueryClient()
     const { data: recurringTask } = useQuery({
-        queryKey: ["recurring-task", taskId],
+        queryKey: ["tasks", { taskId }],
         queryFn: async () => {
             const result = await invoke_tauri_command("get_recurring_task_command", { taskId })
             return result
@@ -293,6 +293,7 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
         onSuccess: () => {
             toast.success(`Due date updated to ${date ? format(date, "MMM d") : "none"}`)
             setOpen(false)
+            queryClient.invalidateQueries({ queryKey: ['tasks'] })
         },
     });
 

@@ -86,14 +86,26 @@ impl<'a> TaskManager<'a> {
         task_id: Uuid,
         update_data: UpdatedTaskData,
     ) -> Result<Option<Task>, Box<dyn Error>> {
-        let mut repository = self.repository_provider.task_repository().await?;
+        let mut task_repository = self.repository_provider.task_repository().await?;
+        let mut recurring_task_repository =
+            self.repository_provider.recurring_task_repository().await?;
 
-        let mut task = match repository.find_by_id(task_id).await? {
+        let mut task = match task_repository.find_by_id(task_id).await? {
             None => return Ok(None),
             Some(task) => task,
         };
 
-        repository.update_task(&mut task, update_data).await?;
+        // If the due date is being updated, handle recurring task update
+        if let Some(due_date) = &update_data.due_date {
+            let new_due_date = DateTime::parse_from_rfc3339(due_date)?.with_timezone(&Utc);
+            let mut recurring_task_manager =
+                RecurringTaskManager::new(&mut recurring_task_repository, &mut task_repository);
+            recurring_task_manager
+                .handle_task_update(task_id, new_due_date)
+                .await?;
+        }
+
+        task_repository.update_task(&mut task, update_data).await?;
         Ok(Some(task))
     }
 

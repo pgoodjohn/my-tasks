@@ -86,6 +86,29 @@ impl<'a> RecurringTaskManager<'a> {
         }
     }
 
+    pub async fn handle_task_update(
+        &mut self,
+        task_id: Uuid,
+        new_due_date: DateTime<Utc>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Check if this task has a recurring configuration
+        if let Some(mut recurring_task) = self
+            .recurring_task_repository
+            .find_by_task_id(task_id)
+            .await?
+        {
+            recurring_task.next_due_at_utc = self.calculate_due_date_for_base_date_and_frequency(
+                new_due_date,
+                &recurring_task.frequency()?,
+                recurring_task.interval,
+            )?;
+            self.recurring_task_repository
+                .save(&mut recurring_task)
+                .await?;
+        }
+        Ok(())
+    }
+
     fn calculate_due_date_for_base_date_and_frequency(
         &self,
         base_date: DateTime<Utc>,
