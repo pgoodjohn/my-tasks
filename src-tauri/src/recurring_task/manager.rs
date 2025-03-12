@@ -28,9 +28,10 @@ impl<'a> RecurringTaskManager<'a> {
         task_id: Uuid,
         frequency: Frequency,
         interval: i32,
-        first_due_date: DateTime<Utc>,
     ) -> Result<RecurringTask, Box<dyn std::error::Error>> {
-        let mut recurring_task = RecurringTask::new(task_id, frequency, interval, first_due_date);
+        let task = self.task_repository.find_by_id(task_id).await?;
+        let mut recurring_task =
+            RecurringTask::new(task_id, frequency, interval, task.unwrap().due_at_utc);
         self.recurring_task_repository
             .save(&mut recurring_task)
             .await?;
@@ -47,17 +48,17 @@ impl<'a> RecurringTaskManager<'a> {
             .find_by_task_id(task.id)
             .await?
         {
-            // Calculate the next due date based on frequency and interval
-            let next_due_date = self.calculate_next_due_date(&recurring_task)?;
-
             // Create a new task for the next occurrence
             let mut new_task = Task::new(
                 task.title.clone(),
                 task.description.clone(),
                 task.project_id,
                 task.parent_task_id,
-                Some(next_due_date),
+                Some(recurring_task.next_due_at_utc),
             );
+
+            // Calculate the next due date based on frequency and interval
+            let next_due_date = self.calculate_next_due_date(&recurring_task)?;
 
             // Save the new task
             self.task_repository.save(&mut new_task).await?;

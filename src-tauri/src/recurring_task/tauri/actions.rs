@@ -14,7 +14,6 @@ pub struct CreateRecurringTaskData {
     task_id: String,
     frequency: String,
     interval: i32,
-    first_due_date: String,
 }
 
 #[tauri::command]
@@ -27,9 +26,6 @@ pub async fn setup_recurring_task_command(
         .frequency
         .try_into()
         .map_err(|e| format!("Invalid frequency: {}", e))?;
-    let first_due_date = DateTime::parse_from_rfc3339(&data.first_due_date)
-        .map_err(|e| format!("Invalid date format: {}", e))?
-        .with_timezone(&Utc);
 
     let mut task_repository = repository_provider
         .task_repository()
@@ -44,7 +40,7 @@ pub async fn setup_recurring_task_command(
         RecurringTaskManager::new(&mut recurring_task_repository, &mut task_repository);
 
     let recurring_task = recurring_task_manager
-        .setup_recurring_task(task_id, frequency, data.interval, first_due_date)
+        .setup_recurring_task(task_id, frequency, data.interval)
         .await
         .map_err(|e| format!("Failed to setup recurring task: {}", e))?;
 

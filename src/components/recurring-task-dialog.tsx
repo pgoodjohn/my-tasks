@@ -43,20 +43,18 @@ export function RecurringTaskDialog({ task }: RecurringTaskDialogProps) {
         defaultValues: {
             frequency: recurringTask?.frequency || Frequency.Weekly,
             interval: recurringTask?.interval || 1,
-            firstDueDate: recurringTask ? new Date(recurringTask.next_due_at_utc) : new Date(),
         },
         onSubmit: async ({ value }) => {
             await setupRecurringTaskMutation.mutateAsync({
                 taskId: task.id,
                 frequency: value.frequency,
                 interval: value.interval,
-                firstDueDate: value.firstDueDate.toISOString()
             })
         }
     })
 
     const setupRecurringTaskMutation = useMutation({
-        mutationFn: async (data: { taskId: string, frequency: Frequency, interval: number, firstDueDate: string }) => {
+        mutationFn: async (data: { taskId: string, frequency: Frequency, interval: number }) => {
             return invoke_tauri_command("setup_recurring_task_command", { data: data })
         },
         onSuccess: () => {
@@ -124,40 +122,6 @@ export function RecurringTaskDialog({ task }: RecurringTaskDialogProps) {
                                         value={field.state.value}
                                         onChange={(e) => field.setValue(parseInt(e.target.value))}
                                     />
-                                </div>
-                            )}
-                        />
-                        <form.Field
-                            name="firstDueDate"
-                            children={(field) => (
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">First Due Date</label>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                className="w-full justify-start text-left font-normal"
-                                            >
-                                                {field.state.value ? (
-                                                    format(field.state.value, "PPP")
-                                                ) : (
-                                                    <span>Pick a date</span>
-                                                )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                selected={field.state.value}
-                                                onSelect={(date) => date && field.setValue(date)}
-                                                disabled={(date) =>
-                                                    date < new Date()
-                                                }
-                                                initialFocus
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
                                 </div>
                             )}
                         />
