@@ -122,6 +122,8 @@ pub fn run() {
             ollama::tauri::get_quick_task,
             // Recurring task commands
             recurring_task::tauri::actions::setup_recurring_task_command,
+            recurring_task::tauri::actions::update_recurring_task_command,
+            recurring_task::tauri::actions::delete_recurring_task_command,
             recurring_task::tauri::queries::get_recurring_task_command,
         ])
         .run(tauri::generate_context!())

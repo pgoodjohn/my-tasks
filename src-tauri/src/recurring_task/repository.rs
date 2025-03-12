@@ -17,6 +17,7 @@ pub trait RecurringTaskRepository: Send + Sync {
         date: DateTime<Utc>,
     ) -> Result<Vec<RecurringTask>, sqlx::Error>;
     async fn delete(&mut self, recurring_task: &RecurringTask) -> Result<(), sqlx::Error>;
+    async fn delete_by_task_id(&mut self, task_id: Uuid) -> Result<(), sqlx::Error>;
 }
 
 pub struct SqliteRecurringTaskRepository {
@@ -97,6 +98,15 @@ impl RecurringTaskRepository for SqliteRecurringTaskRepository {
     async fn delete(&mut self, recurring_task: &RecurringTask) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM recurring_tasks WHERE id = ?1")
             .bind(recurring_task.id.to_string())
+            .execute(&mut *self.connection)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn delete_by_task_id(&mut self, task_id: Uuid) -> Result<(), sqlx::Error> {
+        sqlx::query("DELETE FROM recurring_tasks WHERE task_id = ?1")
+            .bind(task_id.to_string())
             .execute(&mut *self.connection)
             .await?;
 

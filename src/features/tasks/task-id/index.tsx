@@ -11,6 +11,26 @@ import { Route } from "@/routes/tasks/$taskId.route"
 import { RecurringTaskDialog } from "@/components/recurring-task-dialog";
 import type { RecurringTask } from "@/types";
 
+const getFrequencyText = (frequency: string, interval: number) => {
+    if (interval === 1) {
+        switch (frequency.toLowerCase()) {
+            case 'daily': return 'Every day';
+            case 'weekly': return 'Every week';
+            case 'monthly': return 'Every month';
+            case 'yearly': return 'Every year';
+            default: return `Every ${frequency.toLowerCase()}`;
+        }
+    } else {
+        switch (frequency.toLowerCase()) {
+            case 'daily': return `Every ${interval} days`;
+            case 'weekly': return `Every ${interval} weeks`;
+            case 'monthly': return `Every ${interval} months`;
+            case 'yearly': return `Every ${interval} years`;
+            default: return `Every ${interval} ${frequency.toLowerCase()}s`;
+        }
+    }
+};
+
 export function RouteComponent() {
     const { taskId } = Route.useParams()
     const navigate = useNavigate()
@@ -63,7 +83,7 @@ export function RouteComponent() {
                         {recurringTaskQuery.data && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <RepeatIcon className="h-4 w-4" />
-                                <span>Repeats {recurringTaskQuery.data.frequency.toLowerCase()} (every {recurringTaskQuery.data.interval})</span>
+                                <span>{getFrequencyText(recurringTaskQuery.data.frequency, recurringTaskQuery.data.interval)}</span>
                             </div>
                         )}
                     </div>

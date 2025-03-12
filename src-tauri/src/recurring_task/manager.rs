@@ -32,6 +32,15 @@ impl<'a> RecurringTaskManager<'a> {
         let task = self.task_repository.find_by_id(task_id).await?;
         let task = task.ok_or("Task not found")?;
 
+        // Check if a recurring task already exists
+        if let Some(_) = self
+            .recurring_task_repository
+            .find_by_task_id(task_id)
+            .await?
+        {
+            return Err("Task already has recurring settings".into());
+        }
+
         let base_date = task.due_at_utc.unwrap_or_else(Utc::now);
         let next_due_at_utc =
             self.calculate_due_date_for_base_date_and_frequency(base_date, &frequency, interval)?;
@@ -41,6 +50,16 @@ impl<'a> RecurringTaskManager<'a> {
             .save(&mut recurring_task)
             .await?;
         Ok(recurring_task)
+    }
+
+    pub async fn delete_recurring_task(
+        &mut self,
+        task_id: Uuid,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.recurring_task_repository
+            .delete_by_task_id(task_id)
+            .await?;
+        Ok(())
     }
 
     pub async fn handle_task_completion(
@@ -107,6 +126,35 @@ impl<'a> RecurringTaskManager<'a> {
                 .await?;
         }
         Ok(())
+    }
+
+    pub async fn update_recurring_task(
+        &mut self,
+        task_id: Uuid,
+        frequency: Frequency,
+        interval: i32,
+    ) -> Result<RecurringTask, Box<dyn std::error::Error>> {
+        let mut recurring_task = self
+            .recurring_task_repository
+            .find_by_task_id(task_id)
+            .await?
+            .ok_or("No recurring task found for this task")?;
+
+        let task = self.task_repository.find_by_id(task_id).await?;
+        let task = task.ok_or("Task not found")?;
+
+        let base_date = task.due_at_utc.unwrap_or_else(Utc::now);
+        let next_due_at_utc =
+            self.calculate_due_date_for_base_date_and_frequency(base_date, &frequency, interval)?;
+
+        recurring_task.frequency = frequency.to_string();
+        recurring_task.interval = interval;
+        recurring_task.next_due_at_utc = next_due_at_utc;
+
+        self.recurring_task_repository
+            .save(&mut recurring_task)
+            .await?;
+        Ok(recurring_task)
     }
 
     fn calculate_due_date_for_base_date_and_frequency(
