@@ -240,6 +240,55 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, hiddenColumns, showHeade
 
 export default TasksTable;
 
+interface RecurringTaskTooltipProps {
+    recurringTask: {
+        frequency: string;
+        interval: number;
+        next_due_at_utc: string;
+    } | null;
+}
+
+const RecurringTaskTooltip: React.FC<RecurringTaskTooltipProps> = ({ recurringTask }) => {
+    if (!recurringTask) return null;
+
+    const getFrequencyText = (frequency: string, interval: number) => {
+        if (interval === 1) {
+            switch (frequency.toLowerCase()) {
+                case 'daily': return 'Every day';
+                case 'weekly': return 'Every week';
+                case 'monthly': return 'Every month';
+                case 'yearly': return 'Every year';
+                default: return `Every ${frequency.toLowerCase()}`;
+            }
+        } else {
+            switch (frequency.toLowerCase()) {
+                case 'daily': return `Every ${interval} days`;
+                case 'weekly': return `Every ${interval} weeks`;
+                case 'monthly': return `Every ${interval} months`;
+                case 'yearly': return `Every ${interval} years`;
+                default: return `Every ${interval} ${frequency.toLowerCase()}s`;
+            }
+        }
+    };
+
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger>
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                    </svg>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{getFrequencyText(recurringTask.frequency, recurringTask.interval)}</p>
+                    <p>Next due: {format(new Date(recurringTask.next_due_at_utc), "MMM d, yyyy")}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+};
+
 interface DueDateColumnProps {
     dateString: string | null,
     taskId: string,
@@ -326,23 +375,7 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
                     className="flex items-center gap-1"
                 >
                     {date ? format(date, "MMM d") : "-"}
-                    {recurringTask && (
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                                        <path d="M3 3v5h5" />
-                                    </svg>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Repeats {recurringTask.frequency.toLowerCase()}</p>
-                                    <p>Every {recurringTask.interval} {recurringTask.interval === 1 ? recurringTask.frequency.toLowerCase().slice(0, -2) : recurringTask.frequency.toLowerCase()}</p>
-                                    <p>Next due: {format(new Date(recurringTask.next_due_at_utc), "MMM d, yyyy")}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    )}
+                    <RecurringTaskTooltip recurringTask={recurringTask} />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
