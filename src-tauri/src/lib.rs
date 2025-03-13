@@ -85,7 +85,8 @@ pub fn run() {
             app.manage(repository_provider);
             app.manage(db_pool);
 
-            app.manage(AsyncMutex::new(config_clone.configuration));
+            app.manage(AsyncMutex::new(config_clone.configuration.clone()));
+            app.manage(config_clone);
 
             Ok(())
         })
