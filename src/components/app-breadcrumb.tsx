@@ -1,4 +1,4 @@
-import { Link, useRouterState  } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import React from "react";
 import {
     Breadcrumb,
@@ -209,7 +209,7 @@ function TaskBreadcrumb({ taskId }: { taskId: string | undefined }) {
                             </BreadcrumbPage>
                         ) : (
                             <BreadcrumbLink asChild>
-                                <Link to="/tasks/$taskId" params={{ taskId: t.id }}>
+                                <Link to="/tasks/$taskId" params={{ taskId: `${t.id}` } as any}>
                                     {t.title}
                                 </Link>
                             </BreadcrumbLink>

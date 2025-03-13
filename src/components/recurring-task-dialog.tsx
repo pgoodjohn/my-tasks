@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,7 +38,7 @@ interface RecurringTaskFormProps {
     submitLabel: string
 }
 
-function RecurringTaskForm({ taskId, defaultValues, onSubmit, onCancel, onDelete, submitLabel }: RecurringTaskFormProps) {
+function RecurringTaskForm({ defaultValues, onSubmit, onCancel, onDelete, submitLabel }: RecurringTaskFormProps) {
     const form = useForm({
         defaultValues,
         onSubmit: async ({ value }) => {

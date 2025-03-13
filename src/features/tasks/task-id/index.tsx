@@ -32,7 +32,7 @@ const getFrequencyText = (frequency: string, interval: number) => {
 };
 
 export function RouteComponent() {
-    const { taskId } = Route.useParams()
+    const { taskId } = Route.useParams() as { taskId: string }
     const navigate = useNavigate()
 
     const taskQuery = useQuery({
@@ -56,7 +56,7 @@ export function RouteComponent() {
         try {
             const project = await invoke_tauri_command("promote_task_to_project_command", { taskId });
             toast.success(`Task promoted to project "${project.title}"`);
-            navigate({ to: '/projects/$projectId', params: { projectId: project.id } });
+            navigate({ to: '/projects/$projectId', params: { projectId: `${project.id}` } as any });
         } catch (error) {
             console.error("Failed to promote task to project:", error);
             toast.error("Failed to promote task to project");

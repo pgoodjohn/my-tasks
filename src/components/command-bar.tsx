@@ -88,7 +88,7 @@ export function CommandBar() {
                                         <CommandItem
                                             key={project.id}
                                             onSelect={() => {
-                                                navigate({ to: '/projects/$projectId', params: { projectId: project.id } })
+                                                navigate({ to: '/projects/$projectId', params: { projectId: `${project.id}` } as any })
                                                 setOpen(false)
                                             }}
                                         >
@@ -105,7 +105,7 @@ export function CommandBar() {
                                     <CommandItem
                                         key={task.id}
                                         onSelect={() => {
-                                            navigate({ to: '/tasks/$taskId', params: { taskId: task.id } })
+                                            navigate({ to: '/tasks/$taskId', params: { taskId: `${task.id}` } as any })
                                             setOpen(false)
                                         }}
                                     >

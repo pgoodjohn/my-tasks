@@ -24,7 +24,7 @@ export default GlobalTaskForm;
 const NewTaskForm: React.FC = () => {
     const queryClient = useQueryClient()
 
-    const { projectId } = useParams({ strict: false })
+    const { projectId } = useParams({ strict: false }) as { projectId: string }
 
     const mutation = useMutation({
         mutationFn: async function (value: { title: string, description: string, dueDate: Date | undefined, projectId: string | undefined }) {
