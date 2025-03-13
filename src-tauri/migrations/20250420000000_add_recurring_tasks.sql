@@ -6,6 +6,5 @@ CREATE TABLE IF NOT EXISTS recurring_tasks (
     interval INTEGER NOT NULL DEFAULT 1, -- e.g., every 2 weeks
     next_due_at_utc DATETIME NOT NULL,
     created_at_utc DATETIME NOT NULL,
-    updated_at_utc DATETIME NOT NULL,
-    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    updated_at_utc DATETIME NOT NULL
 ); 
