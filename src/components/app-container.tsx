@@ -26,7 +26,7 @@ const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
                 </div>
                 <Separator />
             </div>
-            <div className="w-full flex-grow overflow-auto">
+            <div className="w-full flex-grow overflow-auto no-scrollbar">
                 <div className='p-4'>
                     {children}
                 </div>

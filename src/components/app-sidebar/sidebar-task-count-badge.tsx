@@ -1,4 +1,4 @@
-import { Badge } from "./ui/badge";
+import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 
 type SidebarTaskCountBadgeVariant = "default" | "orange" | "red" | "blue";
