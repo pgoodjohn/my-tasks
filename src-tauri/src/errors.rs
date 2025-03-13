@@ -37,6 +37,11 @@ impl ErrorHandler {
     pub fn initialise(mode: ConfigurationMode) -> Self {
         let environment = Environment::try_from(mode).unwrap();
 
+        log::debug!(
+            "Initialising Error Handler for environment: {}",
+            environment
+        );
+
         let guard = sentry::init((
             dotenv!("SENTRY_DNS"),
             sentry::ClientOptions {
@@ -45,6 +50,12 @@ impl ErrorHandler {
                 ..Default::default()
             },
         ));
+
+        log::debug!(
+            "Sentry error handler initialised with: {} - {}",
+            environment,
+            dotenv!("SENTRY_DNS")
+        );
 
         Self { _sentry: guard }
     }

@@ -10,6 +10,7 @@ use tokio::runtime::Runtime;
 pub mod chart;
 pub mod configuration;
 pub mod errors;
+pub mod logger;
 pub mod ollama;
 pub mod project;
 pub mod recurring_task;
@@ -39,19 +40,23 @@ fn detect_mode() -> ConfigurationMode {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    plogger::init(cfg!(debug_assertions));
+    logger::init(cfg!(debug_assertions));
     tauri::Builder::default()
         .setup(move |app| {
-            let rt = Runtime::new().map_err(|e| Box::new(AppError::Runtime(e)))?;
+            // Initialize error handler
+            let error_handler = errors::ErrorHandler::initialise(detect_mode());
+            app.manage(error_handler);
 
+            // Load Configuration
             let configuration_manager = ConfigurationManager::load(detect_mode())
                 .map_err(|_| AppError::Configuration("Failed to load configuration".to_string()))?;
             let config_clone = configuration_manager.clone();
 
+            // Create the database
+            let rt = Runtime::new().map_err(|e| Box::new(AppError::Runtime(e)))?;
             let db_pool = rt
                 .block_on(async move {
                     log::debug!("Setting up db connection pool");
-
                     let db_pool = SqlitePool::connect(
                         configuration_manager
                             .configuration
