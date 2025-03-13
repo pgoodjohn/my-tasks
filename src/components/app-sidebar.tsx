@@ -27,10 +27,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/theme-provider"
 import { useTasks } from "@/hooks/use-tasks"
+import { useInboxTasks } from "@/hooks/use-inbox-tasks"
+import { SidebarTaskCountBadge } from './sidebar-task-count-badge'
 
 export function AppSidebar() {
     const tasks = useTasks(false);
     const tasksDueToday = useTasksDueToday();
+    const inboxTasks = useInboxTasks();
     const routerState = useRouterState();
     const currentRoute = routerState.matches[1]?.routeId;
     const currentPath = routerState.location.pathname;
@@ -44,13 +47,24 @@ export function AppSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuButton asChild isActive={currentRoute === "/"}>
-                                <Link to='/' className="flex justify-between items-center w-full">
-                                    Home
-                                    {
-                                        tasksDueToday && tasksDueToday.data && tasksDueToday.data.length > 0 && (
-                                            <Badge variant="small-orange">{tasksDueToday.data.length}</Badge>
-                                        )
-                                    }
+                                <Link to='/'>
+                                    <span className="flex justify-between items-center w-full">
+                                        <p>
+                                            Home
+                                        </p>
+                                        <div className="flex gap-1">
+                                            {
+                                                inboxTasks && inboxTasks.data && inboxTasks.data.length > 0 && (
+                                                    <SidebarTaskCountBadge count={inboxTasks.data.length} variant="blue" />
+                                                )
+                                            }
+                                            {
+                                                tasksDueToday && tasksDueToday.data && tasksDueToday.data.length > 0 && (
+                                                    <SidebarTaskCountBadge count={tasksDueToday.data.length} variant="orange" />
+                                                )
+                                            }
+                                        </div>
+                                    </span>
                                 </Link>
                             </SidebarMenuButton>
                             <SidebarMenuButton asChild isActive={currentRoute === "/tasks/"}>
@@ -58,7 +72,7 @@ export function AppSidebar() {
                                     Tasks
                                     {
                                         tasks && tasks.data && (
-                                            <Badge variant="small">{tasks.data.length}</Badge>
+                                            <SidebarTaskCountBadge count={tasks.data.length} variant="default" />
                                         )
                                     }
                                 </Link>
@@ -111,7 +125,7 @@ export function AppSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarFooter>
-        </Sidebar>
+        </Sidebar >
     )
 }
 
