@@ -7,11 +7,7 @@ import TasksTable from '@/components/tasks-table';
 
 const Inbox: React.FC = () => {
     return (
-        <div className='overflow-auto max-h-full'>
-            <div className='pt-2'>
-                <InboxTaskList />
-            </div>
-        </div>
+        <InboxTaskList />
     )
 }
 
@@ -33,7 +29,7 @@ const InboxTaskList: React.FC = () => {
     }
 
     return (
-        <div className='py-2 max-h-full'>
+        <div className=''>
             {taskListQuery.data ? <TasksTable tasks={taskListQuery.data} hiddenColumns={[]} showHeaders={false} /> : <div>No Data</div>}
         </div>
     )

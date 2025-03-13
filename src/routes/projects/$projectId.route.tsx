@@ -6,7 +6,7 @@ export const Route = createFileRoute('/projects/$projectId')({
 })
 
 function RouteComponent() {
-    const { projectId } = Route.useParams()
+    const { projectId } = Route.useParams() as { projectId: string }
 
     return (
         <Index projectID={projectId} />

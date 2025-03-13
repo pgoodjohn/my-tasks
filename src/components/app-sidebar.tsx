@@ -132,7 +132,7 @@ const FavoriteProjects: React.FC<FavoriteProjectsProps> = ({ currentPath }) => {
             <SidebarMenuSub key={project.id}>
                 <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild isActive={isActive}>
-                        <Link to="/projects/$projectId" params={{ projectId: project.id }}>
+                        <Link to="/projects/$projectId" params={{ projectId: `${project.id}` } as any}>
                             {project.emoji} {project.title}
                         </Link>
                     </SidebarMenuSubButton>

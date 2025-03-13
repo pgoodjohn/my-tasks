@@ -38,7 +38,7 @@ function FavoriteProjects() {
                                 <div className="flex items-center justify-between">
                                     <Link
                                         to="/projects/$projectId"
-                                        params={{ projectId: project.id }}
+                                        params={{ projectId: `${project.id}` } as any}
                                         className="flex items-center gap-2 font-medium hover:underline"
                                     >
                                         {project.emoji} {project.title}

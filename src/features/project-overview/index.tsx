@@ -1,18 +1,17 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { invoke_tauri_command } from '@/lib/utils'
 import TasksTable from '@/components/tasks-table'
 import { Checkbox } from '@/components/ui/checkbox'
-import EditProjectDialog from '@/features/projects/edit-project-dialog'
 import { FavoriteProjectButton } from '@/components/favorite-project-button'
+import EditProjectDialog from '@/features/projects/edit-project-dialog'
+import { useState } from 'react'
 
 interface IndexProps {
     projectID: string
 }
 
 function Index({ projectID }: IndexProps) {
-
-    const [showCompleted, setShowCompleted] = useState(false)
+    const [showCompleted, setShowCompleted] = useState(false);
 
     const projectDetailQuery = useQuery({
         queryKey: ['tasks', 'projects', projectID, showCompleted],

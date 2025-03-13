@@ -36,6 +36,12 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 
 const columns: Array<ColumnDef<Task>> = [
@@ -47,8 +53,7 @@ const columns: Array<ColumnDef<Task>> = [
 
             const markCompleteMutation = useMutation({
                 mutationFn: async function () {
-                    const res = await invoke_tauri_command('complete_task_command', { taskId: row.original.id });
-                    return res
+                    await invoke_tauri_command('complete_task_command', { taskId: row.original.id });
                 },
                 onSuccess: () => {
                     // Invalidate and refetch
@@ -78,7 +83,8 @@ const columns: Array<ColumnDef<Task>> = [
             return <div className='flex-col pl-2'>
                 {row.original.parent_task_id && <ParentTaskLabel parentTaskId={row.original.parent_task_id} />}
                 <Link
-                    to="/tasks/$taskId" params={{ taskId: row.original.id }}
+                    to="/tasks/$taskId"
+                    params={{ taskId: row.original.id } as any}
                 >
                     <p className='hover:underline'>
                         {row.original.title}
@@ -111,7 +117,6 @@ const columns: Array<ColumnDef<Task>> = [
     },
     {
         id: "project",
-        accessorKey: "project_id",
         header: "Project",
         size: 120,
         cell: ({ row }) => {
@@ -119,12 +124,12 @@ const columns: Array<ColumnDef<Task>> = [
         }
     },
     {
-        id: "due_at_utc",
-        accessorKey: "due_at_utc",
+        id: 'due_at_utc',
         header: "Due Date",
         size: 100,
         cell: ({ row }) => {
             return <DueDateColumn dateString={row.original.due_at_utc} taskId={row.original.id} task={row.original} />
+            // return <div>{row.original.due_at_utc}</div>
         }
     },
     {
@@ -235,6 +240,55 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, hiddenColumns, showHeade
 
 export default TasksTable;
 
+interface RecurringTaskTooltipProps {
+    recurringTask: {
+        frequency: string;
+        interval: number;
+        next_due_at_utc: string;
+    } | null;
+}
+
+const RecurringTaskTooltip: React.FC<RecurringTaskTooltipProps> = ({ recurringTask }) => {
+    if (!recurringTask) return null;
+
+    const getFrequencyText = (frequency: string, interval: number) => {
+        if (interval === 1) {
+            switch (frequency.toLowerCase()) {
+                case 'daily': return 'Every day';
+                case 'weekly': return 'Every week';
+                case 'monthly': return 'Every month';
+                case 'yearly': return 'Every year';
+                default: return `Every ${frequency.toLowerCase()}`;
+            }
+        } else {
+            switch (frequency.toLowerCase()) {
+                case 'daily': return `Every ${interval} days`;
+                case 'weekly': return `Every ${interval} weeks`;
+                case 'monthly': return `Every ${interval} months`;
+                case 'yearly': return `Every ${interval} years`;
+                default: return `Every ${interval} ${frequency.toLowerCase()}s`;
+            }
+        }
+    };
+
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger>
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                    </svg>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{getFrequencyText(recurringTask.frequency, recurringTask.interval)}</p>
+                    <p>Next due: {format(new Date(recurringTask.next_due_at_utc), "MMM d, yyyy")}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
+};
+
 interface DueDateColumnProps {
     dateString: string | null,
     taskId: string,
@@ -244,6 +298,18 @@ interface DueDateColumnProps {
 const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task }) => {
     const [date, setDate] = React.useState<Date | undefined>(dateString ? new Date(dateString) : undefined)
     const [open, setOpen] = React.useState(false)
+    const queryClient = useQueryClient()
+    const { data: recurringTask } = useQuery({
+        queryKey: ["tasks", { taskId }],
+        queryFn: async () => {
+            const result = await invoke_tauri_command("get_recurring_task_command", { taskId })
+            return result
+        }
+    })
+
+    React.useEffect(() => {
+        setDate(dateString ? new Date(dateString) : undefined);
+    }, [dateString]);
 
     const getDueDateStyle = () => {
         if (!date) return {};
@@ -276,6 +342,7 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
         onSuccess: () => {
             toast.success(`Due date updated to ${date ? format(date, "MMM d") : "none"}`)
             setOpen(false)
+            queryClient.invalidateQueries({ queryKey: ['tasks'] })
         },
     });
 
@@ -305,8 +372,10 @@ const DueDateColumn: React.FC<DueDateColumnProps> = ({ dateString, taskId, task 
                     variant="ghost"
                     size="xs"
                     style={getDueDateStyle()}
+                    className="flex items-center gap-1"
                 >
                     {date ? format(date, "MMM d") : "-"}
+                    <RecurringTaskTooltip recurringTask={recurringTask} />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -341,7 +410,10 @@ function ParentTaskLabel({ parentTaskId }: { parentTaskId: string | null }) {
         if (query.data) {
             return (
                 <p className="text-gray-500 text-xs hover:underline">
-                    <Link to="/tasks/$taskId" params={{ taskId: query.data.id }}>
+                    <Link
+                        to="/tasks/$taskId"
+                        params={{ taskId: query.data.id } as any}
+                    >
                         {query.data.title}
                     </Link>
                 </p>

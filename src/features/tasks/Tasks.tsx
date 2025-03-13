@@ -6,7 +6,6 @@ import { useTasks } from '@/hooks/use-tasks';
 import { useExcludedProjects } from '@/hooks/use-excluded-projects';
 
 const Tasks: React.FC = () => {
-
     return (
         <div className='overflow-auto max-h-full'>
             <div className='pt-2'>
@@ -19,10 +18,9 @@ const Tasks: React.FC = () => {
 export default Tasks;
 
 const TasksList: React.FC = () => {
-
-    const [showCompleted, setShowCompleted] = useState(false)
-    const [excludedProjects, setExcludedProjects] = useExcludedProjects()
-    const tasks = useTasks(showCompleted)
+    const [showCompleted, setShowCompleted] = useState(false);
+    const [excludedProjects, setExcludedProjects] = useExcludedProjects();
+    const tasks = useTasks(showCompleted);
 
     if (tasks.isLoading) {
         return <div>Loading...</div>
@@ -31,6 +29,10 @@ const TasksList: React.FC = () => {
     if (tasks.isError) {
         return <div>Error loading tasks</div>
     }
+
+    const filteredTasks = tasks.data?.filter(task =>
+        !(task.project_id && excludedProjects.includes(task.project_id))
+    );
 
     return (
         <div className='py-2 max-h-full'>
@@ -49,9 +51,9 @@ const TasksList: React.FC = () => {
                     onExcludedProjectsChange={setExcludedProjects}
                 />
             </div>
-            {tasks.data ? (
+            {filteredTasks ? (
                 <TasksTable
-                    tasks={tasks.data.filter(task => task.project_id && !excludedProjects.includes(task.project_id))}
+                    tasks={filteredTasks}
                     hiddenColumns={[]}
                 />
             ) : (

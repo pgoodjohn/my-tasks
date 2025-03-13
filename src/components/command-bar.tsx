@@ -34,14 +34,14 @@ export function CommandBar() {
     }, [])
 
     const projectsQuery = useQuery({
-        queryKey: ['projects'],
+        queryKey: ['projects', 'commandBar'],
         queryFn: async () => {
             return await invoke_tauri_command('load_projects_command', { showArchivedProjects: false })
         }
     })
 
     const tasksQuery = useQuery({
-        queryKey: ['tasks'],
+        queryKey: ['tasks', 'commandBar'],
         queryFn: async () => {
             return await invoke_tauri_command('load_tasks_command', { includeCompleted: false })
         }
@@ -88,7 +88,7 @@ export function CommandBar() {
                                         <CommandItem
                                             key={project.id}
                                             onSelect={() => {
-                                                navigate({ to: '/projects/$projectId', params: { projectId: project.id } })
+                                                navigate({ to: '/projects/$projectId', params: { projectId: `${project.id}` } as any })
                                                 setOpen(false)
                                             }}
                                         >
@@ -105,7 +105,7 @@ export function CommandBar() {
                                     <CommandItem
                                         key={task.id}
                                         onSelect={() => {
-                                            navigate({ to: '/tasks/$taskId', params: { taskId: task.id } })
+                                            navigate({ to: '/tasks/$taskId', params: { taskId: `${task.id}` } as any })
                                             setOpen(false)
                                         }}
                                     >
