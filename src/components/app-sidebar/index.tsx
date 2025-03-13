@@ -1,5 +1,4 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Badge } from "./ui/badge"
 import type { Project } from "@/types"
 import {
     Sidebar,
@@ -16,21 +15,19 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import { useConfiguration } from "@/hooks/use-configuration"
 import { useFavoriteProjects } from "@/hooks/use-favorite-projects"
 import { useTasksDueToday } from "@/hooks/use-tasks-due-today"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useTheme } from "@/components/theme-provider"
 import { useTasks } from "@/hooks/use-tasks"
+import { useInboxTasks } from "@/hooks/use-inbox-tasks"
+
+import { Footer } from './footer'
+import { SidebarTaskCountBadge } from './sidebar-task-count-badge'
+import { ThemeSwitcher } from './theme-switcher'
 
 export function AppSidebar() {
     const tasks = useTasks(false);
     const tasksDueToday = useTasksDueToday();
+    const inboxTasks = useInboxTasks();
     const routerState = useRouterState();
     const currentRoute = routerState.matches[1]?.routeId;
     const currentPath = routerState.location.pathname;
@@ -38,19 +35,30 @@ export function AppSidebar() {
     return (
         <Sidebar>
             <SidebarHeader />
-            <SidebarContent>
+            <SidebarContent className="no-scrollbar">
                 <SidebarGroup>
                     <SidebarGroupLabel>My Tasks</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuButton asChild isActive={currentRoute === "/"}>
-                                <Link to='/' className="flex justify-between items-center w-full">
-                                    Home
-                                    {
-                                        tasksDueToday && tasksDueToday.data && tasksDueToday.data.length > 0 && (
-                                            <Badge variant="small-orange">{tasksDueToday.data.length}</Badge>
-                                        )
-                                    }
+                                <Link to='/'>
+                                    <span className="flex justify-between items-center w-full">
+                                        <p>
+                                            Home
+                                        </p>
+                                        <div className="flex gap-1">
+                                            {
+                                                inboxTasks && inboxTasks.data && inboxTasks.data.length > 0 && (
+                                                    <SidebarTaskCountBadge count={inboxTasks.data.length} variant="blue" />
+                                                )
+                                            }
+                                            {
+                                                tasksDueToday && tasksDueToday.data && tasksDueToday.data.length > 0 && (
+                                                    <SidebarTaskCountBadge count={tasksDueToday.data.length} variant="orange" />
+                                                )
+                                            }
+                                        </div>
+                                    </span>
                                 </Link>
                             </SidebarMenuButton>
                             <SidebarMenuButton asChild isActive={currentRoute === "/tasks/"}>
@@ -58,7 +66,7 @@ export function AppSidebar() {
                                     Tasks
                                     {
                                         tasks && tasks.data && (
-                                            <Badge variant="small">{tasks.data.length}</Badge>
+                                            <SidebarTaskCountBadge count={tasks.data.length} variant="default" />
                                         )
                                     }
                                 </Link>
@@ -78,11 +86,6 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {/* <SidebarMenuItem>
-                                <SidebarMenuButton>
-                                    <ContributionsCalendar variant="monthly" />
-                                </SidebarMenuButton>
-                            </SidebarMenuItem> */}
                             <SidebarMenuButton asChild isActive={currentRoute === "/tasks/completed"}>
                                 <Link to='/tasks/completed'>Completed Tasks</Link>
                             </SidebarMenuButton>
@@ -111,7 +114,7 @@ export function AppSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarFooter>
-        </Sidebar>
+        </Sidebar >
     )
 }
 
@@ -140,60 +143,4 @@ const FavoriteProjects: React.FC<FavoriteProjectsProps> = ({ currentPath }) => {
             </SidebarMenuSub >
         )
     })
-}
-
-const Footer: React.FC = () => {
-    const { data, isLoading, error } = useConfiguration();
-
-    if (isLoading) {
-        return <></>
-    }
-
-    if (error) {
-        return <div>Error loading configuration: {error.message}</div>
-    }
-
-    return (
-        <div className="flex text-center">
-            {
-                data.developmentMode && (
-                    <p className="text-orange-500">👷 v{data.version} 🚧 </p>
-                )
-            }
-            {
-                data.developmentMode == false && (
-                    <p>
-                        v{data.version}
-                    </p>
-                )
-            }
-        </div>
-    )
-}
-
-interface ModeToggleProps {
-    children: React.ReactNode
-}
-
-const ThemeSwitcher: React.FC<ModeToggleProps> = ({ children }) => {
-    const { setTheme } = useTheme()
-
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                {children}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                    Light
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                    Dark
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                    System
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    )
 }
