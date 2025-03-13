@@ -4,7 +4,7 @@ import {
     useQuery,
     useQueryClient,
 } from '@tanstack/react-query'
-import { Ellipsis, Pencil, Trash2 } from 'lucide-react';
+import { Ellipsis, Pencil, Trash2, ListTree } from 'lucide-react';
 import { Link } from '@tanstack/react-router'
 import { addWeeks, format, startOfWeek } from "date-fns"
 import { toast } from "sonner"
@@ -80,16 +80,38 @@ const columns: Array<ColumnDef<Task>> = [
         header: "Task",
         size: 400,
         cell: ({ row }) => {
+            const { data: subtasks } = useQuery({
+                queryKey: ['tasks', row.original.id, 'subtask', false],
+                queryFn: async () => {
+                    const data = await invoke_tauri_command('load_subtasks_for_task_command', { parentTaskId: row.original.id })
+                    return data
+                }
+            })
+
             return <div className='flex-col pl-2'>
                 {row.original.parent_task_id && <ParentTaskLabel parentTaskId={row.original.parent_task_id} />}
-                <Link
-                    to="/tasks/$taskId"
-                    params={{ taskId: row.original.id } as any}
-                >
-                    <p className='hover:underline'>
-                        {row.original.title}
-                    </p>
-                </Link>
+                <div className="flex items-center gap-2">
+                    <Link
+                        to="/tasks/$taskId"
+                        params={{ taskId: row.original.id } as any}
+                    >
+                        <p className='hover:underline'>
+                            {row.original.title}
+                        </p>
+                    </Link>
+                    {subtasks && subtasks.length > 0 && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <ListTree className="h-3 w-3 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{subtasks.length} subtask{subtasks.length !== 1 ? 's' : ''}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                </div>
                 {row.original.description && (
                     <p className="text-gray-500 text-sm">
                         {row.original.description.split(/(\s+)/).map((part, i) => {
