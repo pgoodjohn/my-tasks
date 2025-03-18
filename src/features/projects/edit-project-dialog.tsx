@@ -9,6 +9,7 @@ import { Textarea } from "../../components/ui/textarea"
 import { Button } from "../../components/ui/button"
 import ProjectColorCombobox from "./project-color-combobox"
 import type { Project } from "@/types"
+import { EmojiPickerFormItem } from "@/components/emoji-picker-form-item"
 import {
     Dialog,
     DialogContent,
@@ -52,7 +53,7 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
 
     const editProjectMutation = useMutation({
         mutationFn: async function (value: { id: string, title: string, emoji: string, color: string, description: string }) {
-            invoke_tauri_command('update_project_command', { projectId: value.id, newTitle: value.title, newEmoji: value.emoji, newColor: value.color, newDescription: value.description })
+            invoke_tauri_command('update_project_command', { projectId: value.id, title: value.title, emoji: value.emoji, color: value.color, description: value.description })
         },
         onSuccess: () => {
             // Invalidate and refetch
@@ -86,24 +87,29 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                     </DialogHeader>
                     <Separator />
                     <div className="py-2">
-                        <editProjectForm.Field
-                            name="id"
-                            children={(_field) => (
-                                <></>
-                            )} />
-                        <div className="flex items-center p-2">
+                        <div className="flex container p-2">
                             <editProjectForm.Field
                                 name="emoji"
                                 children={(field) => {
                                     return (
+                                        <div className="pr-2">
+                                            <EmojiPickerFormItem value={field.state.value || ''} onSelect={(value) => field.setValue(value)} />
+                                        </div>
+                                    )
+                                }}
+                            />
+                            <editProjectForm.Field
+                                name="title"
+                                children={(field) => (
+                                    <div className="container pr-2">
                                         <Input
                                             name={field.name}
                                             value={field.state.value || ''}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => field.setValue(e.target.value)}
                                         />
-                                    )
-                                }}
+                                    </div>
+                                )}
                             />
                             <editProjectForm.Field
                                 name="color"
@@ -111,19 +117,6 @@ const EditProjectDialog: React.FC<EditProjectDialogProps> = ({ project }) => {
                                     return <ProjectColorCombobox selectedValue={field.state.value || ''} onChange={field.handleChange} />
                                 }} />
                         </div>
-                        <editProjectForm.Field
-                            name="title"
-                            children={(field) => (
-                                <div className="p-2">
-                                    <Input
-                                        name={field.name}
-                                        value={field.state.value || ''}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.setValue(e.target.value)}
-                                    />
-                                </div>
-                            )}
-                        />
                         <editProjectForm.Field
                             name="description"
                             children={(field) => (

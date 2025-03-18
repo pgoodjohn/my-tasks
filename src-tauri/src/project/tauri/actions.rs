@@ -10,8 +10,10 @@ use crate::repository::RepositoryProvider;
 pub async fn create_project_command(
     repository_provider: State<'_, RepositoryProvider>,
     title: String,
+    emoji: Option<String>,
+    color: Option<String>,
     description: Option<String>,
-) -> Result<Project, String> {
+) -> Result<String, String> {
     let mut project_repository = repository_provider
         .inner()
         .project_repository()
@@ -24,10 +26,12 @@ pub async fn create_project_command(
         .map_err(|e| handle_error(&e))?;
     let mut projects_manager = ProjectsManager::new(&mut project_repository, &mut task_repository);
 
-    projects_manager
-        .create_project(title, description)
+    let project = projects_manager
+        .create_project(title, emoji, color, description)
         .await
-        .map_err(|e| handle_error(&*e))
+        .map_err(|e| handle_error(&*e))?;
+
+    Ok(serde_json::to_string(&project).unwrap())
 }
 
 #[tauri::command]

@@ -135,3 +135,26 @@ pub async fn load_completed_tasks_command(
 
     Ok(serde_json::to_string(&tasks).unwrap())
 }
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn load_tasks_by_project_command(
+    repository_provider: State<'_, RepositoryProvider>,
+    project_id: String,
+    include_completed: bool,
+) -> Result<String, String> {
+    log::debug!(
+        "Running load tasks by project command - project_id: {:?}, include_completed: {:?}",
+        project_id,
+        include_completed
+    );
+
+    let manager = TaskManager::new(&repository_provider);
+    let project_uuid = Uuid::parse_str(&project_id).map_err(|e| handle_error(&e))?;
+
+    let tasks = manager
+        .load_tasks_by_project(project_uuid, include_completed)
+        .await
+        .map_err(|e| handle_error(&*e))?;
+
+    Ok(serde_json::to_string(&tasks).unwrap())
+}

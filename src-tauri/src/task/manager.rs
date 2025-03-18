@@ -129,6 +129,18 @@ impl<'a> TaskManager<'a> {
             .map_err(Into::into)
     }
 
+    pub async fn load_tasks_by_project(
+        &self,
+        project_id: Uuid,
+        include_completed: bool,
+    ) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut repository = self.repository_provider.task_repository().await?;
+        repository
+            .find_by_project(project_id, include_completed)
+            .await
+            .map_err(Into::into)
+    }
+
     pub async fn complete_task(&self, task_id: Uuid) -> Result<(), Box<dyn Error>> {
         let mut task_repository = self.repository_provider.task_repository().await?;
         let mut recurring_task_repository =
