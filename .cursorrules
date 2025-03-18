@@ -1,0 +1,243 @@
+# My-Tasks Project Documentation
+
+## Overview
+
+My-Tasks is a task management application built with a modern tech stack:
+
+- **Frontend**: React with TypeScript, styled using Tailwind CSS and shadcn/ui components
+- **State Management**: TanStack Query (formerly React Query) for server state management
+- **Backend**: Rust with Tauri, providing a native desktop application experience
+- **Database**: SQLite for local data storage
+
+This application follows a structured architecture with clear separation of concerns between the frontend and backend components.
+
+## Project Structure
+
+```
+my-tasks/
+├── src/                    # Frontend React code
+│   ├── components/         # UI components
+│   ├── features/           # Feature-specific components
+│   ├── hooks/              # Custom React hooks
+│   ├── lib/                # Utility functions
+│   ├── routes/             # App routing
+│   └── types.tsx           # TypeScript type definitions
+├── src-tauri/              # Rust backend code
+│   ├── src/                # Rust source code
+│   │   ├── domain-modules/ # Tasks, Projects, etc.
+│   │   │   ├── mod.rs      # Module declaration
+│   │   │   ├── manager.rs  # Business logic
+│   │   │   ├── repository.rs # Data access
+│   │   │   └── tauri/      # Tauri command interfaces
+│   │   │       ├── mod.rs
+│   │   │       ├── actions.rs # Command mutations
+│   │   │       └── queries.rs # Data fetching
+│   │   ├── lib.rs          # Main application setup
+│   │   └── main.rs         # Entry point
+│   └── migrations/         # SQLite migrations
+└── public/                 # Static assets
+```
+
+## Architecture and Patterns
+
+### Backend Architecture
+
+The backend is structured around several key patterns:
+
+#### 1. Repository Pattern
+
+Repositories serve as the data access layer, abstracting the database operations for each domain entity.
+
+- **Responsibility**: Handles CRUD operations for entities
+- **Implementation**: Each domain has its own repository (e.g., `TaskRepository`, `ProjectRepository`)
+- **Central Provider**: `RepositoryProvider` provides access to all repositories
+
+Example:
+```rust
+pub struct RepositoryProvider {
+    pub pool: Pool<Sqlite>,
+}
+
+impl RepositoryProvider {
+    pub fn new(pool: Pool<Sqlite>) -> Self {
+        Self { pool }
+    }
+    
+    pub async fn task_repository(&self) -> Result<impl TaskRepository, sqlx::Error> {
+        let connection = self.pool.acquire().await?;
+        Ok(SqliteTaskRepository::new(connection))
+    }
+    // Additional repository accessor methods...
+}
+```
+
+#### 2. Manager Pattern
+
+Managers encapsulate business logic for each domain entity.
+
+- **Responsibility**: Implements domain-specific business logic, coordinating between repositories
+- **Implementation**: Each domain has a manager (e.g., `TaskManager`, `ProjectsManager`)
+- **Dependencies**: Managers typically depend on one or more repositories
+
+Example:
+```rust
+pub struct TaskManager<'a> {
+    repository_provider: &'a RepositoryProvider,
+}
+
+impl<'a> TaskManager<'a> {
+    pub fn new(repository_provider: &'a RepositoryProvider) -> Self {
+        Self { repository_provider }
+    }
+    
+    pub async fn create_task(&self, create_task_data: CreateTaskData) -> Result<Task, Box<dyn Error>> {
+        // Implementation...
+    }
+    // Additional methods...
+}
+```
+
+#### 3. Tauri Command Interface
+
+The backend exposes functionality to the frontend through Tauri commands, organized into:
+
+- **Actions**: Command handlers that modify data (create, update, delete)
+- **Queries**: Command handlers that retrieve data
+
+Example action:
+```rust
+#[tauri::command]
+pub async fn create_task_command(
+    title: String,
+    description: Option<String>,
+    due_date: Option<String>,
+    project_id: Option<String>,
+    repository_provider: State<'_, RepositoryProvider>,
+) -> Result<String, String> {
+    // Implementation...
+}
+```
+
+Example query:
+```rust
+#[tauri::command]
+pub async fn load_tasks_inbox_command(
+    repository_provider: State<'_, RepositoryProvider>,
+) -> Result<String, String> {
+    // Implementation...
+}
+```
+
+### Frontend Architecture
+
+The frontend follows modern React patterns:
+
+#### 1. Component Structure
+
+- **UI Components**: Reusable, presentational components (`src/components/ui/`)
+- **Feature Components**: Domain-specific components organized by feature area
+- **Layout Components**: Structural components like sidebars, headers, etc.
+
+#### 2. Data Fetching with TanStack Query
+
+The application uses TanStack Query to manage server state:
+
+```typescript
+const { data, isLoading, error } = useQuery({
+    queryKey: ['tasks', 'inbox'],
+    queryFn: async () => {
+        return await invoke_tauri_command('load_tasks_inbox_command', {});
+    }
+});
+```
+
+#### 3. Backend Communication
+
+Frontend-backend communication happens through the `invoke_tauri_command` utility:
+
+```typescript
+export async function invoke_tauri_command(command: string, command_arguments: Record<string, unknown>) {
+  try {
+    const res = await invoke(command, command_arguments);
+    const jsonResponse = JSON.parse(res as string);
+    return jsonResponse;
+  } catch (error) {
+    const errorResponse = JSON.parse(error as string);
+    throw errorResponse;
+  }
+}
+```
+
+## Database Design
+
+The application uses SQLite with the following entity relationships:
+
+- **Tasks**: Core entity with properties like title, description, due date
+- **Projects**: Containers for tasks with properties like title, emoji, color
+- **Recurring Tasks**: Template tasks that generate new tasks on a schedule
+- **Subtasks**: Tasks that belong to a parent task
+
+Database migrations are handled through SQLx migrations in the `src-tauri/migrations/` folder.
+
+## Guidelines for Development
+
+### Adding New Features
+
+1. **Backend Changes**:
+   - Define entities in a domain module (e.g., `new_feature/mod.rs`)
+   - Create a repository (`new_feature/repository.rs`)
+   - Implement business logic in a manager (`new_feature/manager.rs`)
+   - Expose functionality through Tauri commands (`new_feature/tauri/actions.rs` and `new_feature/tauri/queries.rs`)
+   - Register commands in `lib.rs`
+
+2. **Frontend Changes**:
+   - Create React hooks to interact with the backend
+   - Build UI components to display and manipulate data
+   - Add routes if needed
+   - Update types in `types.tsx`
+
+### Best Practices
+
+1. **Error Handling**:
+   - Backend: Use the `handle_error` helper to format errors consistently
+   - Frontend: Use TanStack Query's error handling capabilities
+
+2. **State Management**:
+   - Use TanStack Query for server state
+   - Use React useState/useContext for local UI state
+   - Invalidate queries appropriately when data changes
+
+3. **Performance**:
+   - Be mindful of database query performance
+   - Use appropriate TanStack Query caching strategies
+
+4. **Testing**:
+   - Add tests for business logic in managers
+   - Consider adding integration tests for critical features
+
+## Key Components
+
+### Backend
+
+- **Repository Provider**: Central access point for all data repositories
+- **Managers**: Business logic implementation for domains
+- **Configuration Manager**: Handles application settings
+- **Error Handler**: Consistent error formatting and handling
+
+### Frontend
+
+- **UI Component Library**: shadcn/ui components styled with Tailwind
+- **Data Fetching Hooks**: Custom hooks for backend communication
+- **Router**: TanStack Router for navigation
+- **Forms**: TanStack Form for form handling
+
+## Conclusion
+
+This application follows a well-structured architecture with clear separation of concerns. When extending it:
+
+1. Follow existing patterns to maintain consistency
+2. Keep frontend and backend responsibilities separate
+3. Use managers for business logic and repositories for data access
+4. Expose functionality through the Tauri interface
+
+This modular structure makes the codebase maintainable and extensible as new features are added. 
