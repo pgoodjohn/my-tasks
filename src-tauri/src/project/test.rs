@@ -33,10 +33,15 @@ mod manager_test {
         let mut project_manager =
             ProjectsManager::new(&mut project_repository, &mut task_repository);
 
-        let project = project_manager.create_project(title, None).await.unwrap();
+        let project = project_manager
+            .create_project(title, None, None, None)
+            .await
+            .unwrap();
 
         assert_eq!(project.title, "Test Project");
         assert!(project.description.is_none());
+        assert!(project.emoji.is_none());
+        assert!(project.color.is_none());
         assert!(project.id.to_string().len() > 0);
         assert!(project.created_at_utc <= Utc::now());
         assert!(project.updated_at_utc <= Utc::now());
@@ -52,7 +57,7 @@ mod manager_test {
             ProjectsManager::new(&mut project_repository, &mut task_repository);
 
         let project = project_manager
-            .create_project("Test Project".to_string(), None)
+            .create_project("Test Project".to_string(), None, None, None)
             .await
             .unwrap();
 
@@ -88,7 +93,7 @@ mod manager_test {
             ProjectsManager::new(&mut project_repository, &mut task_repository);
 
         let project = project_manager
-            .create_project("Test Project".to_string(), None)
+            .create_project("Test Project".to_string(), None, None, None)
             .await
             .unwrap();
 
@@ -106,7 +111,7 @@ mod manager_test {
             ProjectsManager::new(&mut project_repository, &mut task_repository);
 
         let project = project_manager
-            .create_project("Test Project".to_string(), None)
+            .create_project("Test Project".to_string(), None, None, None)
             .await
             .unwrap();
 

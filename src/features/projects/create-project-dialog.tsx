@@ -43,7 +43,7 @@ const CreateProjectDialog: React.FC<EditProjectDialogProps> = ({ }) => {
 
     const createProjectFormMutation = useMutation({
         mutationFn: async function (value: { title: string, emoji: string, color: string, description: string }) {
-            invoke_tauri_command('create_project_command', { title: value.title, emoji: value.emoji, color: value.color, description: value.description })
+            return await invoke_tauri_command('create_project_command', { title: value.title, emoji: value.emoji, color: value.color, description: value.description })
         },
         onSuccess: () => {
             // Invalidate and refetch

@@ -20,7 +20,7 @@ export function CreateSubtaskForm({ parentTask }: CreateSubtaskFormProps) {
 
     const newSubtaskMutation = useMutation({
         mutationFn: async ({ value }: { value: { parentTaskId: string, title: string, description: string, dueDate: Date | null } }) => {
-            const res = await invoke_tauri_command('create_subtask_for_task_command', { parentTaskId: value.parentTaskId, title: value.title, description: value.description, due_date: value.dueDate })
+            const res = await invoke_tauri_command('create_subtask_for_task_command', { parentTaskId: value.parentTaskId, title: value.title, description: value.description, dueDate: value.dueDate })
 
             return res
         },

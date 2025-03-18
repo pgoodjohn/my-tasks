@@ -57,13 +57,15 @@ impl<'a> ProjectsManager<'a> {
     pub async fn create_project(
         &mut self,
         title: String,
+        emoji: Option<String>,
+        color: Option<String>,
         description: Option<String>,
     ) -> Result<Project, Box<dyn Error>> {
         let mut project = Project {
             id: Uuid::now_v7(),
             title,
-            emoji: None,
-            color: None,
+            emoji,
+            color,
             description,
             created_at_utc: Utc::now(),
             updated_at_utc: Utc::now(),

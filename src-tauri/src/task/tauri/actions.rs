@@ -162,7 +162,7 @@ pub async fn promote_task_to_project_command(
     let mut projects_manager = ProjectsManager::new(&mut project_repository, &mut task_repository);
 
     let project = projects_manager
-        .create_project(task.title.clone(), task.description.clone())
+        .create_project(task.title.clone(), None, None, task.description.clone())
         .await
         .map_err(|e| handle_error(&*e))?;
 

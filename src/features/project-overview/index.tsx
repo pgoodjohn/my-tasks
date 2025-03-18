@@ -13,33 +13,41 @@ interface IndexProps {
 function Index({ projectID }: IndexProps) {
     const [showCompleted, setShowCompleted] = useState(false);
 
-    const projectDetailQuery = useQuery({
-        queryKey: ['tasks', 'projects', projectID, showCompleted],
+    const projectQuery = useQuery({
+        queryKey: ['projects', projectID],
         queryFn: async () => {
-            return await invoke_tauri_command('load_project_details_command', { projectId: projectID, includeCompletedTasks: showCompleted })
+            return await invoke_tauri_command('load_projects_command', { showArchivedProjects: false })
+                .then(projects => projects.find((p: any) => p.id === projectID))
         }
     })
 
-    if (projectDetailQuery.isLoading) {
+    const tasksQuery = useQuery({
+        queryKey: ['tasks', projectID, showCompleted],
+        queryFn: async () => {
+            return await invoke_tauri_command('load_tasks_by_project_command', { projectId: projectID, includeCompleted: showCompleted })
+        }
+    })
+
+    if (projectQuery.isLoading || tasksQuery.isLoading) {
         return <div>Loading...</div>
     }
 
-    if (projectDetailQuery.isError) {
+    if (projectQuery.isError || tasksQuery.isError) {
         return <div>Error</div>
     }
 
-    if (!projectDetailQuery.data) {
-        return <div>Not found</div>
+    if (!projectQuery.data) {
+        return <div>Project not found</div>
     }
 
     return (
         <div>
             <div className='container flex items-center'>
-                <p className='text-xl'>{projectDetailQuery.data.project.emoji} {projectDetailQuery.data.project.title}</p>
+                <p className='text-xl'>{projectQuery.data.emoji} {projectQuery.data.title}</p>
                 <div className='flex-grow' />
                 <div className='flex items-center gap-2'>
-                    <FavoriteProjectButton project={projectDetailQuery.data.project} />
-                    <EditProjectDialog project={projectDetailQuery.data.project} />
+                    <FavoriteProjectButton project={projectQuery.data} />
+                    <EditProjectDialog project={projectQuery.data} />
                 </div>
             </div>
             <div className='pt-2'>
@@ -52,7 +60,7 @@ function Index({ projectID }: IndexProps) {
                         Show Completed
                     </label>
                 </div>
-                <TasksTable tasks={projectDetailQuery.data.tasks} hiddenColumns={["project"]} />
+                <TasksTable tasks={tasksQuery.data || []} hiddenColumns={["project"]} />
             </div>
         </div>
     )

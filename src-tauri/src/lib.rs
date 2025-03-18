@@ -85,7 +85,8 @@ pub fn run() {
             app.manage(repository_provider);
             app.manage(db_pool);
 
-            app.manage(AsyncMutex::new(config_clone.configuration));
+            app.manage(AsyncMutex::new(config_clone.configuration.clone()));
+            app.manage(config_clone);
 
             Ok(())
         })
@@ -117,6 +118,7 @@ pub fn run() {
             task::tauri::queries::load_subtasks_for_task_command,
             task::tauri::queries::load_completed_subtasks_for_task_command,
             task::tauri::queries::load_task_activity_statistics_command,
+            task::tauri::queries::load_tasks_by_project_command,
             // Chart commands
             chart::tauri::queries::load_rolling_week_day_charts_command,
             chart::tauri::queries::load_project_activity_stats_command,
