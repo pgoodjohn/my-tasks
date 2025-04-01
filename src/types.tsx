@@ -59,17 +59,26 @@ export enum Frequency {
     Daily = "daily",
     Weekly = "weekly",
     Monthly = "monthly",
-    Yearly = "yearly"
+    Yearly = "yearly",
 }
 
-type RecurringTask = {
+export enum WeekDay {
+    Monday = "Monday",
+    Tuesday = "Tuesday",
+    Wednesday = "Wednesday",
+    Thursday = "Thursday",
+    Friday = "Friday",
+    Saturday = "Saturday",
+    Sunday = "Sunday",
+}
+
+export interface RecurringTask {
     id: string
     task_id: string
     frequency: Frequency
     interval: number
+    weekdays: WeekDay[]
     next_due_at_utc: string
     created_at_utc: string
     updated_at_utc: string
 }
-
-export type { RecurringTask }

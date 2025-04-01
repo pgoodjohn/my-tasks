@@ -1,11 +1,11 @@
-use chrono::{DateTime, Datelike, Utc};
+use chrono::{DateTime, Datelike, Duration, Utc, Weekday};
 use uuid::Uuid;
 
 use crate::task::repository::TaskRepository;
 use crate::task::Task;
 
 use super::repository::RecurringTaskRepository;
-use super::{Frequency, RecurringTask};
+use super::{Frequency, RecurringTask, WeekDay};
 
 pub struct RecurringTaskManager<'a> {
     recurring_task_repository: &'a mut dyn RecurringTaskRepository,
@@ -28,6 +28,7 @@ impl<'a> RecurringTaskManager<'a> {
         task_id: Uuid,
         frequency: Frequency,
         interval: i32,
+        weekdays: Option<Vec<WeekDay>>,
     ) -> Result<RecurringTask, Box<dyn std::error::Error>> {
         let task = self.task_repository.find_by_id(task_id).await?;
         let task = task.ok_or("Task not found")?;
@@ -41,11 +42,21 @@ impl<'a> RecurringTaskManager<'a> {
             return Err("Task already has recurring settings".into());
         }
 
-        let base_date = task.due_at_utc.unwrap_or_else(Utc::now);
-        let next_due_at_utc =
-            self.calculate_due_date_for_base_date_and_frequency(base_date, &frequency, interval)?;
+        // Validate weekdays are only provided for weekly frequency
+        if frequency != Frequency::Weekly && weekdays.is_some() {
+            return Err("Weekdays can only be specified for weekly frequency".into());
+        }
 
-        let mut recurring_task = RecurringTask::new(task_id, frequency, interval, next_due_at_utc);
+        let base_date = task.due_at_utc.unwrap_or_else(Utc::now);
+        let next_due_at_utc = self.calculate_due_date_for_base_date_and_frequency(
+            base_date,
+            &frequency,
+            interval,
+            weekdays.as_ref(),
+        )?;
+
+        let mut recurring_task =
+            RecurringTask::new(task_id, frequency, interval, weekdays, next_due_at_utc);
         self.recurring_task_repository
             .save(&mut recurring_task)
             .await?;
@@ -87,6 +98,7 @@ impl<'a> RecurringTaskManager<'a> {
                 recurring_task.next_due_at_utc,
                 &frequency,
                 recurring_task.interval,
+                recurring_task.weekdays().as_ref(),
             )?;
 
             // Save the new task
@@ -120,6 +132,7 @@ impl<'a> RecurringTaskManager<'a> {
                 new_due_date,
                 &recurring_task.frequency()?,
                 recurring_task.interval,
+                recurring_task.weekdays().as_ref(),
             )?;
             self.recurring_task_repository
                 .save(&mut recurring_task)
@@ -133,6 +146,7 @@ impl<'a> RecurringTaskManager<'a> {
         task_id: Uuid,
         frequency: Frequency,
         interval: i32,
+        weekdays: Option<Vec<WeekDay>>,
     ) -> Result<RecurringTask, Box<dyn std::error::Error>> {
         let mut recurring_task = self
             .recurring_task_repository
@@ -140,15 +154,30 @@ impl<'a> RecurringTaskManager<'a> {
             .await?
             .ok_or("No recurring task found for this task")?;
 
+        // Validate weekdays are only provided for weekly frequency
+        if frequency != Frequency::Weekly && weekdays.is_some() {
+            return Err("Weekdays can only be specified for weekly frequency".into());
+        }
+
         let task = self.task_repository.find_by_id(task_id).await?;
         let task = task.ok_or("Task not found")?;
 
         let base_date = task.due_at_utc.unwrap_or_else(Utc::now);
-        let next_due_at_utc =
-            self.calculate_due_date_for_base_date_and_frequency(base_date, &frequency, interval)?;
+        let next_due_at_utc = self.calculate_due_date_for_base_date_and_frequency(
+            base_date,
+            &frequency,
+            interval,
+            weekdays.as_ref(),
+        )?;
 
         recurring_task.frequency = frequency.to_string();
         recurring_task.interval = interval;
+        recurring_task.weekdays = weekdays.map(|days| {
+            days.iter()
+                .map(|day| day.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        });
         recurring_task.next_due_at_utc = next_due_at_utc;
 
         self.recurring_task_repository
@@ -162,10 +191,45 @@ impl<'a> RecurringTaskManager<'a> {
         base_date: DateTime<Utc>,
         frequency: &Frequency,
         interval: i32,
+        weekdays: Option<&Vec<WeekDay>>,
     ) -> Result<DateTime<Utc>, Box<dyn std::error::Error>> {
         let next_due = match frequency {
-            Frequency::Daily => base_date + chrono::Duration::days(interval as i64),
-            Frequency::Weekly => base_date + chrono::Duration::weeks(interval as i64),
+            Frequency::Daily => base_date + Duration::days(interval as i64),
+            Frequency::Weekly => {
+                if let Some(weekdays) = weekdays {
+                    if weekdays.is_empty() {
+                        return Err(
+                            "At least one weekday must be specified for weekly recurring tasks"
+                                .into(),
+                        );
+                    }
+
+                    // Convert weekdays to chrono::Weekday
+                    let weekday_numbers: Vec<u32> = weekdays
+                        .iter()
+                        .map(|day| match day {
+                            WeekDay::Monday => 1,
+                            WeekDay::Tuesday => 2,
+                            WeekDay::Wednesday => 3,
+                            WeekDay::Thursday => 4,
+                            WeekDay::Friday => 5,
+                            WeekDay::Saturday => 6,
+                            WeekDay::Sunday => 7,
+                        })
+                        .collect();
+
+                    // Find the next occurrence after base_date
+                    let mut current = base_date + Duration::days(1); // Start from tomorrow
+                    while !weekday_numbers.contains(&current.weekday().number_from_monday()) {
+                        current = current + Duration::days(1);
+                    }
+
+                    // Add weeks based on interval (subtract 1 since we already moved to next occurrence)
+                    current + Duration::weeks((interval - 1) as i64)
+                } else {
+                    base_date + Duration::weeks(interval as i64)
+                }
+            }
             Frequency::Monthly => {
                 // Add months by adjusting the month number
                 let total_months = base_date.month0() as i32 + interval;

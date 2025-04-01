@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::errors::handle_error;
 use crate::recurring_task::manager::RecurringTaskManager;
-use crate::recurring_task::Frequency;
+use crate::recurring_task::{Frequency, WeekDay};
 use crate::repository::RepositoryProvider;
 
 #[derive(serde::Deserialize)]
@@ -12,6 +12,7 @@ pub struct CreateRecurringTaskData {
     task_id: String,
     frequency: String,
     interval: i32,
+    weekdays: Option<Vec<String>>,
 }
 
 #[derive(serde::Deserialize)]
@@ -20,6 +21,7 @@ pub struct UpdateRecurringTaskData {
     task_id: String,
     frequency: String,
     interval: i32,
+    weekdays: Option<Vec<String>>,
 }
 
 #[tauri::command]
@@ -29,6 +31,17 @@ pub async fn setup_recurring_task_command(
 ) -> Result<String, String> {
     let task_id = Uuid::parse_str(&data.task_id).map_err(|e| handle_error(&e))?;
     let frequency: Frequency = data.frequency.parse().map_err(|e| handle_error(&e))?;
+
+    // Parse weekdays if provided
+    let weekdays = match data.weekdays {
+        Some(days) => Some(
+            days.iter()
+                .map(|day| day.parse::<WeekDay>())
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| handle_error(&e))?,
+        ),
+        None => None,
+    };
 
     let mut task_repository = repository_provider
         .task_repository()
@@ -43,7 +56,7 @@ pub async fn setup_recurring_task_command(
         RecurringTaskManager::new(&mut recurring_task_repository, &mut task_repository);
 
     let recurring_task = recurring_task_manager
-        .setup_recurring_task(task_id, frequency, data.interval)
+        .setup_recurring_task(task_id, frequency, data.interval, weekdays)
         .await
         .map_err(|e| handle_error(&*e))?;
 
@@ -58,6 +71,17 @@ pub async fn update_recurring_task_command(
     let task_id = Uuid::parse_str(&data.task_id).map_err(|e| handle_error(&e))?;
     let frequency: Frequency = data.frequency.parse().map_err(|e| handle_error(&e))?;
 
+    // Parse weekdays if provided
+    let weekdays = match data.weekdays {
+        Some(days) => Some(
+            days.iter()
+                .map(|day| day.parse::<WeekDay>())
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| handle_error(&e))?,
+        ),
+        None => None,
+    };
+
     let mut task_repository = repository_provider
         .task_repository()
         .await
@@ -71,7 +95,7 @@ pub async fn update_recurring_task_command(
         RecurringTaskManager::new(&mut recurring_task_repository, &mut task_repository);
 
     let recurring_task = recurring_task_manager
-        .update_recurring_task(task_id, frequency, data.interval)
+        .update_recurring_task(task_id, frequency, data.interval, weekdays)
         .await
         .map_err(|e| handle_error(&*e))?;
 

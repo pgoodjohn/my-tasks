@@ -10,23 +10,65 @@ import { invoke_tauri_command } from "@/lib/utils";
 import { Route } from "@/routes/tasks/$taskId.route"
 import { RecurringTaskDialog } from "@/components/recurring-task-dialog";
 import type { RecurringTask } from "@/types";
+import { WeekDay } from "@/types";
 
-const getFrequencyText = (frequency: string, interval: number) => {
+const formatWeekDays = (weekdays: WeekDay[]) => {
+    if (weekdays.length === 7) return "every day";
+    if (weekdays.length === 0) return "";
+
+    // Sort weekdays to ensure they're in order from Monday to Sunday
+    const sortedDays = [...weekdays].sort((a, b) => {
+        const order = {
+            [WeekDay.Monday]: 1,
+            [WeekDay.Tuesday]: 2,
+            [WeekDay.Wednesday]: 3,
+            [WeekDay.Thursday]: 4,
+            [WeekDay.Friday]: 5,
+            [WeekDay.Saturday]: 6,
+            [WeekDay.Sunday]: 7,
+        };
+        return order[a] - order[b];
+    });
+
+    if (weekdays.length === 1) {
+        return `every ${sortedDays[0]}`;
+    }
+
+    const daysText = sortedDays
+        .join(", ")
+        .replace(/,([^,]*)$/, ' and$1');
+
+    return `every ${daysText}`;
+};
+
+const getFrequencyText = (frequency: string, interval: number, weekdays?: WeekDay[]) => {
+    const frequencyLower = frequency.toLowerCase();
+
+    // Special handling for weekly frequency with weekdays
+    if (frequencyLower === 'weekly' && weekdays && weekdays.length > 0) {
+        if (interval === 1) {
+            return formatWeekDays(weekdays);
+        } else {
+            return `${formatWeekDays(weekdays)}, every ${interval} weeks`;
+        }
+    }
+
+    // Default handling for other frequencies or when no weekdays specified
     if (interval === 1) {
-        switch (frequency.toLowerCase()) {
+        switch (frequencyLower) {
             case 'daily': return 'Every day';
             case 'weekly': return 'Every week';
             case 'monthly': return 'Every month';
             case 'yearly': return 'Every year';
-            default: return `Every ${frequency.toLowerCase()}`;
+            default: return `Every ${frequencyLower}`;
         }
     } else {
-        switch (frequency.toLowerCase()) {
+        switch (frequencyLower) {
             case 'daily': return `Every ${interval} days`;
             case 'weekly': return `Every ${interval} weeks`;
             case 'monthly': return `Every ${interval} months`;
             case 'yearly': return `Every ${interval} years`;
-            default: return `Every ${interval} ${frequency.toLowerCase()}s`;
+            default: return `Every ${interval} ${frequencyLower}s`;
         }
     }
 };
@@ -83,7 +125,11 @@ export function RouteComponent() {
                         {recurringTaskQuery.data && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <RepeatIcon className="h-4 w-4" />
-                                <span>{getFrequencyText(recurringTaskQuery.data.frequency, recurringTaskQuery.data.interval)}</span>
+                                <span>{getFrequencyText(
+                                    recurringTaskQuery.data.frequency,
+                                    recurringTaskQuery.data.interval,
+                                    recurringTaskQuery.data.weekdays
+                                )}</span>
                             </div>
                         )}
                     </div>

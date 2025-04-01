@@ -9,13 +9,27 @@ pub mod manager;
 pub mod repository;
 pub mod tauri;
 
-#[derive(Debug, Serialize, Deserialize, Clone, strum_macros::Display, strum_macros::EnumString)]
+#[derive(
+    Debug, Serialize, Deserialize, Clone, strum_macros::Display, strum_macros::EnumString, PartialEq,
+)]
 #[strum(serialize_all = "lowercase")]
 pub enum Frequency {
     Daily,
     Weekly,
     Monthly,
     Yearly,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, strum_macros::Display, strum_macros::EnumString)]
+#[strum(serialize_all = "PascalCase")]
+pub enum WeekDay {
+    Monday,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday,
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
@@ -26,6 +40,7 @@ pub struct RecurringTask {
     pub task_id: Uuid,
     pub frequency: String, // Will be converted to/from Frequency enum
     pub interval: i32,
+    pub weekdays: Option<String>, // Comma-separated list of weekdays
     pub next_due_at_utc: DateTime<Utc>,
     pub created_at_utc: DateTime<Utc>,
     pub updated_at_utc: DateTime<Utc>,
@@ -36,6 +51,7 @@ impl RecurringTask {
         task_id: Uuid,
         frequency: Frequency,
         interval: i32,
+        weekdays: Option<Vec<WeekDay>>,
         next_due_at_utc: DateTime<Utc>,
     ) -> Self {
         let now = Utc::now();
@@ -44,6 +60,12 @@ impl RecurringTask {
             task_id,
             frequency: frequency.to_string(),
             interval,
+            weekdays: weekdays.map(|days| {
+                days.iter()
+                    .map(|day| day.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            }),
             next_due_at_utc,
             created_at_utc: now,
             updated_at_utc: now,
@@ -52,5 +74,14 @@ impl RecurringTask {
 
     pub fn frequency(&self) -> Result<Frequency, strum::ParseError> {
         self.frequency.parse()
+    }
+
+    pub fn weekdays(&self) -> Option<Vec<WeekDay>> {
+        self.weekdays.as_ref().map(|days_str| {
+            days_str
+                .split(',')
+                .filter_map(|day| day.parse().ok())
+                .collect()
+        })
     }
 }

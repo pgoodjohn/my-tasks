@@ -43,11 +43,12 @@ impl RecurringTaskRepository for SqliteRecurringTaskRepository {
 
         if exists {
             sqlx::query(
-                "UPDATE recurring_tasks SET task_id = ?1, frequency = ?2, interval = ?3, next_due_at_utc = ?4, updated_at_utc = ?5 WHERE id = ?6"
+                "UPDATE recurring_tasks SET task_id = ?1, frequency = ?2, interval = ?3, weekdays = ?4, next_due_at_utc = ?5, updated_at_utc = ?6 WHERE id = ?7"
             )
             .bind(recurring_task.task_id.to_string())
             .bind(&recurring_task.frequency)
             .bind(recurring_task.interval)
+            .bind(&recurring_task.weekdays)
             .bind(recurring_task.next_due_at_utc.to_rfc3339())
             .bind(recurring_task.updated_at_utc.to_rfc3339())
             .bind(recurring_task.id.to_string())
@@ -55,12 +56,13 @@ impl RecurringTaskRepository for SqliteRecurringTaskRepository {
             .await?;
         } else {
             sqlx::query(
-                "INSERT INTO recurring_tasks (id, task_id, frequency, interval, next_due_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+                "INSERT INTO recurring_tasks (id, task_id, frequency, interval, weekdays, next_due_at_utc, created_at_utc, updated_at_utc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"
             )
             .bind(recurring_task.id.to_string())
             .bind(recurring_task.task_id.to_string())
             .bind(&recurring_task.frequency)
             .bind(recurring_task.interval)
+            .bind(&recurring_task.weekdays)
             .bind(recurring_task.next_due_at_utc.to_rfc3339())
             .bind(recurring_task.created_at_utc.to_rfc3339())
             .bind(recurring_task.updated_at_utc.to_rfc3339())

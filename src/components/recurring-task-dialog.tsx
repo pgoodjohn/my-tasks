@@ -23,16 +23,19 @@ import { Separator } from "@/components/ui/separator"
 import { useForm } from "@tanstack/react-form"
 import { invoke_tauri_command } from "@/lib/utils"
 import type { Task, RecurringTask } from "@/types"
-import { Frequency } from "@/types"
+import { Frequency, WeekDay } from "@/types"
 import { toast } from "sonner"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 
 interface RecurringTaskFormProps {
     taskId: string
     defaultValues: {
         frequency: Frequency
         interval: number
+        weekdays: WeekDay[]
     }
-    onSubmit: (values: { frequency: Frequency; interval: number }) => Promise<void>
+    onSubmit: (values: { frequency: Frequency; interval: number; weekdays: WeekDay[] }) => Promise<void>
     onCancel: () => void
     onDelete?: () => void
     submitLabel: string
@@ -45,6 +48,18 @@ function RecurringTaskForm({ defaultValues, onSubmit, onCancel, onDelete, submit
             await onSubmit(value)
         }
     })
+
+    const [selectedFrequency, setSelectedFrequency] = useState<Frequency>(defaultValues.frequency)
+
+    const weekDays = [
+        { label: "Monday", value: WeekDay.Monday },
+        { label: "Tuesday", value: WeekDay.Tuesday },
+        { label: "Wednesday", value: WeekDay.Wednesday },
+        { label: "Thursday", value: WeekDay.Thursday },
+        { label: "Friday", value: WeekDay.Friday },
+        { label: "Saturday", value: WeekDay.Saturday },
+        { label: "Sunday", value: WeekDay.Sunday },
+    ]
 
     return (
         <form onSubmit={(e) => {
@@ -60,7 +75,15 @@ function RecurringTaskForm({ defaultValues, onSubmit, onCancel, onDelete, submit
                             <label className="text-sm font-medium">Frequency</label>
                             <Select
                                 value={field.state.value}
-                                onValueChange={(value) => field.setValue(value as Frequency)}
+                                onValueChange={(value) => {
+                                    const newFrequency = value as Frequency;
+                                    field.setValue(newFrequency)
+                                    setSelectedFrequency(newFrequency)
+                                    // Clear weekdays if switching away from weekly
+                                    if (newFrequency !== Frequency.Weekly) {
+                                        form.setFieldValue("weekdays", [])
+                                    }
+                                }}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select frequency" />
@@ -90,6 +113,35 @@ function RecurringTaskForm({ defaultValues, onSubmit, onCancel, onDelete, submit
                         </div>
                     )}
                 />
+                {selectedFrequency === Frequency.Weekly && (
+                    <form.Field
+                        name="weekdays"
+                        children={(field) => (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Repeat on</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {weekDays.map((day) => (
+                                        <div key={day.value} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`weekday-${day.value}`}
+                                                checked={(field.state.value || []).includes(day.value)}
+                                                onCheckedChange={(checked) => {
+                                                    const currentWeekdays = field.state.value || []
+                                                    if (checked) {
+                                                        field.setValue([...currentWeekdays, day.value])
+                                                    } else {
+                                                        field.setValue(currentWeekdays.filter(d => d !== day.value))
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor={`weekday-${day.value}`}>{day.label}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    />
+                )}
             </div>
             <Separator />
             <DialogFooter>
@@ -134,9 +186,20 @@ export function RecurringTaskDialog({ task }: RecurringTaskDialogProps) {
         }
     })
 
-    const handleSubmit = async (values: { frequency: Frequency, interval: number }) => {
+    const handleSubmit = async (values: { frequency: Frequency, interval: number, weekdays: WeekDay[] }) => {
         const command = recurringTask ? "update_recurring_task_command" : "setup_recurring_task_command"
-        const data = { taskId: task.id, ...values }
+
+        // Only include weekdays for weekly frequency
+        const weekdays = values.frequency === Frequency.Weekly && values.weekdays.length > 0
+            ? values.weekdays
+            : undefined;
+
+        const data = {
+            taskId: task.id,
+            frequency: values.frequency,
+            interval: values.interval,
+            weekdays
+        }
 
         try {
             await invoke_tauri_command(command, { data })
@@ -192,6 +255,7 @@ export function RecurringTaskDialog({ task }: RecurringTaskDialogProps) {
                     defaultValues={{
                         frequency: recurringTask?.frequency ?? Frequency.Weekly,
                         interval: recurringTask?.interval ?? 1,
+                        weekdays: recurringTask?.weekdays ?? []
                     }}
                     onSubmit={handleSubmit}
                     onCancel={() => setOpen(false)}
