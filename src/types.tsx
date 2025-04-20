@@ -27,6 +27,9 @@ declare module "@tanstack/react-router" {
         "/tasks/completed": {
             parentRoute: typeof import("./routes/__root").Route;
         };
+        "/markdown": {
+            parentRoute: typeof import("./routes/__root").Route;
+        };
     }
 }
 
@@ -73,3 +76,16 @@ type RecurringTask = {
 }
 
 export type { RecurringTask }
+
+// Types for Markdown Tasks read from files
+export enum MarkdownTaskStatus {
+    Pending = "Pending",
+    Completed = "Completed",
+}
+
+export interface MarkdownTask {
+    title: string;
+    status: MarkdownTaskStatus;
+    file_path: string;
+    line_number: number;
+}

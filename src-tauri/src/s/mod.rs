@@ -17,6 +17,8 @@ pub struct Configuration {
     pub db_path: PathBuf,
     #[serde(default)]
     pub ollama: OllamaConfig,
+    #[serde(rename = "markdownTasksFolder", default)]
+    pub markdown_tasks_folder: Option<PathBuf>,
 }
 
 impl Default for Configuration {
@@ -27,6 +29,7 @@ impl Default for Configuration {
             config_path: ".config.toml".into(),
             db_path: "file.db".into(),
             ollama: OllamaConfig::default(),
+            markdown_tasks_folder: None,
         }
     }
 }

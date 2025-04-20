@@ -52,6 +52,7 @@ impl ConfigurationManager {
                     config_path: storage_manager.configuration_path.clone(),
                     db_path: storage_manager.db_path.clone(),
                     ollama: OllamaConfig::default(),
+                    markdown_tasks_folder: Some(PathBuf::from("/Users/pietro/Documents/Notes")),
                 };
 
                 let _ = storage_manager.write_to_file(
@@ -69,7 +70,7 @@ impl ConfigurationManager {
         let storage_manager = ConfigurationStorageManager::init(mode);
 
         match storage_manager.validate_config_path_exists() {
-            Err(_) => Err(()),
+            Err(_) => Ok(Self::init(mode)),
             Ok(_) => {
                 let configuration_string = storage_manager.read_from_file().unwrap();
                 match toml::from_str::<Configuration>(&configuration_string) {

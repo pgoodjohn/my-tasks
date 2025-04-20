@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as StatisticsRouteImport } from './routes/statistics.route'
 import { Route as SettingsRouteImport } from './routes/settings.route'
 import { Route as OllamaRouteImport } from './routes/ollama.route'
+import { Route as MarkdownRouteImport } from './routes/markdown.route'
 import { Route as IndexRouteImport } from './routes/index.route'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index.route'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index.route'
@@ -38,6 +39,12 @@ const SettingsRouteRoute = SettingsRouteImport.update({
 const OllamaRouteRoute = OllamaRouteImport.update({
   id: '/ollama',
   path: '/ollama',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const MarkdownRouteRoute = MarkdownRouteImport.update({
+  id: '/markdown',
+  path: '/markdown',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -86,6 +93,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRoute
+    }
+    '/markdown': {
+      id: '/markdown'
+      path: '/markdown'
+      fullPath: '/markdown'
+      preLoaderRoute: typeof MarkdownRouteImport
       parentRoute: typeof rootRoute
     }
     '/ollama': {
@@ -151,6 +165,7 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRouteRoute
+  '/markdown': typeof MarkdownRouteRoute
   '/ollama': typeof OllamaRouteRoute
   '/settings': typeof SettingsRouteRoute
   '/statistics': typeof StatisticsRouteRoute
@@ -163,6 +178,7 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRouteRoute
+  '/markdown': typeof MarkdownRouteRoute
   '/ollama': typeof OllamaRouteRoute
   '/settings': typeof SettingsRouteRoute
   '/statistics': typeof StatisticsRouteRoute
@@ -176,6 +192,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRouteRoute
+  '/markdown': typeof MarkdownRouteRoute
   '/ollama': typeof OllamaRouteRoute
   '/settings': typeof SettingsRouteRoute
   '/statistics': typeof StatisticsRouteRoute
@@ -190,6 +207,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/markdown'
     | '/ollama'
     | '/settings'
     | '/statistics'
@@ -201,6 +219,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/markdown'
     | '/ollama'
     | '/settings'
     | '/statistics'
@@ -212,6 +231,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/markdown'
     | '/ollama'
     | '/settings'
     | '/statistics'
@@ -225,6 +245,7 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRouteRoute: typeof IndexRouteRoute
+  MarkdownRouteRoute: typeof MarkdownRouteRoute
   OllamaRouteRoute: typeof OllamaRouteRoute
   SettingsRouteRoute: typeof SettingsRouteRoute
   StatisticsRouteRoute: typeof StatisticsRouteRoute
@@ -237,6 +258,7 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRouteRoute: IndexRouteRoute,
+  MarkdownRouteRoute: MarkdownRouteRoute,
   OllamaRouteRoute: OllamaRouteRoute,
   SettingsRouteRoute: SettingsRouteRoute,
   StatisticsRouteRoute: StatisticsRouteRoute,
@@ -258,6 +280,7 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/markdown",
         "/ollama",
         "/settings",
         "/statistics",
@@ -270,6 +293,9 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.route.tsx"
+    },
+    "/markdown": {
+      "filePath": "markdown.route.tsx"
     },
     "/ollama": {
       "filePath": "ollama.route.tsx"

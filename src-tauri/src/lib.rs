@@ -11,6 +11,7 @@ pub mod chart;
 pub mod configuration;
 pub mod errors;
 pub mod logger;
+pub mod markdown_reader;
 pub mod ollama;
 pub mod project;
 pub mod recurring_task;
@@ -132,6 +133,8 @@ pub fn run() {
             recurring_task::tauri::actions::update_recurring_task_command,
             recurring_task::tauri::actions::delete_recurring_task_command,
             recurring_task::tauri::queries::get_recurring_task_command,
+            // Markdown Reader commands
+            markdown_reader::tauri::queries::load_markdown_tasks_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

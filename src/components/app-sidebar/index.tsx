@@ -86,6 +86,9 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
+                            <SidebarMenuButton asChild isActive={currentRoute === "/markdown"}>
+                                <Link to='/markdown'>Markdown Tasks</Link>
+                            </SidebarMenuButton>
                             <SidebarMenuButton asChild isActive={currentRoute === "/tasks/completed"}>
                                 <Link to='/tasks/completed'>Completed Tasks</Link>
                             </SidebarMenuButton>
