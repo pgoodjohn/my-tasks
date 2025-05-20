@@ -77,7 +77,8 @@ export interface RecurringTask {
     task_id: string
     frequency: Frequency
     interval: number
-    weekdays: WeekDay[]
+    weekdays?: WeekDay[]
+    day_of_month?: number
     next_due_at_utc: string
     created_at_utc: string
     updated_at_utc: string

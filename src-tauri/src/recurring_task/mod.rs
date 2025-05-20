@@ -41,6 +41,7 @@ pub struct RecurringTask {
     pub frequency: String, // Will be converted to/from Frequency enum
     pub interval: i32,
     pub weekdays: Option<String>, // Comma-separated list of weekdays
+    pub day_of_month: Option<u8>,
     pub next_due_at_utc: DateTime<Utc>,
     pub created_at_utc: DateTime<Utc>,
     pub updated_at_utc: DateTime<Utc>,
@@ -52,6 +53,7 @@ impl RecurringTask {
         frequency: Frequency,
         interval: i32,
         weekdays: Option<Vec<WeekDay>>,
+        day_of_month: Option<u8>,
         next_due_at_utc: DateTime<Utc>,
     ) -> Self {
         let now = Utc::now();
@@ -66,6 +68,7 @@ impl RecurringTask {
                     .collect::<Vec<_>>()
                     .join(",")
             }),
+            day_of_month,
             next_due_at_utc,
             created_at_utc: now,
             updated_at_utc: now,
