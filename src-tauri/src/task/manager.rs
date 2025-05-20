@@ -105,7 +105,7 @@ impl<'a> TaskManager<'a> {
                 .await?;
         }
 
-        task_repository.update_task(&mut task, update_data).await?;
+        task = task_repository.update_task(&mut task, update_data).await?;
         Ok(Some(task))
     }
 

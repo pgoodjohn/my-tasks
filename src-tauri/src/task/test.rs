@@ -1,13 +1,15 @@
 #[cfg(test)]
 mod task_tests {
     use super::super::manager::TaskManager;
+    use super::super::manager::TaskManager;
     use crate::repository::RepositoryProvider;
     use crate::task::repository::TaskRepository;
     use crate::task::{CreateTaskData, UpdatedTaskData};
-
+    use chrono::{DateTime, Utc};
     use sqlx::migrate::MigrateDatabase;
     use sqlx::sqlite::SqlitePool;
     use sqlx::Sqlite;
+    use uuid::Uuid;
 
     async fn setup_test_db() -> Result<RepositoryProvider, sqlx::Error> {
         let url = format!("sqlite://{}", ":memory:");
@@ -172,5 +174,70 @@ mod task_tests {
         let reloaded_subtask = manager.load_by_id(subtask.id).await.unwrap().unwrap();
 
         assert!(reloaded_subtask.completed_at_utc.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_update_task_returns_updated_fields() {
+        let provider = setup_test_db().await.unwrap();
+        let manager = TaskManager::new(&provider);
+
+        // Create an initial task
+        let initial_task_data = CreateTaskData {
+            title: "Initial Task Title".to_string(),
+            description: Some("Initial task description".to_string()),
+            project_id: None,
+            due_at_utc: None,
+        };
+        let created_task = manager.create_task(initial_task_data).await.unwrap();
+
+        // Prepare update data
+        let new_project_id = Uuid::new_v4();
+        let new_due_date_str = "2024-12-31T23:59:59Z";
+        let updated_task_data = UpdatedTaskData {
+            title: "Updated Task Title".to_string(), // Title can also be updated
+            description: Some("Updated task description".to_string()),
+            project_id: Some(new_project_id.to_string()),
+            due_date: Some(new_due_date_str.to_string()),
+        };
+
+        // Call update_task
+        let updated_task_result = manager
+            .update_task(created_task.id, updated_task_data)
+            .await
+            .unwrap();
+
+        // Assertions
+        assert!(
+            updated_task_result.is_some(),
+            "Task should be found and updated"
+        );
+        let updated_task = updated_task_result.unwrap();
+
+        assert_eq!(
+            updated_task.project_id,
+            Some(new_project_id),
+            "Project ID was not updated correctly in the returned task."
+        );
+
+        let expected_due_date = DateTime::parse_from_rfc3339(new_due_date_str)
+            .unwrap()
+            .with_timezone(&Utc);
+        assert_eq!(
+            updated_task.due_at_utc,
+            Some(expected_due_date),
+            "Due date was not updated correctly in the returned task."
+        );
+
+        // Also check other fields to ensure they are updated or preserved as expected
+        assert_eq!(
+            updated_task.title,
+            "Updated Task Title".to_string(),
+            "Title was not updated correctly."
+        );
+        assert_eq!(
+            updated_task.description,
+            Some("Updated task description".to_string()),
+            "Description was not updated correctly."
+        );
     }
 }
