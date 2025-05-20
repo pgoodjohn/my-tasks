@@ -33,9 +33,10 @@ interface RecurringTaskFormProps {
     defaultValues: {
         frequency: Frequency
         interval: number
-        weekdays: WeekDay[]
+        weekdays?: WeekDay[]
+        dayOfMonth?: number
     }
-    onSubmit: (values: { frequency: Frequency; interval: number; weekdays: WeekDay[] }) => Promise<void>
+    onSubmit: (values: { frequency: Frequency; interval: number; weekdays?: WeekDay[]; dayOfMonth?: number }) => Promise<void>
     onCancel: () => void
     onDelete?: () => void
     submitLabel: string
@@ -81,7 +82,11 @@ function RecurringTaskForm({ defaultValues, onSubmit, onCancel, onDelete, submit
                                     setSelectedFrequency(newFrequency)
                                     // Clear weekdays if switching away from weekly
                                     if (newFrequency !== Frequency.Weekly) {
-                                        form.setFieldValue("weekdays", [])
+                                        form.setFieldValue("weekdays", undefined)
+                                    }
+                                    // Clear dayOfMonth if switching away from monthly
+                                    if (newFrequency !== Frequency.Monthly) {
+                                        form.setFieldValue("dayOfMonth", undefined)
                                     }
                                 }}
                             >
@@ -142,6 +147,24 @@ function RecurringTaskForm({ defaultValues, onSubmit, onCancel, onDelete, submit
                         )}
                     />
                 )}
+                {selectedFrequency === Frequency.Monthly && (
+                    <form.Field
+                        name="dayOfMonth"
+                        children={(field) => (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Day of Month</label>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    max={31}
+                                    value={field.state.value ?? ''}
+                                    onChange={(e) => field.setValue(e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
+                                    placeholder="E.g., 15"
+                                />
+                            </div>
+                        )}
+                    />
+                )}
             </div>
             <Separator />
             <DialogFooter>
@@ -182,23 +205,26 @@ export function RecurringTaskDialog({ task }: RecurringTaskDialogProps) {
     const { data: recurringTask, isLoading } = useQuery<RecurringTask>({
         queryKey: ["recurring-task", task.id],
         queryFn: async () => {
-            return invoke_tauri_command("get_recurring_task_command", { taskId: task.id })
+            const result = await invoke_tauri_command<RecurringTask>("get_recurring_task_command", { taskId: task.id })
+            // Ensure day_of_month from backend (snake_case) is mapped to dayOfMonth (camelCase) for the form
+            if (result && result.day_of_month !== undefined) {
+                return { ...result, dayOfMonth: result.day_of_month };
+            }
+            return result;
         }
     })
 
-    const handleSubmit = async (values: { frequency: Frequency, interval: number, weekdays: WeekDay[] }) => {
+    const handleSubmit = async (values: { frequency: Frequency, interval: number, weekdays?: WeekDay[], dayOfMonth?: number }) => {
         const command = recurringTask ? "update_recurring_task_command" : "setup_recurring_task_command"
-
-        // Only include weekdays for weekly frequency
-        const weekdays = values.frequency === Frequency.Weekly && values.weekdays.length > 0
-            ? values.weekdays
-            : undefined;
 
         const data = {
             taskId: task.id,
             frequency: values.frequency,
             interval: values.interval,
-            weekdays
+            weekdays: values.frequency === Frequency.Weekly && values.weekdays && values.weekdays.length > 0
+                ? values.weekdays
+                : undefined,
+            day_of_month: values.frequency === Frequency.Monthly ? values.dayOfMonth : undefined
         }
 
         try {
@@ -255,7 +281,8 @@ export function RecurringTaskDialog({ task }: RecurringTaskDialogProps) {
                     defaultValues={{
                         frequency: recurringTask?.frequency ?? Frequency.Weekly,
                         interval: recurringTask?.interval ?? 1,
-                        weekdays: recurringTask?.weekdays ?? []
+                        weekdays: recurringTask?.weekdays ?? undefined,
+                        dayOfMonth: recurringTask?.dayOfMonth ?? undefined
                     }}
                     onSubmit={handleSubmit}
                     onCancel={() => setOpen(false)}
