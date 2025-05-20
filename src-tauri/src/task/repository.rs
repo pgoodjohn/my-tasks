@@ -15,7 +15,7 @@ pub trait TaskRepository: Send + Sync {
         &mut self,
         task: &mut Task,
         data: UpdatedTaskData,
-    ) -> Result<(), sqlx::Error>;
+    ) -> Result<Task, sqlx::Error>;
     async fn find_all_filtered_by_completed(
         &mut self,
         include_completed: bool,
@@ -291,7 +291,7 @@ impl TaskRepository for SqliteTaskRepository {
         &mut self,
         task: &mut Task,
         data: UpdatedTaskData,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<Task, sqlx::Error> {
         task.title = data.title;
         task.description = data.description;
         task.due_at_utc = data
@@ -307,7 +307,8 @@ impl TaskRepository for SqliteTaskRepository {
             task.project_id = None;
         }
 
-        self.save(task).await
+        self.save(task).await?;
+        Ok(task.clone())
     }
 
     async fn move_subtasks_to_project(

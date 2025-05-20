@@ -68,7 +68,7 @@ impl TryFrom<TaskRow> for Task {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Task {
     pub id: Uuid,
     pub title: String,
